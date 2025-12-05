@@ -1,32 +1,18 @@
-// This page gives the warm welcome and sends people to the guide intro.
-import GoldButton from "../components/GoldButton";
+// This page shows the welcome screen using the shared intro card.
+import IntroCard from "../components/IntroCard";
+
+const welcomeParagraphs = [
+  { text: "It's a space created to help you grow, reflect, and become the best version of yourself." },
+  { text: "Because every journey begins with a single step." },
+  { text: "Let's take your first step together.", italic: true },
+];
 
 export default function WelcomePage() {
-  // This mirrors the wording from the welcome notes.
   return (
-    <main className="page-shell">
-      <div className="bg-orbs" aria-hidden="true" />
-      <div className="glass-card">
-        <div className="gold-icon">
-          <img className="icon-main" src="/coai-logo.png" alt="Coach icon" />
-          <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
-        </div>
-        <h1 className="hero-title typewriter-title" style={{ ["--tw-delay" as string]: "0s" }}>
-          Welcome to leadership-factory.cn!
-        </h1>
-        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.6s" }}>
-          It's a space created to help you grow, reflect, and become the best version of yourself.
-        </p>
-        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "1.2s" }}>
-          Because every journey begins with a single step.
-        </p>
-        <p className="italic-note typewriter-line" style={{ ["--tw-delay" as string]: "1.8s" }}>
-          Let's take your first step together.
-        </p>
-        <div className="flex-row">
-          <GoldButton href="/learning-guide-intro">CONTINUE</GoldButton>
-        </div>
-      </div>
-    </main>
+    <IntroCard
+      title="Welcome to leadership-factory.cn!"
+      paragraphs={welcomeParagraphs}
+      button={{ label: "CONTINUE", href: "/learning-guide-intro" }}
+    />
   );
 }

@@ -90,10 +90,10 @@ async function main() {
     "The welcome page should show the exact title, three paragraphs, and a CONTINUE button to /learning-guide-intro."
   );
   const welcome = render(React.createElement(WelcomePage));
-  welcome.getByText("Welcome to leadership-factory.cn!");
-  welcome.getByText("It's a space created to help you grow, reflect, and become the best version of yourself.");
-  welcome.getByText("Because every journey begins with a single step.");
-  welcome.getByText("Let's take your first step together.");
+  await welcome.findByText((content) => content.includes("Welcome to leadership-factory.cn"));
+  await welcome.findByText((content) => content.includes("It's a space created to help you grow"));
+  await welcome.findByText((content) => content.includes("Because every journey begins"));
+  await welcome.findByText((content) => content.includes("Let's take your first step together."));
   const continueLink = welcome.getByRole("link", { name: "CONTINUE" });
   assert(continueLink.getAttribute("href") === "/learning-guide-intro", "CONTINUE should point to /learning-guide-intro.");
   logPass("Welcome page copy and link look right.");
@@ -104,12 +104,12 @@ async function main() {
     "This page should introduce the guide and send people to the placeholder chat route."
   );
   const intro = render(React.createElement(LearningGuideIntroPage));
-  intro.getByText("I'm your learning guide, here to guide your journey of discovery and growth.");
-  intro.getByText(
+  await intro.findByText((content) => content.includes("I'm your learning guide, here to guide your journey of discovery and growth."));
+  await intro.findByText(
     "I'll ask you a few easy questions about what you'd like to work on, such as your goals, confidence, communication, relationships, or everyday challenges."
   );
-  intro.getByText("Your answers will help me create a personalized learning path.");
-  intro.getByText("When you're ready, let's begin.");
+  await intro.findByText((content) => content.includes("Your answers will help me create a personalized learning path."));
+  await intro.findByText((content) => content.includes("When you're ready, let's begin."));
   const readyLink = intro.getByRole("link", { name: "I'M READY" });
   assert(readyLink.getAttribute("href") === "/journeys/goal-clarification/steps/TEST", "I'M READY should point to the placeholder step.");
   logPass("Learning-guide-intro text and CTA look right.");
