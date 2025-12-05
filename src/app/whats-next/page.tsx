@@ -13,6 +13,7 @@ export default function WhatsNextPage({
 
   return (
     <main className="page-shell">
+      <div className="bg-orbs" aria-hidden="true" />
       <div className="glass-card">
         <h1 className="hero-title">You did it!</h1>
         <p className="hero-lead">

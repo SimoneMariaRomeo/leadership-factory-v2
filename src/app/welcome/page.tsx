@@ -5,8 +5,11 @@ export default function WelcomePage() {
   // This mirrors the wording from the welcome notes.
   return (
     <main className="page-shell">
+      <div className="bg-orbs" aria-hidden="true" />
       <div className="glass-card">
-        <div className="gold-icon">LF</div>
+        <div className="gold-icon">
+          <img src="/coai-logo.png" alt="Coach icon" />
+        </div>
         <h1 className="hero-title">Welcome to leadership-factory.cn!</h1>
         <p className="hero-lead">
           It's a space created to help you grow, reflect, and become the best version of yourself.

@@ -13,9 +13,12 @@ export default function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  // This wraps every page with the body styling.
+  // This wraps every page with the background and shared styles.
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.png" />
+      </head>
       <body>{children}</body>
     </html>
   );

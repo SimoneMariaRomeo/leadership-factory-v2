@@ -5,8 +5,11 @@ export default function LearningGuideIntroPage() {
   // This keeps the exact text from the guide intro notes.
   return (
     <main className="page-shell">
+      <div className="bg-orbs" aria-hidden="true" />
       <div className="glass-card">
-        <div className="gold-icon">LF</div>
+        <div className="gold-icon">
+          <img src="/coai-logo.png" alt="Coach icon" />
+        </div>
         <h1 className="hero-title">I'm your learning guide, here to guide your journey of discovery and growth.</h1>
         <p className="hero-lead">
           I'll ask you a few easy questions about what you'd like to work on, such as your goals, confidence, communication,

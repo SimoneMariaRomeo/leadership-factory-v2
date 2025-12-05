@@ -16,8 +16,11 @@ export default function LearningGoalConfirmationPage() {
 
   return (
     <main className="page-shell">
+      <div className="bg-orbs" aria-hidden="true" />
       <div className="glass-card">
-        <div className="gold-icon">LF</div>
+        <div className="gold-icon">
+          <img src="/coai-logo.png" alt="Coach icon" />
+        </div>
         <h1 className="hero-title">Let me see if I understood:</h1>
         <p className="goal-text">
           <span>{goal}</span>
