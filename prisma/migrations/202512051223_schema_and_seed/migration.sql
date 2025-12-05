@@ -116,6 +116,12 @@ CREATE UNIQUE INDEX "LearningSessionOutline_journeyId_slug_key" ON "LearningSess
 -- CreateIndex
 CREATE UNIQUE INDEX "LearningJourneyStep_chatId_key" ON "LearningJourneyStep"("chatId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "LearningJourneyStep_journeyId_order_key" ON "LearningJourneyStep"("journeyId", "order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LearningSessionOutline_journeyId_id_key" ON "LearningSessionOutline"("journeyId", "id");
+
 -- AddCheck
 ALTER TABLE "LearningJourney" ADD CONSTRAINT "LearningJourney_standard_requires_null_user" CHECK (("isStandard" = true AND "personalizedForUserId" IS NULL) OR "isStandard" = false);
 
@@ -141,7 +147,7 @@ ALTER TABLE "LearningSessionOutline" ADD CONSTRAINT "LearningSessionOutline_jour
 ALTER TABLE "LearningJourneyStep" ADD CONSTRAINT "LearningJourneyStep_journeyId_fkey" FOREIGN KEY ("journeyId") REFERENCES "LearningJourney"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LearningJourneyStep" ADD CONSTRAINT "LearningJourneyStep_sessionOutlineId_fkey" FOREIGN KEY ("sessionOutlineId") REFERENCES "LearningSessionOutline"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LearningJourneyStep" ADD CONSTRAINT "LearningJourneyStep_journeyId_sessionOutlineId_fkey" FOREIGN KEY ("journeyId", "sessionOutlineId") REFERENCES "LearningSessionOutline"("journeyId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "LearningJourneyStep" ADD CONSTRAINT "LearningJourneyStep_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "LearningSessionChat"("id") ON DELETE SET NULL ON UPDATE CASCADE;

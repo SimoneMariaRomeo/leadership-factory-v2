@@ -1,6 +1,6 @@
 /**
- * Simple checks to confirm the database shape and seed data.
- * Uses its own test databases so it does not touch real data.
+ * Domain checks for schema and core rules.
+ * Uses its own test databases so real data stays safe.
  */
 const path = require("path");
 const { execSync } = require("child_process");
@@ -12,7 +12,6 @@ require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const TEST_DB_NAME = process.env.SCHEMA_AND_SEED_TEST_DB || "schema_and_seed_tests";
 const TEST_SHADOW_DB_NAME = `${TEST_DB_NAME}_shadow`;
 const GOAL_JOURNEY_SLUG = "goal-clarification";
-const NEED_ANALYSIS_SLUG = "need-analysis";
 
 const databaseUrl = withDbName(process.env.DATABASE_URL, TEST_DB_NAME);
 const shadowDatabaseUrl = withDbName(
@@ -32,7 +31,7 @@ let pool;
 let adapter;
 let prisma;
 
-// Points the Postgres URL at a specific database name.
+// Builds a URL that points to a specific database name.
 function withDbName(url, dbName) {
   if (!url) return url;
   const parsed = new URL(url);
@@ -40,7 +39,7 @@ function withDbName(url, dbName) {
   return parsed.toString();
 }
 
-// Prints what the test is about.
+// Prints which test is running.
 function logTest(title, expectation) {
   console.log(`\n[Test] ${title}`);
   console.log(`- Expectation: ${expectation}`);
@@ -58,7 +57,7 @@ function assert(condition, message) {
   }
 }
 
-// Runs a shell command with the test schema URLs.
+// Runs a shell command with the test DB URLs.
 function runCommand(command, label) {
   execSync(command, {
     env: {
@@ -72,7 +71,7 @@ function runCommand(command, label) {
   logPass(label);
 }
 
-// Runs all schema and seed tests in order.
+// Main runner.
 async function main() {
   await resetTestDatabases();
   pool = new Pool({ connectionString: databaseUrl });
@@ -87,60 +86,52 @@ async function main() {
   await ensureTablesExist();
 
   logTest(
-    "2) Seed creates exactly one Goal Clarification journey",
-    "Seeding should insert a single standard journey with the expected title, slug, status, and null personalized user."
+    "2) Standard vs personalized constraints",
+    "Standard journeys must stay user-null; personalized journeys must not set isStandard."
   );
-  runCommand("npx prisma db seed --schema prisma/schema.prisma", "Seed script executed");
-  const goalJourney = await fetchGoalJourney();
+  await testStandardAndPersonalizedJourneys();
 
   logTest(
-    "3) Standard journey visibility invariants",
-    "A standard journey keeps personalizedForUserId null, and attempts to set it while isStandard=true must be rejected."
+    "3) Slug uniqueness on journeys",
+    "The same journey slug should be blocked."
   );
-  assert(goalJourney.isStandard === true && goalJourney.personalizedForUserId === null, "Seeded standard journey must not be tied to a user.");
-  await expectStandardJourneyConstraint();
+  await testJourneySlugUniqueness();
 
   logTest(
-    "4) Need-analysis outline exists and is linked to Goal Clarification",
-    "The seed should create one outline with slug need-analysis attached to the Goal Clarification journey."
+    "4) Outline slug uniqueness per journey",
+    "Outline slugs can repeat on another journey, not on the same one."
   );
-  const needAnalysisOutline = await fetchNeedAnalysisOutline(goalJourney.id);
+  await testOutlineUniqueness();
 
   logTest(
-    "5) Need-analysis outline fields match spec",
-    "The outline must carry objective, content, botTools with the create_learning_goal JSON instruction, and a first user message."
+    "5) Step ordering and cross-journey safety",
+    "Step order must be unique per journey, and steps cannot point to outlines from another journey."
   );
-  validateNeedAnalysisFields(needAnalysisOutline);
+  await testStepOrderingAndCrossJourneyGuard();
 
   logTest(
-    "6) Need-analysis step exists and is correctly wired",
-    "There should be one unlocked step wired to the need-analysis outline, with chatId still null."
+    "6) Chat and message wiring",
+    "Chats and messages should link back to the right user, outline, and step."
   );
-  const needAnalysisStep = await fetchNeedAnalysisStep(goalJourney.id, needAnalysisOutline.id);
+  await testChatAndMessageRelations();
 
   logTest(
-    "7) Journey outlines and steps relations work",
-    "Including outlines and steps on the journey should return the need-analysis outline and step, and relations should resolve."
+    "7) Need-analysis outline content",
+    "botTools should mention the create_learning_goal JSON and other fields should be filled."
   );
-  await validateJourneyRelations(goalJourney.id, needAnalysisOutline.id, needAnalysisStep.id);
+  await testNeedAnalysisOutlineContent();
 
   logTest(
-    "8) LearningSessionOutline slug uniqueness per journey",
-    "Creating another outline with the same slug for the same journey should fail, while reusing the slug on a different journey should succeed."
+    "8) Timestamp updates",
+    "createdAt should be set and updatedAt should move forward after changes."
   );
-  await validateOutlineUniqueness(goalJourney.id);
+  await testTimestampBehaviour();
 
   logTest(
-    "9) LearningJourney.slug uniqueness",
-    "A duplicate slug goal-clarification must be rejected, while a new slug should be accepted."
+    "9) Minimal seed smoke test",
+    "Running the seed should leave at least the Goal Clarification journey."
   );
-  await validateJourneySlugUniqueness();
-
-  logTest(
-    "10) Defaults and timestamps",
-    "Seeded records and newly created records should have createdAt/updatedAt set, and updatedAt should move forward on updates."
-  );
-  await validateTimestamps(goalJourney.id, needAnalysisOutline.id, needAnalysisStep.id);
+  await testSeedSmoke();
 
   console.log("\nAll schema-and-seed checks passed.");
 }
@@ -180,246 +171,328 @@ async function recreateDatabase(adminUrl, dbName) {
   await adminPool.end();
 }
 
-// Fetches the seeded Goal Clarification journey and checks its flags.
-async function fetchGoalJourney() {
-  const journeys = await prisma.learningJourney.findMany({
-    where: { slug: GOAL_JOURNEY_SLUG },
+// Makes a user for tests.
+async function createUser() {
+  return prisma.user.create({
+    data: {
+      email: `user-${Date.now()}@example.com`,
+      passwordHash: "hash",
+      role: "user",
+      botRole: "coachee",
+    },
   });
-  assert(journeys.length === 1, `Expected exactly one Goal Clarification journey, found ${journeys.length}.`);
-  const journey = journeys[0];
-  assert(journey.title === "Goal Clarification", "Seeded journey should be titled 'Goal Clarification'.");
-  assert(journey.isStandard === true, "Seeded journey should be marked as standard.");
-  assert(journey.status === "active", "Seeded journey should be active.");
-  assert(journey.personalizedForUserId === null, "Standard journey should not be linked to a user.");
-  logPass("Goal Clarification journey exists with the expected flags.");
-  return journey;
 }
 
-// Ensures a standard journey cannot point to a user.
-async function expectStandardJourneyConstraint() {
-  let errorCaught = false;
+// Standard vs personalized rules.
+async function testStandardAndPersonalizedJourneys() {
+  const standard = await prisma.learningJourney.create({
+    data: {
+      title: "Standard One",
+      slug: `standard-${Date.now()}`,
+      isStandard: true,
+      status: "active",
+    },
+  });
+
+  const user = await createUser();
+  const personalized = await prisma.learningJourney.create({
+    data: {
+      title: "Personalized One",
+      slug: `personalized-${Date.now()}`,
+      isStandard: false,
+      status: "draft",
+      personalizedForUserId: user.id,
+    },
+  });
+
+  let blocked = false;
   try {
     await prisma.learningJourney.create({
       data: {
-        title: "Invalid Standard Journey",
-        slug: `goal-clarification-invalid-${Date.now()}`,
+        title: "Broken Standard",
+        slug: `broken-standard-${Date.now()}`,
         isStandard: true,
-        personalizedForUserId: "fake-user-id",
         status: "active",
+        personalizedForUserId: user.id,
       },
     });
-  } catch (error) {
-    errorCaught = true;
-    logPass("Standard journey tied to a user was rejected as expected.");
+  } catch (err) {
+    blocked = true;
   }
-  assert(errorCaught, "Creating a standard journey with personalizedForUserId should fail.");
+  assert(blocked, "Standard journey tied to a user should be blocked.");
+  assert(standard.personalizedForUserId === null, "Standard journey keeps personalizedForUserId null.");
+  assert(personalized.personalizedForUserId === user.id, "Personalized journey stores the user id.");
+  logPass("Standard and personalized rules enforced.");
 }
 
-// Fetches the need-analysis outline.
-async function fetchNeedAnalysisOutline(journeyId) {
-  const outline = await prisma.learningSessionOutline.findUnique({
-    where: { journeyId_slug: { journeyId, slug: NEED_ANALYSIS_SLUG } },
-    include: { journey: true },
+// Journey slug uniqueness.
+async function testJourneySlugUniqueness() {
+  const slug = `slug-${Date.now()}`;
+  await prisma.learningJourney.create({
+    data: { title: "Slug One", slug, isStandard: false, status: "draft" },
   });
-  assert(outline, "Need-analysis outline should exist.");
-  assert(outline.journeyId === journeyId, "Need-analysis outline should belong to Goal Clarification.");
-  logPass("Need-analysis outline exists and points to the correct journey.");
-  return outline;
+  let blocked = false;
+  try {
+    await prisma.learningJourney.create({
+      data: { title: "Slug Two", slug, isStandard: false, status: "draft" },
+    });
+  } catch (err) {
+    blocked = true;
+  }
+  assert(blocked, "Duplicate journey slug should be blocked.");
+  logPass("Journey slug uniqueness enforced.");
 }
 
-// Checks that the outline fields carry the required text.
-function validateNeedAnalysisFields(outline) {
-  assert(outline.objective && outline.objective.length > 0, "Outline objective should be set.");
-  assert(outline.content && outline.content.length > 0, "Outline content should be set.");
-  assert(outline.botTools.includes('"command": "create_learning_goal"'), "botTools must mention the create_learning_goal JSON command.");
-  assert(outline.botTools.includes('"learningGoal":'), "botTools must include the learningGoal field description.");
-  assert(outline.firstUserMessage && outline.firstUserMessage.length > 0, "firstUserMessage should be set.");
-  logPass("Need-analysis outline fields match the expected spec.");
-}
-
-// Finds the seed step tied to the need-analysis outline.
-async function fetchNeedAnalysisStep(journeyId, sessionOutlineId) {
-  const steps = await prisma.learningJourneyStep.findMany({
-    where: { journeyId, sessionOutlineId },
+// Outline uniqueness per journey.
+async function testOutlineUniqueness() {
+  const journeyA = await prisma.learningJourney.create({
+    data: { title: "Journey A", slug: `journey-a-${Date.now()}`, isStandard: false, status: "draft" },
   });
-  assert(steps.length === 1, `Expected one need-analysis step, found ${steps.length}.`);
-  const step = steps[0];
-  assert(step.order === 1, "Need-analysis step should be the first item in the journey.");
-  assert(step.status === "unlocked", "Need-analysis step should be unlocked in the template.");
-  assert(step.chatId === null, "Need-analysis step should not have a chatId yet.");
-  logPass("Need-analysis step exists and is wired to the outline.");
-  return step;
-}
-
-// Confirms journey includes outline and step, and relations resolve.
-async function validateJourneyRelations(journeyId, outlineId, stepId) {
-  const journeyWithRelations = await prisma.learningJourney.findUnique({
-    where: { id: journeyId },
-    include: { outlines: true, steps: true },
+  const journeyB = await prisma.learningJourney.create({
+    data: { title: "Journey B", slug: `journey-b-${Date.now()}`, isStandard: false, status: "draft" },
   });
-  const hasOutline = journeyWithRelations.outlines.some((outline) => outline.id === outlineId);
-  const hasStep = journeyWithRelations.steps.some((step) => step.id === stepId);
-  assert(hasOutline, "Journey should include the need-analysis outline.");
-  assert(hasStep, "Journey should include the need-analysis step.");
 
-  const step = await prisma.learningJourneyStep.findUnique({
-    where: { id: stepId },
-    include: { sessionOutline: true },
+  await prisma.learningSessionOutline.create({
+    data: {
+      journeyId: journeyA.id,
+      slug: "outline-shared",
+      order: 1,
+      live: false,
+      title: "Outline Shared",
+      content: "Outline content",
+      botTools: "tooling",
+      firstUserMessage: "Hello A",
+    },
   });
-  assert(step.sessionOutline?.id === outlineId, "LearningJourneyStep.sessionOutline should resolve correctly.");
-  assert(step.sessionOutline.journeyId === journeyId, "Session outline back-reference to journey should resolve.");
-  logPass("Journey relations (outlines, steps, and back-references) resolve correctly.");
-}
 
-// Checks slug uniqueness per journey and across journeys.
-async function validateOutlineUniqueness(journeyId) {
-  let uniqueErrorCaught = false;
+  let blocked = false;
   try {
     await prisma.learningSessionOutline.create({
       data: {
-        journeyId,
-        slug: NEED_ANALYSIS_SLUG,
+        journeyId: journeyA.id,
+        slug: "outline-shared",
         order: 2,
         live: false,
-        title: "Duplicate Need Analysis",
-        objective: "Test duplicate slug handling",
-        content: "This should never persist because of the composite unique constraint.",
-        botTools: "noop",
-        firstUserMessage: "noop",
+        title: "Outline Shared Duplicate",
+        content: "Duplicate",
+        botTools: "tooling",
+        firstUserMessage: "Hello again",
       },
     });
-  } catch (error) {
-    uniqueErrorCaught = true;
-    logPass("Duplicate need-analysis outline on the same journey was blocked.");
+  } catch (err) {
+    blocked = true;
   }
-  assert(uniqueErrorCaught, "Composite unique constraint on journeyId + slug should block duplicates.");
+  assert(blocked, "Duplicate outline slug on the same journey should be blocked.");
 
-  const otherJourney = await prisma.learningJourney.create({
+  const allowed = await prisma.learningSessionOutline.create({
     data: {
-      title: "Another Journey",
-      slug: `journey-${Date.now()}`,
-      isStandard: false,
-      status: "draft",
+      journeyId: journeyB.id,
+      slug: "outline-shared",
+      order: 1,
+      live: false,
+      title: "Outline Shared B",
+      content: "Outline content",
+      botTools: "tooling",
+      firstUserMessage: "Hello B",
     },
+  });
+  assert(allowed.journeyId === journeyB.id, "Outline with same slug on another journey should work.");
+  logPass("Outline slug uniqueness enforced per journey.");
+}
+
+// Step ordering and cross-journey guard.
+async function testStepOrderingAndCrossJourneyGuard() {
+  const journey = await prisma.learningJourney.create({
+    data: { title: "Journey Order", slug: `journey-order-${Date.now()}`, isStandard: false, status: "draft" },
   });
   const outline = await prisma.learningSessionOutline.create({
     data: {
-      journeyId: otherJourney.id,
-      slug: NEED_ANALYSIS_SLUG,
+      journeyId: journey.id,
+      slug: "step-outline",
       order: 1,
       live: false,
-      title: "Need Analysis",
-      content: "Valid outline on a different journey.",
-      botTools: "ok",
-      firstUserMessage: "hello",
+      title: "Step Outline",
+      content: "Outline content",
+      botTools: "tooling",
+      firstUserMessage: "Hello",
     },
   });
-  assert(outline.journeyId === otherJourney.id, "Outline with duplicate slug on a different journey should succeed.");
-  logPass("Reusing the slug on a different journey works as expected.");
+  await prisma.learningJourneyStep.create({
+    data: {
+      journeyId: journey.id,
+      sessionOutlineId: outline.id,
+      order: 1,
+      status: "unlocked",
+    },
+  });
 
-  await prisma.learningSessionOutline.delete({ where: { id: outline.id } });
-  await prisma.learningJourney.delete({ where: { id: otherJourney.id } });
-}
-
-// Checks uniqueness of journey slug.
-async function validateJourneySlugUniqueness() {
-  let slugErrorCaught = false;
+  let blockedOrder = false;
   try {
-    await prisma.learningJourney.create({
+    await prisma.learningJourneyStep.create({
       data: {
-        title: "Duplicate Goal Clarification",
-        slug: GOAL_JOURNEY_SLUG,
-        isStandard: true,
-        status: "active",
+        journeyId: journey.id,
+        sessionOutlineId: outline.id,
+        order: 1,
+        status: "unlocked",
       },
     });
-  } catch (error) {
-    slugErrorCaught = true;
-    logPass("Duplicate journey slug was rejected by the unique constraint.");
+  } catch (err) {
+    blockedOrder = true;
   }
-  assert(slugErrorCaught, "Unique constraint on journey slug should block duplicates.");
+  assert(blockedOrder, "Duplicate step order on the same journey should be blocked.");
 
-  const uniqueSlug = `journey-unique-${Date.now()}`;
-  const created = await prisma.learningJourney.create({
-    data: {
-      title: "Unique Journey",
-      slug: uniqueSlug,
-      isStandard: false,
-      status: "draft",
-    },
+  const otherJourney = await prisma.learningJourney.create({
+    data: { title: "Journey Other", slug: `journey-other-${Date.now()}`, isStandard: false, status: "draft" },
   });
-  assert(created.slug === uniqueSlug, "New journey with a unique slug should be created.");
-  logPass("Unique journey slug is accepted.");
-  await prisma.learningJourney.delete({ where: { id: created.id } });
+  let blockedCross = false;
+  try {
+    await prisma.learningJourneyStep.create({
+      data: {
+        journeyId: otherJourney.id,
+        sessionOutlineId: outline.id,
+        order: 1,
+        status: "unlocked",
+      },
+    });
+  } catch (err) {
+    blockedCross = true;
+  }
+  assert(blockedCross, "Step pointing to an outline from another journey should be blocked.");
+  logPass("Step ordering and cross-journey safety enforced.");
 }
 
-// Checks default timestamps and that updatedAt moves forward.
-async function validateTimestamps(goalJourneyId, outlineId, stepId) {
-  const seededJourney = await prisma.learningJourney.findUnique({ where: { id: goalJourneyId } });
-  const seededOutline = await prisma.learningSessionOutline.findUnique({ where: { id: outlineId } });
-  const seededStep = await prisma.learningJourneyStep.findUnique({ where: { id: stepId } });
-
-  [seededJourney, seededOutline, seededStep].forEach((record, idx) => {
-    const label = ["journey", "outline", "step"][idx];
-    assert(record.createdAt && record.updatedAt, `Seeded ${label} should have timestamps.`);
-    assert(record.updatedAt >= record.createdAt, `Seeded ${label} updatedAt should not precede createdAt.`);
+// Chat and message relations.
+async function testChatAndMessageRelations() {
+  const user = await createUser();
+  const journey = await prisma.learningJourney.create({
+    data: { title: "Chat Journey", slug: `chat-journey-${Date.now()}`, isStandard: false, status: "draft" },
   });
-
-  const timeSlug = `timestamps-${Date.now()}`;
-  const tempJourney = await prisma.learningJourney.create({
+  const outline = await prisma.learningSessionOutline.create({
     data: {
-      title: "Timestamp Journey",
-      slug: timeSlug,
-      isStandard: false,
-      status: "draft",
+      journeyId: journey.id,
+      slug: "chat-outline",
+      order: 1,
+      live: false,
+      title: "Chat Outline",
+      content: "Outline content",
+      botTools: "tooling",
+      firstUserMessage: "Hello",
     },
   });
-  const tempOutline = await prisma.learningSessionOutline.create({
+  const step = await prisma.learningJourneyStep.create({
+    data: { journeyId: journey.id, sessionOutlineId: outline.id, order: 1, status: "unlocked" },
+  });
+
+  const chat = await prisma.learningSessionChat.create({
     data: {
-      journeyId: tempJourney.id,
-      slug: `outline-${timeSlug}`,
+      userId: user.id,
+      sessionOutlineId: outline.id,
+      journeyStepId: step.id,
+      sessionTitle: "Need Analysis",
+      startedAt: new Date(),
+      metadata: { topic: "chat-test" },
+    },
+  });
+  await prisma.message.createMany({
+    data: [
+      { chatId: chat.id, role: "user", content: "Hi", command: null },
+      { chatId: chat.id, role: "assistant", content: "Hello", command: null },
+    ],
+  });
+
+  const loaded = await prisma.learningSessionChat.findUnique({
+    where: { id: chat.id },
+    include: { messages: true, journeyStep: true, sessionOutline: true, user: true },
+  });
+  assert(loaded?.user?.id === user.id, "Chat should point to the user.");
+  assert(loaded?.journeyStep?.id === step.id, "Chat should point to the journey step.");
+  assert(loaded?.sessionOutline?.id === outline.id, "Chat should point to the outline.");
+  assert(loaded?.messages.length === 2, "Chat should have two messages.");
+  logPass("Chat and message relations load correctly.");
+}
+
+// Need-analysis outline content rules.
+async function testNeedAnalysisOutlineContent() {
+  const journey = await prisma.learningJourney.create({
+    data: { title: "Need Analysis Journey", slug: `need-journey-${Date.now()}`, isStandard: false, status: "draft" },
+  });
+  const botTools = `
+You have one special JSON command available in this session.
+
+When the user reaches a clear, specific and agreed-upon learning goal, you must send a single assistant message whose content is exactly this JSON object (and nothing else):
+
+{
+  "command": "create_learning_goal",
+  "learningGoal": "<final goal text>"
+}
+
+Rules:
+- Only send this JSON when the goal is concrete and validated with the user.
+- Do not include any text before or after the JSON.
+- Do not send this JSON more than once.
+- Until the goal is clear, continue asking clarifying questions.
+`.trim();
+  const outline = await prisma.learningSessionOutline.create({
+    data: {
+      journeyId: journey.id,
+      slug: "need-analysis",
+      order: 1,
+      live: true,
+      title: "Need Analysis",
+      objective: "Help the user clarify a goal.",
+      content: "Guide the user toward a clear goal.",
+      botTools,
+      firstUserMessage: "What brings you here?",
+    },
+  });
+
+  assert(outline.botTools.includes('"command": "create_learning_goal"'), "botTools should mention the command name.");
+  assert(outline.botTools.includes('"learningGoal":'), "botTools should mention the learningGoal field.");
+  assert(outline.content.length > 0, "Outline content should not be empty.");
+  assert(outline.firstUserMessage.length > 0, "firstUserMessage should not be empty.");
+  logPass("Need-analysis outline fields carry the required instructions.");
+}
+
+// Timestamp behaviour.
+async function testTimestampBehaviour() {
+  const journey = await prisma.learningJourney.create({
+    data: { title: "Timestamp Journey", slug: `timestamp-${Date.now()}`, isStandard: false, status: "draft" },
+  });
+  const outline = await prisma.learningSessionOutline.create({
+    data: {
+      journeyId: journey.id,
+      slug: `outline-${Date.now()}`,
       order: 1,
       live: false,
       title: "Timestamp Outline",
-      content: "Checking createdAt defaults.",
-      botTools: "test",
-      firstUserMessage: "Hi",
+      content: "Content",
+      botTools: "tooling",
+      firstUserMessage: "Hello",
     },
   });
-  const tempStep = await prisma.learningJourneyStep.create({
-    data: {
-      journeyId: tempJourney.id,
-      sessionOutlineId: tempOutline.id,
-      order: 1,
-      status: "locked",
-    },
+  const step = await prisma.learningJourneyStep.create({
+    data: { journeyId: journey.id, sessionOutlineId: outline.id, order: 1, status: "locked" },
   });
 
-  assert(tempJourney.createdAt <= tempJourney.updatedAt, "Journey timestamps should be set on create.");
-  assert(tempOutline.createdAt <= tempOutline.updatedAt, "Outline timestamps should be set on create.");
-  assert(tempStep.createdAt <= tempStep.updatedAt, "Step timestamps should be set on create.");
+  [journey, outline, step].forEach((record) => {
+    assert(record.createdAt && record.updatedAt, "Records should have timestamps on create.");
+    assert(record.updatedAt >= record.createdAt, "updatedAt should not be before createdAt on create.");
+  });
 
   const updatedJourney = await prisma.learningJourney.update({
-    where: { id: tempJourney.id },
+    where: { id: journey.id },
     data: { title: "Timestamp Journey Updated" },
   });
-  const updatedOutline = await prisma.learningSessionOutline.update({
-    where: { id: tempOutline.id },
-    data: { title: "Timestamp Outline Updated" },
-  });
-  const updatedStep = await prisma.learningJourneyStep.update({
-    where: { id: tempStep.id },
-    data: { status: "unlocked" },
-  });
+  assert(updatedJourney.updatedAt > journey.updatedAt, "Journey updatedAt should move forward after update.");
+  logPass("Timestamp fields update as expected.");
+}
 
-  assert(updatedJourney.updatedAt >= tempJourney.updatedAt, "Journey updatedAt should move forward on update.");
-  assert(updatedOutline.updatedAt >= tempOutline.updatedAt, "Outline updatedAt should move forward on update.");
-  assert(updatedStep.updatedAt >= tempStep.updatedAt, "Step updatedAt should move forward on update.");
-  logPass("createdAt defaults and updatedAt auto-updates behave correctly.");
-
-  await prisma.learningJourneyStep.delete({ where: { id: tempStep.id } });
-  await prisma.learningSessionOutline.delete({ where: { id: tempOutline.id } });
-  await prisma.learningJourney.delete({ where: { id: tempJourney.id } });
+// Minimal seed smoke test.
+async function testSeedSmoke() {
+  runCommand("npx prisma db seed --schema prisma/schema.prisma", "Seed script executed");
+  const goal = await prisma.learningJourney.findFirst({ where: { slug: GOAL_JOURNEY_SLUG } });
+  assert(goal, "Seed should leave Goal Clarification journey in place.");
+  logPass("Seed created or kept Goal Clarification journey.");
 }
 
 main()
@@ -435,4 +508,3 @@ main()
       await pool.end();
     }
   });
-

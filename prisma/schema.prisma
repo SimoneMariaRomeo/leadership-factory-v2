@@ -77,7 +77,7 @@ model LearningJourney {
   updatedAt             DateTime @updatedAt
 
   outlines LearningSessionOutline[]
-  steps    LearningJourneyStep[]
+  steps    LearningJourneyStep[] @relation("StepJourney")
 }
 
 model LearningSessionOutline {
@@ -96,18 +96,19 @@ model LearningSessionOutline {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  steps                LearningJourneyStep[]
+  steps                LearningJourneyStep[] @relation("OutlineStep")
   learningSessionChats LearningSessionChat[]
 
   @@unique([journeyId, slug])
+  @@unique([journeyId, id])
 }
 
 model LearningJourneyStep {
   id               String                 @id @default(cuid())
   journeyId        String
-  journey          LearningJourney        @relation(fields: [journeyId], references: [id])
+  journey          LearningJourney        @relation("StepJourney", fields: [journeyId], references: [id])
   sessionOutlineId String
-  sessionOutline   LearningSessionOutline @relation(fields: [sessionOutlineId], references: [id])
+  sessionOutline   LearningSessionOutline @relation("OutlineStep", fields: [journeyId, sessionOutlineId], references: [journeyId, id])
   order            Int
   status           String
   chats            LearningSessionChat[]  @relation("JourneyStepChatLink")
@@ -118,4 +119,6 @@ model LearningJourneyStep {
   completedAt      DateTime?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
+
+  @@unique([journeyId, order])
 }
