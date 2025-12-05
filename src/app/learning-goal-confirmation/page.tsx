@@ -44,7 +44,9 @@ export default function LearningGoalConfirmationPage() {
             />
           </div>
         )}
-        <p className="italic-note typewriter">Please confirm it or edit it and I'll recommend a learning journey for you.</p>
+        <p className="italic-note typewriter-line" style={{ ["--tw-delay" as string]: "0.2s" }}>
+          Please confirm it or edit it and I'll recommend a learning journey for you.
+        </p>
         <div className="flex-row">
           <GoldButton href={confirmHref}>Confirm</GoldButton>
           <a className="secondary-button" href="/">

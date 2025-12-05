@@ -12,11 +12,15 @@ export default function WelcomePage() {
           <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
         </div>
         <h1 className="hero-title">Welcome to leadership-factory.cn!</h1>
-        <p className="hero-lead typewriter">
+        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.1s" }}>
           It's a space created to help you grow, reflect, and become the best version of yourself.
         </p>
-        <p className="hero-lead">Because every journey begins with a single step.</p>
-        <p className="italic-note">Let's take your first step together.</p>
+        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.4s" }}>
+          Because every journey begins with a single step.
+        </p>
+        <p className="italic-note typewriter-line" style={{ ["--tw-delay" as string]: "0.7s" }}>
+          Let's take your first step together.
+        </p>
         <div className="flex-row">
           <GoldButton href="/learning-guide-intro">CONTINUE</GoldButton>
         </div>
