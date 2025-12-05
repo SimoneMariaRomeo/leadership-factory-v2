@@ -1,134 +1,300 @@
-implement the step below. Check the overall features to ensure your implementation is aligned to the bigger picture/project scope.
+follow the AGENTS.md instructions and implement the step below. Check the overall features to ensure your implementation is aligned to the bigger picture/project scope.
 After that, implement the tests below.
 
-Step 1 — New DB schema + seed “Goal Clarification”
+Step 2 — Public funnel pages only (no chat yet)
 
-Goal: Have the new Prisma schema in place and the basic seed data for the first journey/session.
+Goal: /, /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next exist visually and navigate correctly with fake data.
 
-Implement the new Prisma models:
+Implement layout + visual style (fonts, gradients, glass cards, buttons).
 
-User, LearningSessionChat, Message, LearningJourney, LearningSessionOutline, LearningJourneyStep.
+Implement:
 
-Add @@unique([journeyId, slug]) on LearningSessionOutline.
+/ with Start → /welcome.
 
-Write a seed script that:
+/welcome → /learning-guide-intro.
 
-Creates standard journey Goal Clarification (slug = "goal-clarification", isStandard = true, status = "active").
+/learning-guide-intro → temporary hardcoded route (e.g. /journeys/goal-clarification/steps/TEST) or just a placeholder page.
 
-Creates LearningSessionOutline for need-analysis.
+/learning-goal-confirmation that shows a dummy goal from local hardcoded state.
 
-Creates a LearningJourneyStep for need-analysis (order = 1, status = "unlocked").
+/whats-next showing a dummy goal and the YES, I’M IN! button with a no-op handler.
 
 
 TESTS TO CREATE
-Create a test file (schema-and-seed-tests) to test the project functionality (see the names below). For each test file, add natural language logs that explain what is being tested (expected behavior) with very clear, human readable explanations
+Create a test file (public-funnel-tests) to test the project functionality (see the names below). For each test file, add natural language logs that explain what is being tested (expected behavior) with very clear, human readable explanations
 
-1. Schema migration succeeds and models exist
+A. Public funnel navigation & page content
 
-Running prisma migrate dev completes without error.
+Landing → Welcome navigation
 
-All models are present in the DB: User, LearningSessionChat, Message, LearningJourney, LearningSessionOutline, LearningJourneyStep.
+Open /.
 
-2. Seed creates exactly one “Goal Clarification” journey
+Click the primary Start button.
 
-After running the seed, there is exactly one LearningJourney with:
+Assert redirect to /welcome.
 
-title = "Goal Clarification"
+Welcome page content
 
-slug = "goal-clarification"
+On /welcome, assert:
 
-isStandard = true
+Title: “Welcome to leadership-factory.cn!”
 
-status = "active"
+Three paragraphs with the exact texts specified.
 
-personalizedForUserId = null.
+Button label: CONTINUE.
 
-3. Standard journey visibility invariants
+Click CONTINUE → assert redirect to /learning-guide-intro.
 
-For the seeded journey:
+Learning-guide-intro page content & CTA
 
-isStandard = true implies personalizedForUserId is null.
+On /learning-guide-intro, assert:
 
-Test creating a second journey where:
+Title text matches the “I'm your learning guide…” sentence.
 
-If isStandard = true and personalizedForUserId is set → operation must fail (or be rejected by application-level validation).
+Two body paragraphs + italic line.
 
-4. Need-analysis outline exists and is linked to “Goal Clarification”
+Button label: I’M READY.
 
-After seed:
+Click I’M READY → assert navigation to the need-analysis entry route
+/journeys/goal-clarification/steps/[need-analysis-step-id].
 
-There is exactly one LearningSessionOutline with:
+B. Need-analysis chat + JSON command
 
-slug = "need-analysis"
+Need-analysis chat uses the correct outline
 
-title = "Need Analysis"
+From /learning-guide-intro, click I’M READY.
 
-journeyId matching the “Goal Clarification” journey.
+Assert:
 
-5. Need-analysis outline fields match spec
+The page renders chat UI.
 
-For that outline, assert:
+The backend /api/chat is called with the sessionOutlineId of the seeded need-analysis outline and the journeyStepId of the correct step.
 
-objective is non-empty and set.
+Prompt construction fields are present
 
-content is non-empty (instructions text).
+On the first request to /api/chat for need-analysis, assert (via test logs/mocks) that:
 
-botTools contains the instruction mentioning:
+User.botRole is included.
 
-JSON with "command": "create_learning_goal" and "learningGoal".
+LearningSessionOutline.objective, content, botTools, firstUserMessage are included.
 
-firstUserMessage is non-empty.
+LearningJourney.userGoalSummary is “not defined yet” (or omitted) for first-time users.
 
-6. Need-analysis step exists and is correctly wired
+Assistant can emit create_learning_goal JSON
 
-After seed:
+Simulate/model the assistant response containing:
 
-There is exactly one LearningJourneyStep for the “Goal Clarification” journey.
+{ "command": "create_learning_goal", "learningGoal": "Improve my executive communication skills" }
 
-It has:
 
-order = 1
+Assert:
 
-status = "unlocked"
+The response is stored in Message.command for the last message in DB.
 
-sessionOutlineId pointing to the need-analysis outline.
+useChat detects the command and does not render it as plain text.
 
-chatId = null.
+Redirect to /learning-goal-confirmation on create_learning_goal
 
-7. Journey → outlines and steps relations work
+After the assistant sends the above JSON:
 
-Using Prisma relations:
+Assert useChat stores the learningGoal client-side (e.g. sessionStorage key exists).
 
-Loading the “Goal Clarification” journey with include: { outlines: true, steps: true }:
+Assert the browser is redirected to /learning-goal-confirmation.
 
-outlines array contains the need-analysis outline.
+C. Learning-goal-confirmation behaviour
 
-steps array contains the expected step.
+Goal text is displayed correctly
 
-LearningJourneyStep.sessionOutline and LearningSessionOutline.journey resolve correctly.
+On /learning-goal-confirmation after the previous step:
 
-8. LearningSessionOutline slug uniqueness per journey
+Assert the goal paragraph equals the learningGoal from the JSON.
 
-Try to create a second LearningSessionOutline with:
+Assert the header “Let me see if I understood:” is visible.
 
-Same journeyId and same slug = "need-analysis" → should fail due to @@unique([journeyId, slug]).
+Assert the italic instruction line is visible.
 
-Creating an outline with slug = "need-analysis" under a different journey should succeed.
+Inline edit of goal
 
-9. LearningJourney.slug uniqueness
+Click the pencil icon.
 
-Try to create another LearningJourney with slug = "goal-clarification" → should fail due to @unique.
+Change the goal text to a new value.
 
-Creating a journey with a different slug should succeed.
+Click the Confirm button.
 
-10. Defaults and timestamps
+Assert:
 
-For the seeded journey, outline, and step:
+The edited value is what gets saved in client state (check sessionStorage or the next page).
 
-createdAt is set (not null).
+Browser navigates to /whats-next.
 
-updatedAt is set and equal or later than createdAt.
+Direct access without pending goal
 
-Creating a new journey/outline/step in tests:
+Open /learning-goal-confirmation in a fresh browser session without any prior chat.
 
-Confirms createdAt defaults and updatedAt auto-update behavior.
+Assert:
+
+Either a safe fallback is shown (e.g. “No goal available, please start from the beginning”)
+
+Or the user is redirected back to / or /learning-guide-intro (define expected behaviour and assert).
+
+D. Whats-next: login, goal commit & journey creation
+
+Whats-next displays the goal and explaining text
+
+After confirming on /learning-goal-confirmation, on /whats-next:
+
+Assert the goal box shows the edited goal text.
+
+Assert the static texts (“You did it!”, “Congratulations…”, “Our team will now review…”, etc.) are present.
+
+Assert the YES, I’M IN! button is visible.
+
+YES, I’M IN! forces login for guests
+
+Start as not logged-in user.
+
+Reach /whats-next with a pending goal.
+
+Click YES, I’M IN!.
+
+Assert:
+
+Auth modal / login form appears.
+
+No call to the goal-commit endpoint is made before successful login.
+
+Goal commit for a new user
+
+From /whats-next, after successful login:
+
+Click YES, I’M IN!.
+
+Assert:
+
+The frontend sends a request to the goal-commit backend (e.g. POST /api/goal/commit) with the goal from client state.
+
+Response status is 200.
+
+DB state after goal commit
+
+After the goal-commit response:
+
+Assert in DB:
+
+User.learningGoal equals the confirmed goal.
+
+User.learningGoalConfirmedAt is set (within a small time window).
+
+Exactly one new LearningJourney exists with:
+
+isStandard = false
+
+personalizedForUserId = current user.id
+
+userGoalSummary = confirmed goal
+
+status = "awaiting_review"
+
+Assert the user is redirected to /my-profile.
+
+Emails are triggered
+
+In test mode, mock the email service.
+
+After goal commit:
+
+Assert one email to the user address is sent with:
+
+Subject/body mentioning the learning goal.
+
+Assert one email to the admin address is sent with:
+
+User email.
+
+Learning goal.
+
+A link pointing to the admin journey view (e.g. /admin/journeys/... or equivalent).
+
+/my-profile content after commit
+
+On /my-profile immediately after redirect:
+
+Assert:
+
+Shows User.learningGoal.
+
+Lists the newly created personalized journey with status = "awaiting_review".
+
+Standard journeys (if any) are listed under a “Learning Journeys” or equivalent section.
+
+E. Repeat need-analysis behaviour
+
+User with existing goal runs need-analysis again
+
+Use a logged-in user who already has learningGoal and at least one personalized journey.
+
+Run the entire funnel again (from /learning-guide-intro → chat → /learning-goal-confirmation → /whats-next → YES, I’M IN!).
+
+Assert:
+
+After commit:
+
+User.learningGoal is overwritten with the new goal.
+
+User.learningGoalConfirmedAt is updated.
+
+A new personalized LearningJourney is created (status = "awaiting_review").
+
+The previous journeys are still present in DB (not deleted).
+
+Multiple journeys shown in profile
+
+After the second commit:
+
+On /my-profile, assert the user now sees two personalized journeys (old + new) with their respective statuses.
+
+F. Guest abandonment behaviour
+
+Guest abandons before login
+
+As a not-logged-in user, run need-analysis until create_learning_goal is emitted and /learning-goal-confirmation is shown.
+
+Then:
+
+Close the tab or navigate away without ever clicking YES, I’M IN! on /whats-next.
+
+Assert:
+
+No new User is created (if you rely on explicit signup).
+
+No LearningJourney is created.
+
+No emails are sent.
+
+G. Security / isolation checks
+
+Cannot create journey for another user
+
+While logged in as user A:
+
+Attempt, via crafted request, to call the goal-commit endpoint with another userId in the payload.
+
+Assert:
+
+Backend ignores the client-provided userId and uses the authenticated user.
+
+No journey is created for any user other than A.
+
+Personalized journeys are not public
+
+After at least one personalized journey exists for user A:
+
+As anonymous OR logged-in user B:
+
+Visit /journeys (public list).
+
+Assert personalized journeys are not shown there.
+
+If you try to hit /journeys/[slug]?userId=A as user B:
+
+Assert access is denied or redirected (according to your access rules).
