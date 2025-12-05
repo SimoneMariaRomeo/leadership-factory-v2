@@ -54,8 +54,8 @@ a {
 .glass-card {
   position: relative;
   width: 100%;
-  max-width: 860px;
-  padding: 56px 52px;
+  max-width: 880px;
+  padding: 64px 60px;
   border-radius: 30px;
   background: #ffffff;
   border: 1px solid rgba(199, 157, 45, 0.18);
@@ -89,15 +89,7 @@ a {
 }
 
 .gold-icon .icon-badge {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1px solid rgba(199, 157, 45, 0.6);
-  padding: 3px;
+  display: none;
 }
 
 .start-hero {
@@ -205,6 +197,14 @@ a {
 .typewriter,
 .hero-lead {
   max-width: 760px;
+}
+
+.typewriter-title {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing-line 3s steps(80, end) forwards;
+  animation-delay: var(--tw-delay, 0s);
 }
 
 .typewriter-line {

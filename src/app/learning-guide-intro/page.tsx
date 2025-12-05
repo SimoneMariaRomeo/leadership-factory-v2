@@ -11,8 +11,10 @@ export default function LearningGuideIntroPage() {
           <img className="icon-main" src="/coai-logo.png" alt="Coach icon" />
           <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
         </div>
-        <h1 className="hero-title">I'm your learning guide, here to guide your journey of discovery and growth.</h1>
-        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.1s" }}>
+        <h1 className="hero-title typewriter-title" style={{ ["--tw-delay" as string]: "0s" }}>
+          I'm your learning guide, here to guide your journey of discovery and growth.
+        </h1>
+        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.15s" }}>
           I'll ask you a few easy questions about what you'd like to work on, such as your goals, confidence, communication,
           relationships, or everyday challenges.
         </p>

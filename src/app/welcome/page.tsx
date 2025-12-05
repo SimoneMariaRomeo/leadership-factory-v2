@@ -11,14 +11,16 @@ export default function WelcomePage() {
           <img className="icon-main" src="/coai-logo.png" alt="Coach icon" />
           <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
         </div>
-        <h1 className="hero-title">Welcome to leadership-factory.cn!</h1>
-        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.1s" }}>
+        <h1 className="hero-title typewriter-title" style={{ ["--tw-delay" as string]: "0s" }}>
+          Welcome to leadership-factory.cn!
+        </h1>
+        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.15s" }}>
           It's a space created to help you grow, reflect, and become the best version of yourself.
         </p>
-        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.4s" }}>
+        <p className="hero-lead typewriter-line" style={{ ["--tw-delay" as string]: "0.45s" }}>
           Because every journey begins with a single step.
         </p>
-        <p className="italic-note typewriter-line" style={{ ["--tw-delay" as string]: "0.7s" }}>
+        <p className="italic-note typewriter-line" style={{ ["--tw-delay" as string]: "0.75s" }}>
           Let's take your first step together.
         </p>
         <div className="flex-row">

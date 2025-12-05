@@ -22,7 +22,9 @@ export default function LearningGoalConfirmationPage() {
           <img className="icon-main" src="/coai-logo.png" alt="Coach icon" />
           <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
         </div>
-        <h1 className="hero-title">Let me see if I understood:</h1>
+        <h1 className="hero-title typewriter-title" style={{ ["--tw-delay" as string]: "0s" }}>
+          Let me see if I understood:
+        </h1>
         <p className="goal-text">
           <span>{goal}</span>
           <button
