@@ -37,10 +37,7 @@ model LearningSessionChat {
   user             User?                   @relation(fields: [userId], references: [id])
   sessionOutlineId String?
   sessionOutline   LearningSessionOutline? @relation(fields: [sessionOutlineId], references: [id])
-
-  journeyStepId String?
-  journeyStep   LearningJourneyStep? @relation("JourneyStepChatLink", fields: [journeyStepId], references: [id])
-  activeStep    LearningJourneyStep? @relation("StepActiveChat")
+  step             LearningJourneyStep?    @relation("StepChat")
 
   sessionTitle  String?
   startedAt     DateTime
@@ -111,9 +108,8 @@ model LearningJourneyStep {
   sessionOutline   LearningSessionOutline @relation("OutlineStep", fields: [journeyId, sessionOutlineId], references: [journeyId, id])
   order            Int
   status           String
-  chats            LearningSessionChat[]  @relation("JourneyStepChatLink")
   chatId           String?                @unique
-  chat             LearningSessionChat?   @relation("StepActiveChat", fields: [chatId], references: [id])
+  chat             LearningSessionChat?   @relation("StepChat", fields: [chatId], references: [id])
   ahaText          String?
   unlockedAt       DateTime?
   completedAt      DateTime?

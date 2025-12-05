@@ -27,9 +27,6 @@ model LearningSessionChat {
   sessionOutlineId          String?
   sessionOutline            LearningSessionOutline? @relation(fields: [sessionOutlineId], references: [id])
 
-  journeyStepId             String?
-  journeyStep               LearningJourneyStep?  @relation(fields: [journeyStepId], references: [id])
-
   sessionTitle              String?
   startedAt                 DateTime
   endedAt                   DateTime?

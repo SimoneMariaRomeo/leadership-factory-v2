@@ -387,11 +387,14 @@ async function testChatAndMessageRelations() {
     data: {
       userId: user.id,
       sessionOutlineId: outline.id,
-      journeyStepId: step.id,
       sessionTitle: "Need Analysis",
       startedAt: new Date(),
       metadata: { topic: "chat-test" },
     },
+  });
+  await prisma.learningJourneyStep.update({
+    where: { id: step.id },
+    data: { chatId: chat.id },
   });
   await prisma.message.createMany({
     data: [
@@ -402,12 +405,16 @@ async function testChatAndMessageRelations() {
 
   const loaded = await prisma.learningSessionChat.findUnique({
     where: { id: chat.id },
-    include: { messages: true, journeyStep: true, sessionOutline: true, user: true },
+    include: { messages: true, sessionOutline: true, user: true },
   });
   assert(loaded?.user?.id === user.id, "Chat should point to the user.");
-  assert(loaded?.journeyStep?.id === step.id, "Chat should point to the journey step.");
   assert(loaded?.sessionOutline?.id === outline.id, "Chat should point to the outline.");
   assert(loaded?.messages.length === 2, "Chat should have two messages.");
+  const stepWithChat = await prisma.learningJourneyStep.findUnique({
+    where: { id: step.id },
+    include: { chat: true },
+  });
+  assert(stepWithChat?.chat?.id === chat.id, "Step should point back to the chat via chatId.");
   logPass("Chat and message relations load correctly.");
 }
 
