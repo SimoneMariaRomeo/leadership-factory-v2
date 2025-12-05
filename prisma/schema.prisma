@@ -5,10 +5,117 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id                      String    @id @default(cuid())
+  name                    String?
+  email                   String?   @unique
+  phone                   String?   @unique
+  passwordHash            String
+  picture                 String?
+  role                    String
+  learningGoal            String?
+  learningGoalConfirmedAt DateTime?
+  botRole                 String
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  chats    LearningSessionChat[]
+  journeys LearningJourney[]     @relation("UserJourneys")
+}
+
+model LearningSessionChat {
+  id               String                  @id @default(cuid())
+  userId           String?
+  user             User?                   @relation(fields: [userId], references: [id])
+  sessionOutlineId String?
+  sessionOutline   LearningSessionOutline? @relation(fields: [sessionOutlineId], references: [id])
+
+  journeyStepId String?
+  journeyStep   LearningJourneyStep? @relation("JourneyStepChatLink", fields: [journeyStepId], references: [id])
+  activeStep    LearningJourneyStep? @relation("StepActiveChat")
+
+  sessionTitle  String?
+  startedAt     DateTime
+  endedAt       DateTime?
+  lastMessageAt DateTime?
+  metadata      Json?
+
+  messages Message[]
+}
+
+model Message {
+  id        String              @id @default(cuid())
+  chatId    String
+  chat      LearningSessionChat @relation(fields: [chatId], references: [id])
+  role      String
+  content   String
+  command   Json?
+  createdAt DateTime            @default(now())
+}
+
+model LearningJourney {
+  id                    String   @id @default(cuid())
+  slug                  String?  @unique
+  order                 Int?
+  title                 String
+  intro                 String?
+  objectives            Json?
+  isStandard            Boolean  @default(false)
+  personalizedForUserId String?
+  personalizedForUser   User?    @relation("UserJourneys", fields: [personalizedForUserId], references: [id])
+  userGoalSummary       String?
+  status                String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  outlines LearningSessionOutline[]
+  steps    LearningJourneyStep[]
+}
+
+model LearningSessionOutline {
+  id               String          @id @default(cuid())
+  journeyId        String
+  journey          LearningJourney @relation(fields: [journeyId], references: [id])
+  slug             String
+  order            Int
+  live             Boolean         @default(false)
+  title            String
+  objective        String?
+  content          String
+  botTools         String
+  firstUserMessage String
+  tags             Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  steps                LearningJourneyStep[]
+  learningSessionChats LearningSessionChat[]
+
+  @@unique([journeyId, slug])
+}
+
+model LearningJourneyStep {
+  id               String                 @id @default(cuid())
+  journeyId        String
+  journey          LearningJourney        @relation(fields: [journeyId], references: [id])
+  sessionOutlineId String
+  sessionOutline   LearningSessionOutline @relation(fields: [sessionOutlineId], references: [id])
+  order            Int
+  status           String
+  chats            LearningSessionChat[]  @relation("JourneyStepChatLink")
+  chatId           String?                @unique
+  chat             LearningSessionChat?   @relation("StepActiveChat", fields: [chatId], references: [id])
+  ahaText          String?
+  unlockedAt       DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 }
