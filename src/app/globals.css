@@ -54,8 +54,8 @@ a {
 .glass-card {
   position: relative;
   width: 100%;
-  max-width: 900px;
-  padding: 72px 72px;
+  max-width: 940px;
+  padding: 96px 96px 96px 168px;
   border-radius: 30px;
   background: #ffffff;
   border: 1px solid rgba(17, 24, 39, 0.05);
@@ -66,8 +66,8 @@ a {
 
 .gold-icon {
   position: absolute;
-  top: -46px;
-  left: 26px;
+  top: 42px;
+  left: 52px;
   width: 78px;
   height: 78px;
   border-radius: 50%;
