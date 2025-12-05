@@ -23,8 +23,15 @@ const Module = require("module");
 const originalLoad = Module._load;
 Module._load = function mockNextLink(request, parent, isMain) {
   if (request === "next/link") {
-    return function LinkMock({ href, children, className }) {
-      return React.createElement("a", { href, className }, children);
+    return function LinkMock({ href, children, className, onClick, ...rest }) {
+      return React.createElement("a", { href, className, onClick, ...rest }, children);
+    };
+  }
+  if (request === "next/navigation") {
+    return {
+      useRouter: () => ({
+        push: () => {},
+      }),
     };
   }
   return originalLoad(request, parent, isMain);

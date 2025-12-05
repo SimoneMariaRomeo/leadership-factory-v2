@@ -16,7 +16,7 @@ export default function WhatsNextPage({
       <div className="bg-orbs" aria-hidden="true" />
       <div className="glass-card">
         <h1 className="hero-title">You did it!</h1>
-        <p className="hero-lead">
+        <p className="hero-lead typewriter">
           Congratulations on writing down your learning goal. You just unlocked the very first step toward the best version of yourself.
         </p>
         <div className="goal-box">

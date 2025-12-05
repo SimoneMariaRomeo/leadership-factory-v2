@@ -1,8 +1,8 @@
 "use client";
 
 // This page shows the dummy goal, lets people edit it, and moves to what's-next.
-import Link from "next/link";
 import { useState } from "react";
+import GoldButton from "../components/GoldButton";
 
 const DEFAULT_GOAL = "Improve my executive communication skills";
 
@@ -19,7 +19,8 @@ export default function LearningGoalConfirmationPage() {
       <div className="bg-orbs" aria-hidden="true" />
       <div className="glass-card">
         <div className="gold-icon">
-          <img src="/coai-logo.png" alt="Coach icon" />
+          <img className="icon-main" src="/coai-logo.png" alt="Coach icon" />
+          <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
         </div>
         <h1 className="hero-title">Let me see if I understood:</h1>
         <p className="goal-text">
@@ -43,14 +44,12 @@ export default function LearningGoalConfirmationPage() {
             />
           </div>
         )}
-        <p className="italic-note">Please confirm it or edit it and I'll recommend a learning journey for you.</p>
+        <p className="italic-note typewriter">Please confirm it or edit it and I'll recommend a learning journey for you.</p>
         <div className="flex-row">
-          <Link className="primary-button" href={confirmHref}>
-            Confirm
-          </Link>
-          <Link className="secondary-button" href="/">
+          <GoldButton href={confirmHref}>Confirm</GoldButton>
+          <a className="secondary-button" href="/">
             Start over
-          </Link>
+          </a>
         </div>
       </div>
     </main>
