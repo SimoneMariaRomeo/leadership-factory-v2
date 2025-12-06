@@ -110,7 +110,7 @@ export async function handleChat({
 
   const journeyForPrompt = journeyFromStep?.journey || outline.journey;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
-  const botRole = user?.botRole || "You are a warm learning guide who helps people shape a clear learning goal.";
+  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset.";
 
   const modelMessages: LlmMessage[] = [
     buildSystemMessage({

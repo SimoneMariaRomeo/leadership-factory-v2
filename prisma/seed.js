@@ -18,29 +18,29 @@ const NEED_OUTLINE_SLUG = "need-analysis";
 const NEED_STEP_ID = "step-goal-clarification-need-analysis";
 
 const needAnalysisContent = [
-  "Guide the user through a concise goal clarification coaching flow:",
-  "1) Welcome the user and ask what they want to achieve or change.",
-  "2) Ask 2-3 clarifying questions about context, motivation, and timeframe.",
-  "3) Propose a first draft of the learning goal and ask for confirmation.",
-  "4) Iterate until the goal is concrete, measurable, and relevant.",
-  "5) When validated, emit the create_learning_goal JSON command and stop chatting.",
+  "Start a conversation to define the user's learning needs within maximum 5 messages by identifying:",
+  "[X situation] --> what the user is going through",
+  "[Y pattern] --> the root causes",
+  "[Z learning] --> would help them to achieve their [X Goal]",
+  "[X Goal] --> their goal",
+  "This conversation focuses strictly on human development themes such as mindset, behavior, communication, and self-effectiveness. If it shifts into technical, product, or process-related problem-solving, gently remind the user about the focus.",
+  "The total interaction should be around 3-5 messages.",
+  "",
+  "After and only after you have understood situation, patters, learning and goal, redirect.",
+  "",
+  "CLARIFICATIONS:",
+  "\"learningGoal\" --> phrased like this \"[X situation], driven by [Y pattern], and you believe [Z learning] would help you achieve [N Goal]\"",
+  "",
+  "NEVER DO:",
+  "- Never ask more than 4 questions to the user before redirecting",
+  "- Never coach the user to define options or solutions (you focus on analysing the situation and goal)",
 ].join("\n");
 
 const needAnalysisBotTools = `
-You have one special JSON command available in this session.
-
-When the user reaches a clear, specific and agreed-upon learning goal, you must send a single assistant message whose content is exactly this JSON object (and nothing else):
-
-{
-  "command": "create_learning_goal",
-  "learningGoal": "<final goal text>"
-}
-
-Rules:
-- Only send this JSON when the goal is concrete and validated with the user.
-- Do not include any text before or after the JSON.
-- Do not send this JSON more than once.
-- Until the goal is clear, continue asking clarifying questions.
+REDIRECT PROTOCOL
+Write the following JSON command:
+{"command":"create_learning_goal","learningGoal":"..."}
+No extra punctuation, explanations, or text before/after the JSON.
 `.trim();
 
 // Seeds the goal clarification journey, its outline, and its step.
