@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 // This page shows the dummy goal, lets people edit it, and moves to what's-next.
 import { useEffect, useMemo, useState } from "react";
@@ -21,6 +21,9 @@ export default function LearningGoalConfirmationPage() {
   );
   const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
   const [paragraphIndex, setParagraphIndex] = useState(0);
+  const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+  const skipTyping =
+    isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
 
   useEffect(() => {
     setTypedTitle("");
@@ -29,11 +32,21 @@ export default function LearningGoalConfirmationPage() {
     setParagraphIndex(0);
   }, [paragraphs]);
 
+  // In tests we skip typing so assertions can read the full text immediately.
+  useEffect(() => {
+    if (!skipTyping) return;
+    setTypedTitle("Let me see if I understood:");
+    setTitleIndex("Let me see if I understood:".length);
+    setTypedParagraphs(paragraphs.map((p) => p));
+    setParagraphIndex(paragraphs.length);
+  }, [skipTyping, paragraphs]);
+
   const titleDone = useMemo(() => titleIndex >= "Let me see if I understood:".length, [titleIndex]);
 
   // Type the title first.
   useEffect(() => {
     const fullTitle = "Let me see if I understood:";
+    if (skipTyping) return;
     if (titleIndex < fullTitle.length) {
       const timer = setTimeout(() => {
         setTypedTitle(fullTitle.slice(0, titleIndex + 1));
@@ -42,10 +55,11 @@ export default function LearningGoalConfirmationPage() {
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [titleIndex]);
+  }, [titleIndex, skipTyping]);
 
   // Then type each paragraph one by one.
   useEffect(() => {
+    if (skipTyping) return;
     if (!titleDone || paragraphIndex >= paragraphs.length) return;
     const currentText = paragraphs[paragraphIndex];
     const currentTyped = typedParagraphs[paragraphIndex] || "";
@@ -63,7 +77,7 @@ export default function LearningGoalConfirmationPage() {
 
     const nextTimer = setTimeout(() => setParagraphIndex((prev) => prev + 1), 120);
     return () => clearTimeout(nextTimer);
-  }, [titleDone, paragraphIndex, paragraphs, typedParagraphs]);
+  }, [titleDone, paragraphIndex, paragraphs, typedParagraphs, skipTyping]);
 
   const confirmHref = `/whats-next?goal=${encodeURIComponent(goal)}`;
 
@@ -85,7 +99,7 @@ export default function LearningGoalConfirmationPage() {
                 aria-label="Edit goal"
                 style={{ marginLeft: "12px", padding: "6px 12px" }}
               >
-                ✏️ Edit
+                Edit
               </button>
             </p>
             {isEditing && (

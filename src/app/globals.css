@@ -223,6 +223,7 @@ a {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
   overflow: hidden;
   text-decoration: none;
+  transition: all 0.2s ease-in-out;
 }
 
 .start-logo-btn::before {
@@ -251,6 +252,11 @@ a {
   color: #ffffff;
   text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
   z-index: 2;
+}
+
+.start-logo-btn:hover {
+  box-shadow: 0 16px 28px rgba(212, 175, 55, 0.35);
+  background: #453e00;
 }
 
 .primary-button,

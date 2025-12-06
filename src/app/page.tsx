@@ -11,9 +11,10 @@ export default function HomePage() {
         <Link
           className="start-logo-btn transition-colors hover:bg-luxury-gold-light hover:shadow-[0_16px_28px_rgba(212,175,55,0.35)] transition-all"
           href="/welcome"
+          aria-label="Start"
         >
-          <span className="start-text">START</span>
-          <img src="/coai-logo.png" alt="Start" />
+          <span className="start-text">Start</span>
+          <img src="/coai-logo.png" alt="" aria-hidden="true" />
         </Link>
       </div>
     </main>

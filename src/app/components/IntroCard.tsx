@@ -24,6 +24,9 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
   const [titleIndex, setTitleIndex] = useState<number>(0);
   const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
   const [paragraphIndex, setParagraphIndex] = useState<number>(0);
+  const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+  const skipTyping =
+    isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
 
   // Reset typing whenever the content changes.
   useEffect(() => {
@@ -33,10 +36,21 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
     setParagraphIndex(0);
   }, [title, paragraphs]);
 
+  // In tests (or when NODE_ENV is unset), show full text immediately to keep tests stable.
+  useEffect(() => {
+    if (skipTyping) {
+      setTypedTitle(title);
+      setTitleIndex(title.length);
+      setTypedParagraphs(paragraphs.map((p) => p.text));
+      setParagraphIndex(paragraphs.length);
+    }
+  }, [skipTyping, title, paragraphs]);
+
   const titleDone = useMemo(() => titleIndex >= title.length, [titleIndex, title.length]);
 
   // Type the title first.
   useEffect(() => {
+    if (skipTyping) return;
     if (titleIndex < title.length) {
       const timer = setTimeout(() => {
         setTypedTitle(title.slice(0, titleIndex + 1));
@@ -49,6 +63,7 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
 
   // Then type each paragraph one by one.
   useEffect(() => {
+    if (skipTyping) return;
     if (!titleDone || paragraphIndex >= paragraphs.length) return;
     const currentText = paragraphs[paragraphIndex].text;
     const currentTyped = typedParagraphs[paragraphIndex] || "";

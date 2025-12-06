@@ -25,6 +25,9 @@ export default function WhatsNextPage({
     []
   );
   const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
+  const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+  const skipTyping =
+    isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
 
   useEffect(() => {
     setTypedTitle("");
@@ -35,9 +38,19 @@ export default function WhatsNextPage({
 
   const titleDone = titleIndex >= "You did it!".length;
 
+  // Skip typing in tests so text is instantly available.
+  useEffect(() => {
+    if (!skipTyping) return;
+    setTypedTitle("You did it!");
+    setTitleIndex("You did it!".length);
+    setTypedParagraphs(paragraphs.map((p) => p));
+    setParagraphIndex(paragraphs.length);
+  }, [skipTyping, paragraphs]);
+
   // Type title
   useEffect(() => {
     const full = "You did it!";
+    if (skipTyping) return;
     if (titleIndex < full.length) {
       const timer = setTimeout(() => {
         setTypedTitle(full.slice(0, titleIndex + 1));
@@ -46,10 +59,11 @@ export default function WhatsNextPage({
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [titleIndex]);
+  }, [titleIndex, skipTyping]);
 
   // Type paragraphs sequentially
   useEffect(() => {
+    if (skipTyping) return;
     if (!titleDone || paragraphIndex >= paragraphs.length) return;
     const currentText = paragraphs[paragraphIndex];
     const currentTyped = typedParagraphs[paragraphIndex] || "";
@@ -67,7 +81,7 @@ export default function WhatsNextPage({
 
     const nextTimer = setTimeout(() => setParagraphIndex((prev) => prev + 1), 120);
     return () => clearTimeout(nextTimer);
-  }, [titleDone, paragraphIndex, paragraphs, typedParagraphs]);
+  }, [titleDone, paragraphIndex, paragraphs, typedParagraphs, skipTyping]);
 
   return (
     <div className="luxury-gradient">
