@@ -10,13 +10,27 @@ const FALLBACK_REPLY = "I am here to help you shape a clear learning goal.";
 
 export async function callChatModel({ messages, provider }: CallChatModelArgs): Promise<string> {
   const activeProvider = (provider || process.env.DEFAULT_API || "aliyun").toLowerCase();
+  const shouldLog = process.env.NODE_ENV !== "production";
+
+  if (shouldLog) {
+    console.log("[llm] request provider:", activeProvider);
+    console.log("[llm] request messages:", messages);
+  }
 
   if (activeProvider === "chatgpt") {
-    return postToOpenAI(messages);
+    const reply = await postToOpenAI(messages, shouldLog);
+    if (shouldLog) {
+      console.log("[llm] response chatgpt:", reply);
+    }
+    return reply;
   }
 
   if (activeProvider === "aliyun") {
-    return postToAliyun(messages);
+    const reply = await postToAliyun(messages, shouldLog);
+    if (shouldLog) {
+      console.log("[llm] response aliyun:", reply);
+    }
+    return reply;
   }
 
   console.warn(`Unknown LLM provider "${activeProvider}", returning fallback text.`);
@@ -24,7 +38,7 @@ export async function callChatModel({ messages, provider }: CallChatModelArgs): 
 }
 
 // This sends the prompt to the Aliyun Qwen compatible endpoint.
-async function postToAliyun(messages: LlmMessage[]): Promise<string> {
+async function postToAliyun(messages: LlmMessage[], shouldLog: boolean): Promise<string> {
   const apiKey = process.env.ALIBABA_CLOUD_API_KEY;
   if (!apiKey) {
     console.warn("ALIBABA_CLOUD_API_KEY missing, using fallback reply.");
@@ -45,6 +59,9 @@ async function postToAliyun(messages: LlmMessage[]): Promise<string> {
     });
     if (!response.ok) {
       console.error("Aliyun call failed with status", response.status);
+      if (shouldLog) {
+        console.error("[llm] aliyun error body:", await response.text());
+      }
       return FALLBACK_REPLY;
     }
     const data = (await response.json()) as any;
@@ -57,7 +74,7 @@ async function postToAliyun(messages: LlmMessage[]): Promise<string> {
 }
 
 // This sends the prompt to OpenAI ChatGPT when selected.
-async function postToOpenAI(messages: LlmMessage[]): Promise<string> {
+async function postToOpenAI(messages: LlmMessage[], shouldLog: boolean): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.warn("OPENAI_API_KEY missing, using fallback reply.");
@@ -78,6 +95,9 @@ async function postToOpenAI(messages: LlmMessage[]): Promise<string> {
     });
     if (!response.ok) {
       console.error("OpenAI call failed with status", response.status);
+      if (shouldLog) {
+        console.error("[llm] openai error body:", await response.text());
+      }
       return FALLBACK_REPLY;
     }
     const data = (await response.json()) as any;

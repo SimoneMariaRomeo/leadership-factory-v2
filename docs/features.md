@@ -592,7 +592,7 @@ Source of truth for journeys and sessions is the database (LearningJourney, Lear
 
 A file-based prompt template for journey generation is kept at e.g. /prompts/learning-journey-creation.txt and used as a user message in the AI call that generates title, intro, objectives for new personalized journeys.
 
-Full raw AI requests/responses are not stored in DB, but should be logged in dev mode (e.g. server logs) to aid debugging.
+Raw AI requests/responses should be logged in dev mode (e.g. server logs) to aid debugging.
 
 10. Need-analysis as part of a standard journey
 
