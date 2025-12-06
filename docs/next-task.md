@@ -1,300 +1,238 @@
-follow the AGENTS.md instructions and implement the step below. Check the overall features to ensure your implementation is aligned to the bigger picture/project scope.
-After that, implement the tests below.
+feature/202505120337-public-funnel
 
-Step 2 — Public funnel pages only (no chat yet)
+Follow AGENTS.md, prisma-database-structure.md, features.md, implementation-steps.md, visual-guidelines.md, key-pages-additional-notes.md, image-checklist.md and env-contents.md.
 
-Goal: /, /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next exist visually and navigate correctly with fake data.
+This step is Step 2 — Public funnel pages only (no chat yet)
 
-Implement layout + visual style (fonts, gradients, glass cards, buttons).
+1. STEP 2 – IMPLEMENTATION (PUBLIC FUNNEL PAGES ONLY)
 
-Implement:
+Goal
 
-/ with Start → /welcome.
+/, /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next must:
 
-/welcome → /learning-guide-intro.
+be implemented as Next.js App Router pages (React),
 
-/learning-guide-intro → temporary hardcoded route (e.g. /journeys/goal-clarification/steps/TEST) or just a placeholder page.
+use the shared visual style from visual-guidelines.md and key-pages-additional-notes.md
 
-/learning-goal-confirmation that shows a dummy goal from local hardcoded state.
+navigate correctly with fake/hard-coded data only (no DB, no chat, no auth, no emails).
 
-/whats-next showing a dummy goal and the YES, I’M IN! button with a no-op handler.
+1.1 Next.js app setup
+
+If not already present, turn this repo into a Next.js 14 App Router project:
+
+Install next, react, react-dom.
+
+Create next.config.mjs and standard App Router structure under src/app.
+
+Add scripts in package.json:
+
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "generate": "prisma generate",
+  "migrate": "prisma migrate dev",
+  "db:seed": "prisma db seed",
+  "test:schema-and-seed": "node tests/schema-and-seed-tests.js",
+  "test:public-funnel": "node tests/public-funnel-tests.mjs"
+}
 
 
-TESTS TO CREATE
-Create a test file (public-funnel-tests) to test the project functionality (see the names below). For each test file, add natural language logs that explain what is being tested (expected behavior) with very clear, human readable explanations
+Do not implement the funnel as standalone static HTML files in public/.
+All user-facing pages for this step must be React pages under src/app.
 
-A. Public funnel navigation & page content
+Create a shared layout and styles:
+
+src/app/layout.tsx with the global layout (background gradient, centered content).
+
+src/app/globals.css (or similar) implementing the fonts, colors, glass cards, buttons etc. from visual-guidelines.md.
+
+Use the exact wording and structure for each page from key-pages-additional-notes.md (for /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next).
+
+1.2 Pages & navigation
+
+Implement the following pages in the App Router:
+
+/ – Landing
+
+File: src/app/page.tsx.
+
+Hero section that matches the “landing” description in features.md.
+
+Primary Start button (text from features.md) implemented with next/link that navigates to /welcome.
+
+/welcome
+
+File: src/app/welcome/page.tsx.
+
+Content and structure exactly as in key-pages-additional-notes.md → /welcome.
+
+Gold CONTINUE button → navigates to /learning-guide-intro.
+
+/learning-guide-intro
+
+File: src/app/learning-guide-intro/page.tsx.
+
+Text and layout exactly as in key-pages-additional-notes.md → /learning-guide-intro.
+
+Gold I’M READY button → navigates to a temporary hardcoded route:
+
+For Step 2, route to /journeys/goal-clarification/steps/TEST.
+
+Implement a simple placeholder page:
+
+File: src/app/journeys/goal-clarification/steps/TEST/page.tsx.
+
+Contents: a centered card that says e.g. “Need-analysis placeholder – chat will be wired in Step 3”.
+
+In Step 2 this route is purely visual; no chat, no API calls.
+
+/learning-goal-confirmation
+
+File: src/app/learning-goal-confirmation/page.tsx.
+
+Use a dummy goal stored in React state (e.g. "Improve my executive communication skills").
+
+Layout and static copy exactly as in key-pages-additional-notes.md → /learning-goal-confirmation, except the goal text is the dummy value.
+
+Behaviour:
+
+Show the goal in the paragraph area.
+
+A simple inline edit control:
+
+Either a small pencil icon/button or an “Edit” button that toggles a <textarea> or <input>.
+
+Editing updates the local component state goal.
+
+Confirm button:
+
+For Step 2, push to /whats-next with the goal value in query string, e.g.:
+
+router.push(`/whats-next?goal=${encodeURIComponent(goal)}`);
+
+
+No DB calls, no auth, no backend yet.
+
+/whats-next
+
+File: src/app/whats-next/page.tsx.
+
+Layout and static copy exactly as in key-pages-additional-notes.md → /whats-next.
+
+Goal display:
+
+Read goal from searchParams (Next App Router) or fall back to the same dummy text as /learning-goal-confirmation if missing.
+
+Show it inside the purple-highlighted box as described.
+
+YES, I’M IN! button:
+
+For Step 2: implement a no-op handler:
+
+On click, prevent page reload and just log to console, or show a small temporary toast “Next steps coming in Step 3”.
+
+Do not implement login, goal commit, DB writes, or emails yet.
+
+2. STEP 2 – TESTS (PUBLIC FUNNEL ONLY)
+
+Create real automated tests that validate the implemented Next.js pages, not static HTML under public.
+
+Test file: tests/public-funnel-tests.mjs (or .js if you prefer, but update the script).
+
+Script: npm run test:public-funnel should execute this file.
+
+You can use either:
+
+a lightweight JSDOM setup + React Testing Library to render the page components directly, or
+
+a minimal Playwright / headless browser setup that hits http://localhost:3000 when next dev is running.
+
+Whatever you choose, tests must fail if the React pages or links are missing. They must not just read public/*.html.
+
+A. Public funnel navigation & page content (Step-2 scope only)
 
 Landing → Welcome navigation
 
-Open /.
+Render / (either via dev server or by importing src/app/page.tsx).
 
-Click the primary Start button.
+Assert:
 
-Assert redirect to /welcome.
+The primary CTA button contains the correct label from features.md.
+
+The button/link href points to /welcome.
+
+Simulate a click (or read the Link href) and assert navigation target is /welcome.
 
 Welcome page content
 
-On /welcome, assert:
+Render /welcome.
 
-Title: “Welcome to leadership-factory.cn!”
+Assert:
 
-Three paragraphs with the exact texts specified.
+Title equals exactly the text defined in key-pages-additional-notes.md → /welcome.
 
-Button label: CONTINUE.
+There are three paragraphs with the exact content (two normal, one italic).
 
-Click CONTINUE → assert redirect to /learning-guide-intro.
+The button label is CONTINUE.
+
+The button/link href is /learning-guide-intro.
 
 Learning-guide-intro page content & CTA
 
-On /learning-guide-intro, assert:
-
-Title text matches the “I'm your learning guide…” sentence.
-
-Two body paragraphs + italic line.
-
-Button label: I’M READY.
-
-Click I’M READY → assert navigation to the need-analysis entry route
-/journeys/goal-clarification/steps/[need-analysis-step-id].
-
-B. Need-analysis chat + JSON command
-
-Need-analysis chat uses the correct outline
-
-From /learning-guide-intro, click I’M READY.
+Render /learning-guide-intro.
 
 Assert:
 
-The page renders chat UI.
+Title matches the “I'm your learning guide…” sentence from key-pages-additional-notes.md.
 
-The backend /api/chat is called with the sessionOutlineId of the seeded need-analysis outline and the journeyStepId of the correct step.
+Two body paragraphs + one italic line are present.
 
-Prompt construction fields are present
+The button label is I’M READY.
 
-On the first request to /api/chat for need-analysis, assert (via test logs/mocks) that:
+The button/link href is /journeys/goal-clarification/steps/TEST.
 
-User.botRole is included.
+Learning-goal-confirmation dummy behaviour
 
-LearningSessionOutline.objective, content, botTools, firstUserMessage are included.
-
-LearningJourney.userGoalSummary is “not defined yet” (or omitted) for first-time users.
-
-Assistant can emit create_learning_goal JSON
-
-Simulate/model the assistant response containing:
-
-{ "command": "create_learning_goal", "learningGoal": "Improve my executive communication skills" }
-
+Render /learning-goal-confirmation.
 
 Assert:
 
-The response is stored in Message.command for the last message in DB.
+The header “Let me see if I understood:” is visible.
 
-useChat detects the command and does not render it as plain text.
+The italic instruction line from key-pages-additional-notes.md is visible.
 
-Redirect to /learning-goal-confirmation on create_learning_goal
+The goal paragraph shows the dummy goal value (e.g. “Improve my executive communication skills”).
 
-After the assistant sends the above JSON:
+Simulate editing the goal:
 
-Assert useChat stores the learningGoal client-side (e.g. sessionStorage key exists).
+Trigger the edit control, change text to a new value.
 
-Assert the browser is redirected to /learning-goal-confirmation.
+Click Confirm.
 
-C. Learning-goal-confirmation behaviour
+Assert that the navigation target URL is /whats-next with ?goal=<edited-goal> in the query string.
 
-Goal text is displayed correctly
+Whats-next dummy behaviour
 
-On /learning-goal-confirmation after the previous step:
-
-Assert the goal paragraph equals the learningGoal from the JSON.
-
-Assert the header “Let me see if I understood:” is visible.
-
-Assert the italic instruction line is visible.
-
-Inline edit of goal
-
-Click the pencil icon.
-
-Change the goal text to a new value.
-
-Click the Confirm button.
+Render /whats-next?goal=Edited%20Goal%20Text.
 
 Assert:
 
-The edited value is what gets saved in client state (check sessionStorage or the next page).
+Title “You did it!” is visible.
 
-Browser navigates to /whats-next.
+Both static explanatory paragraphs are present (texts from key-pages-additional-notes.md → /whats-next).
 
-Direct access without pending goal
+The goal box shows “Edited Goal Text”.
 
-Open /learning-goal-confirmation in a fresh browser session without any prior chat.
+The YES, I’M IN! button is present.
 
-Assert:
+Simulate click on YES, I’M IN!:
 
-Either a safe fallback is shown (e.g. “No goal available, please start from the beginning”)
+Assert that, in Step 2, it:
 
-Or the user is redirected back to / or /learning-guide-intro (define expected behaviour and assert).
+Does not navigate away or call any backend URL, and
 
-D. Whats-next: login, goal commit & journey creation
+Executes only the no-op behaviour (e.g. console log or simple toast).
 
-Whats-next displays the goal and explaining text
-
-After confirming on /learning-goal-confirmation, on /whats-next:
-
-Assert the goal box shows the edited goal text.
-
-Assert the static texts (“You did it!”, “Congratulations…”, “Our team will now review…”, etc.) are present.
-
-Assert the YES, I’M IN! button is visible.
-
-YES, I’M IN! forces login for guests
-
-Start as not logged-in user.
-
-Reach /whats-next with a pending goal.
-
-Click YES, I’M IN!.
-
-Assert:
-
-Auth modal / login form appears.
-
-No call to the goal-commit endpoint is made before successful login.
-
-Goal commit for a new user
-
-From /whats-next, after successful login:
-
-Click YES, I’M IN!.
-
-Assert:
-
-The frontend sends a request to the goal-commit backend (e.g. POST /api/goal/commit) with the goal from client state.
-
-Response status is 200.
-
-DB state after goal commit
-
-After the goal-commit response:
-
-Assert in DB:
-
-User.learningGoal equals the confirmed goal.
-
-User.learningGoalConfirmedAt is set (within a small time window).
-
-Exactly one new LearningJourney exists with:
-
-isStandard = false
-
-personalizedForUserId = current user.id
-
-userGoalSummary = confirmed goal
-
-status = "awaiting_review"
-
-Assert the user is redirected to /my-profile.
-
-Emails are triggered
-
-In test mode, mock the email service.
-
-After goal commit:
-
-Assert one email to the user address is sent with:
-
-Subject/body mentioning the learning goal.
-
-Assert one email to the admin address is sent with:
-
-User email.
-
-Learning goal.
-
-A link pointing to the admin journey view (e.g. /admin/journeys/... or equivalent).
-
-/my-profile content after commit
-
-On /my-profile immediately after redirect:
-
-Assert:
-
-Shows User.learningGoal.
-
-Lists the newly created personalized journey with status = "awaiting_review".
-
-Standard journeys (if any) are listed under a “Learning Journeys” or equivalent section.
-
-E. Repeat need-analysis behaviour
-
-User with existing goal runs need-analysis again
-
-Use a logged-in user who already has learningGoal and at least one personalized journey.
-
-Run the entire funnel again (from /learning-guide-intro → chat → /learning-goal-confirmation → /whats-next → YES, I’M IN!).
-
-Assert:
-
-After commit:
-
-User.learningGoal is overwritten with the new goal.
-
-User.learningGoalConfirmedAt is updated.
-
-A new personalized LearningJourney is created (status = "awaiting_review").
-
-The previous journeys are still present in DB (not deleted).
-
-Multiple journeys shown in profile
-
-After the second commit:
-
-On /my-profile, assert the user now sees two personalized journeys (old + new) with their respective statuses.
-
-F. Guest abandonment behaviour
-
-Guest abandons before login
-
-As a not-logged-in user, run need-analysis until create_learning_goal is emitted and /learning-goal-confirmation is shown.
-
-Then:
-
-Close the tab or navigate away without ever clicking YES, I’M IN! on /whats-next.
-
-Assert:
-
-No new User is created (if you rely on explicit signup).
-
-No LearningJourney is created.
-
-No emails are sent.
-
-G. Security / isolation checks
-
-Cannot create journey for another user
-
-While logged in as user A:
-
-Attempt, via crafted request, to call the goal-commit endpoint with another userId in the payload.
-
-Assert:
-
-Backend ignores the client-provided userId and uses the authenticated user.
-
-No journey is created for any user other than A.
-
-Personalized journeys are not public
-
-After at least one personalized journey exists for user A:
-
-As anonymous OR logged-in user B:
-
-Visit /journeys (public list).
-
-Assert personalized journeys are not shown there.
-
-If you try to hit /journeys/[slug]?userId=A as user B:
-
-Assert access is denied or redirected (according to your access rules).
+(You can mock console.log or check that no network calls were made if using a browser test.)
