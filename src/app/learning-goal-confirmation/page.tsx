@@ -1,7 +1,7 @@
 "use client";
 
 // This page shows the dummy goal, lets people edit it, and moves to what's-next.
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import GoldButton from "../components/GoldButton";
 
 const DEFAULT_GOAL = "Improve my executive communication skills";
@@ -12,50 +12,98 @@ export default function LearningGoalConfirmationPage() {
   // This toggles whether the edit box is open.
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
+  // Typewriter state for title and paragraphs.
+  const [typedTitle, setTypedTitle] = useState("");
+  const [titleIndex, setTitleIndex] = useState(0);
+  const paragraphs = useMemo(
+    () => [goal, "Please confirm it or edit it and I'll recommend a learning journey for you."],
+    [goal]
+  );
+  const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
+  const [paragraphIndex, setParagraphIndex] = useState(0);
+
+  useEffect(() => {
+    setTypedTitle("");
+    setTitleIndex(0);
+    setTypedParagraphs(paragraphs.map(() => ""));
+    setParagraphIndex(0);
+  }, [paragraphs]);
+
+  const titleDone = useMemo(() => titleIndex >= "Let me see if I understood:".length, [titleIndex]);
+
+  // Type the title first.
+  useEffect(() => {
+    const fullTitle = "Let me see if I understood:";
+    if (titleIndex < fullTitle.length) {
+      const timer = setTimeout(() => {
+        setTypedTitle(fullTitle.slice(0, titleIndex + 1));
+        setTitleIndex((prev) => prev + 1);
+      }, 18);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [titleIndex]);
+
+  // Then type each paragraph one by one.
+  useEffect(() => {
+    if (!titleDone || paragraphIndex >= paragraphs.length) return;
+    const currentText = paragraphs[paragraphIndex];
+    const currentTyped = typedParagraphs[paragraphIndex] || "";
+
+    if (currentTyped.length < currentText.length) {
+      const timer = setTimeout(() => {
+        setTypedParagraphs((prev) => {
+          const copy = [...prev];
+          copy[paragraphIndex] = currentText.slice(0, currentTyped.length + 1);
+          return copy;
+        });
+      }, 14);
+      return () => clearTimeout(timer);
+    }
+
+    const nextTimer = setTimeout(() => setParagraphIndex((prev) => prev + 1), 120);
+    return () => clearTimeout(nextTimer);
+  }, [titleDone, paragraphIndex, paragraphs, typedParagraphs]);
+
   const confirmHref = `/whats-next?goal=${encodeURIComponent(goal)}`;
 
   return (
-    <main className="page-shell">
-      <div className="bg-orbs" aria-hidden="true" />
-      <div className="glass-card">
-        <div className="gold-icon">
-          <img className="icon-main" src="/coai-logo.png" alt="Coach icon" />
-          <img className="icon-badge" src="/favicon.png" alt="Accent mark" />
-        </div>
-        <h1 className="hero-title typewriter-title" style={{ ["--tw-delay" as string]: "0s" }}>
-          Let me see if I understood:
-        </h1>
-        <p className="goal-text">
-          <span>{goal}</span>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setIsEditing(!isEditing)}
-            aria-label="Edit goal"
-          >
-            ✏️ Edit
-          </button>
-        </p>
-        {isEditing && (
-          <div style={{ marginBottom: "12px" }}>
-            <input
-              className="goal-input"
-              value={goal}
-              onChange={(event) => setGoal(event.target.value)}
-              aria-label="Learning goal text"
-            />
+    <div className="luxury-gradient">
+      <main className="intro-card">
+        <div className="intro-row">
+          <div className="intro-logo">
+            <img className="intro-logo-img" src="/coai-logo.png" alt="Coach logo" />
           </div>
-        )}
-        <p className="italic-note typewriter-line" style={{ ["--tw-delay" as string]: "0.2s" }}>
-          Please confirm it or edit it and I'll recommend a learning journey for you.
-        </p>
-        <div className="flex-row">
-          <GoldButton href={confirmHref}>Confirm</GoldButton>
-          <a className="secondary-button" href="/">
-            Start over
-          </a>
+          <div className="intro-text-col">
+            <h1 className="intro-title">{typedTitle}</h1>
+            <p className="intro-paragraph">
+              {typedParagraphs[0]}
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                aria-label="Edit goal"
+                style={{ marginLeft: "12px", padding: "6px 12px" }}
+              >
+                ✏️ Edit
+              </button>
+            </p>
+            {isEditing && (
+              <div style={{ margin: "8px 0 6px" }}>
+                <input
+                  className="goal-input"
+                  value={goal}
+                  onChange={(event) => setGoal(event.target.value)}
+                  aria-label="Learning goal text"
+                  style={{ width: "100%", maxWidth: "520px" }}
+                />
+              </div>
+            )}
+            <p className="intro-paragraph intro-paragraph-italic">{typedParagraphs[1]}</p>
+          </div>
         </div>
-      </div>
-    </main>
+        <GoldButton href={confirmHref}>Confirm</GoldButton>
+      </main>
+    </div>
   );
 }

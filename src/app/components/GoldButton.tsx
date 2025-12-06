@@ -29,8 +29,11 @@ export default function GoldButton({ href, children, className = "", asSecondary
     }, 380);
   };
 
+  const tailwindHover = asSecondary
+    ? "transition-colors hover:bg-white hover:shadow-[0_10px_20px_rgba(0,0,0,0.12)]"
+    : "bg-luxury-gold transition-colors hover:bg-luxury-gold-light hover:shadow-[0_16px_28px_rgba(212,175,55,0.35)] transition-all";
   const baseClass = asSecondary ? "secondary-button" : "primary-button";
-  const finalClass = `${baseClass} ${className}`.trim();
+  const finalClass = `${baseClass} ${tailwindHover} ${className}`.trim();
 
   return (
     <Link

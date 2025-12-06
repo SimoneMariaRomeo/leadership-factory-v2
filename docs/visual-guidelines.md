@@ -9,6 +9,7 @@
 - Layout vibes: centered columns, generous padding, rounded 2xl cards, lots of white space; nav/menu overlays on top of gradient; modals with soft shadows and white backgrounds.
 - Icons/avatars: circular avatar images with gold border; coai-logo as the main coach avatar; tiny favicon badge can sit on the avatar badge for an extra accent.
 - Gradients and shadows: luxury-shadow used on most cards; glass-effect for chat panels and lists; gold-gradient for primary emphasis.
+- Hover highlights: buttons use gold fill with a brighter hover (`luxury-gold-light`) plus a gentle glow; keep transitions smooth (`transition-colors` / `transition-all`) and allow stronger hover shadow when needed.
 - Quick-reply chips: rounded pills, gold fill with dark text, small bold font.
 - Progress bars: thin rounded track with gold fill; step indicators use gold squares or numbers.
 - Corporate flow visuals: same gradients and golds; chat-style bubble or badge near the card top uses a white background with gold edge, carrying the coai logo (and small favicon badge).

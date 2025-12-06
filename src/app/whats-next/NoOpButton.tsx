@@ -18,7 +18,7 @@ export default function NoOpButton() {
 
   return (
     <button
-      className="primary-button"
+      className="primary-button bg-luxury-gold transition-colors hover:bg-luxury-gold-light hover:shadow-[0_16px_28px_rgba(212,175,55,0.35)] transition-all"
       type="button"
       onClick={handleClick}
       data-loading={loading ? "true" : "false"}

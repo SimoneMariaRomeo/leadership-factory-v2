@@ -1,5 +1,5 @@
 // This page shows the public landing hero with the main Start button.
-import GoldButton from "./components/GoldButton";
+import Link from "next/link";
 
 export default function HomePage() {
   // This keeps the landing focused on a single glowing Start action.
@@ -8,9 +8,13 @@ export default function HomePage() {
       <div className="bg-orbs" aria-hidden="true" />
       <div className="start-hero">
         <div className="start-ring" aria-hidden="true" />
-        <GoldButton href="/welcome" className="solo-start">
-          Start
-        </GoldButton>
+        <Link
+          className="start-logo-btn transition-colors hover:bg-luxury-gold-light hover:shadow-[0_16px_28px_rgba(212,175,55,0.35)] transition-all"
+          href="/welcome"
+        >
+          <span className="start-text">START</span>
+          <img src="/coai-logo.png" alt="Start" />
+        </Link>
       </div>
     </main>
   );
