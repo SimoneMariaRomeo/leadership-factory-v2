@@ -24,6 +24,10 @@ export default function LearningGoalConfirmationPage() {
   const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
   const skipTyping =
     isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
+  const paragraphsDone = useMemo(
+    () => typedParagraphs.length === paragraphs.length && typedParagraphs.every((text, idx) => text.length === paragraphs[idx].length),
+    [typedParagraphs, paragraphs]
+  );
 
   useEffect(() => {
     setTypedTitle("");
@@ -92,15 +96,20 @@ export default function LearningGoalConfirmationPage() {
             <h1 className="intro-title">{typedTitle}</h1>
             <p className="intro-paragraph">
               {typedParagraphs[0]}
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setIsEditing(!isEditing)}
-                aria-label="Edit goal"
-                style={{ marginLeft: "12px", padding: "6px 12px" }}
-              >
-                Edit
-              </button>
+              {(skipTyping || paragraphsDone) && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  aria-label="Edit goal"
+                  style={{ marginLeft: "12px", padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    ✏️
+                  </span>
+                  Edit
+                </button>
+              )}
             </p>
             {isEditing && (
               <div style={{ margin: "8px 0 6px" }}>
