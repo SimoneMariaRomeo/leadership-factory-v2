@@ -17,7 +17,6 @@ export default function GoldButton({ href, children, className = "", asSecondary
   const [loading, setLoading] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    // Stop double clicks while we show the glow.
     if (loading) {
       event.preventDefault();
       return;
@@ -41,14 +40,25 @@ export default function GoldButton({ href, children, className = "", asSecondary
       data-loading={loading ? "true" : "false"}
       aria-busy={loading}
     >
-      {!asSecondary && (
-        <span className="btn-spinner" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
-      )}
-      <span className="btn-label">{children}</span>
+      <span
+        className="btn-spinner"
+        aria-hidden="true"
+        style={{
+          display: loading ? "inline-flex" : "none",
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          margin: 0,
+        }}
+      >
+        <span />
+        <span />
+        <span />
+      </span>
+      <span className="btn-label" style={loading ? { visibility: "hidden" } : undefined}>
+        {children}
+      </span>
     </Link>
   );
 }

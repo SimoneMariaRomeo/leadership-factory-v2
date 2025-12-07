@@ -125,7 +125,14 @@ export default function LearningGoalConfirmationPage() {
                   type="button"
                   onClick={() => setIsEditing(!isEditing)}
                   aria-label="Edit goal"
-                  style={{ marginLeft: "12px", padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                  style={{
+                    marginLeft: "12px",
+                    padding: "6px 12px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    color: "var(--gold)",
+                  }}
                 >
                   <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">

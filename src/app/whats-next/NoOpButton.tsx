@@ -24,12 +24,25 @@ export default function NoOpButton() {
       data-loading={loading ? "true" : "false"}
       aria-busy={loading}
     >
-      <span className="btn-spinner" aria-hidden="true">
+      <span
+        className="btn-spinner"
+        aria-hidden="true"
+        style={{
+          display: loading ? "inline-flex" : "none",
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          margin: 0,
+        }}
+      >
         <span />
         <span />
         <span />
       </span>
-      <span className="btn-label">YES, I'M IN!</span>
+      <span className="btn-label" style={loading ? { visibility: "hidden" } : undefined}>
+        YES, I'M IN!
+      </span>
     </button>
   );
 }

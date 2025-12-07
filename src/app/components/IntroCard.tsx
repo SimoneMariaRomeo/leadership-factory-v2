@@ -2,8 +2,9 @@
 
 // This card shows the intro content with a logo and a soft typing effect.
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import GoldButton from "./GoldButton";
+import { useRouter } from "next/navigation";
 
 type Paragraph = {
   text: string;
@@ -24,6 +25,8 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
   const [titleIndex, setTitleIndex] = useState<number>(0);
   const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
   const [paragraphIndex, setParagraphIndex] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
   const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
   const skipTyping =
     isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
@@ -85,6 +88,16 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
     return () => clearTimeout(nextTimer);
   }, [titleDone, paragraphIndex, paragraphs, typedParagraphs]);
 
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (loading) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    setLoading(true);
+    router.push(button.href);
+  };
+
   return (
     <div className="luxury-gradient">
       <main className="intro-card">
@@ -104,9 +117,20 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
             ))}
           </div>
         </div>
-        <GoldButton href={button.href}>
-          {button.label}
-        </GoldButton>
+        <Link
+          className="intro-button"
+          href={button.href}
+          onClick={handleClick}
+          data-loading={loading ? "true" : "false"}
+          aria-busy={loading}
+        >
+          <span className="btn-spinner" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="btn-label">{button.label}</span>
+        </Link>
       </main>
     </div>
   );
