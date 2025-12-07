@@ -105,6 +105,7 @@ async function main() {
   await testJsonCommandStorage(outline.id, step.id);
   await testApiPostRoundtrip(outline.id, step.id);
   await testMockConversationCreatesGoalCommand(outline.id, step.id);
+  await testProvidersWork(outline.id, step.id);
 
   console.log("\nNeed-analysis chat checks completed.");
 }
@@ -351,6 +352,40 @@ async function testMockConversationCreatesGoalCommand(sessionOutlineId, journeyS
   );
   assert(seenMessages && seenMessages.length >= conversation.length, "Model should receive the full conversation history.");
   logPass("Mock conversation produced the expected create_learning_goal command.");
+}
+
+// This ensures both supported providers run through the chat flow.
+async function testProvidersWork(sessionOutlineId, journeyStepId) {
+  logTest(
+    "[Chat] GPT and Qwen providers work",
+    "A need-assessment chat should work whether DEFAULT_API is aliyun or chatgpt."
+  );
+  const originalProvider = process.env.DEFAULT_API;
+  const providersToCheck = ["aliyun", "chatgpt"];
+
+  for (const provider of providersToCheck) {
+    process.env.DEFAULT_API = provider;
+    let seenProvider = null;
+    const fakeModel = async ({ provider: incomingProvider }) => {
+      seenProvider = incomingProvider;
+      return "Provider echo";
+    };
+
+    const result = await handleChat({
+      userId: null,
+      sessionOutlineId,
+      journeyStepId,
+      chatId: null,
+      messages: [{ role: "user", content: "Check provider path." }],
+      callChatModel: fakeModel,
+    });
+
+    assert(seenProvider === provider, `Provider should be ${provider}.`);
+    assert(result.assistantMessage.content === "Provider echo", "Assistant content should match the fake model reply.");
+  }
+
+  process.env.DEFAULT_API = originalProvider;
+  logPass("Both aliyun and chatgpt providers were accepted.");
 }
 
 main()
