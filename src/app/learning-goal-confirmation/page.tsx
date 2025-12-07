@@ -1,11 +1,12 @@
 "use client";
 
 // This page shows the saved goal (or a fallback), lets people edit it, and moves to what's-next.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import GoldButton from "../components/GoldButton";
 import { getPendingGoal } from "../../lib/pending-goal-store";
 
 const FALLBACK_GOAL_TEXT = "No learning goal is available. Please start from the beginning.";
+const INSTRUCTION_LINE = "Please confirm it or edit it and I'll recommend a learning journey for you.";
 
 export default function LearningGoalConfirmationPage() {
   // This stores the current goal text or a fallback message.
@@ -15,23 +16,17 @@ export default function LearningGoalConfirmationPage() {
   // This toggles whether the edit box is open.
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  // Typewriter state for title and paragraphs.
+  // Typewriter state for title and the single instruction line.
   const [typedTitle, setTypedTitle] = useState("");
   const [titleIndex, setTitleIndex] = useState(0);
-  const displayGoal = hasStoredGoal ? goal : FALLBACK_GOAL_TEXT;
-  const paragraphs = useMemo(
-    () => [displayGoal, "Please confirm it or edit it and I'll recommend a learning journey for you."],
-    [displayGoal]
-  );
-  const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
-  const [paragraphIndex, setParagraphIndex] = useState(0);
+  const [typedInstruction, setTypedInstruction] = useState("");
+  const [instructionIndex, setInstructionIndex] = useState(0);
   const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
   const skipTyping =
     isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
-  const paragraphsDone = useMemo(
-    () => typedParagraphs.length === paragraphs.length && typedParagraphs.every((text, idx) => text.length === paragraphs[idx].length),
-    [typedParagraphs, paragraphs]
-  );
+  const titleDone = useMemo(() => titleIndex >= "Let me see if I understood:".length, [titleIndex]);
+  const instructionDone = useMemo(() => instructionIndex >= INSTRUCTION_LINE.length, [instructionIndex]);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   // This reads the goal from session storage on the client.
   useEffect(() => {
@@ -45,35 +40,20 @@ export default function LearningGoalConfirmationPage() {
     }
   }, []);
 
-  // This keeps edit mode closed when no goal is present.
-  useEffect(() => {
-    if (!hasStoredGoal) {
-      setIsEditing(false);
-    }
-  }, [hasStoredGoal]);
-
-  useEffect(() => {
-    setTypedTitle("");
-    setTitleIndex(0);
-    setTypedParagraphs(paragraphs.map(() => ""));
-    setParagraphIndex(0);
-  }, [paragraphs]);
-
   // In tests we skip typing so assertions can read the full text immediately.
   useEffect(() => {
-    if (!skipTyping) return;
-    setTypedTitle("Let me see if I understood:");
-    setTitleIndex("Let me see if I understood:".length);
-    setTypedParagraphs(paragraphs.map((p) => p));
-    setParagraphIndex(paragraphs.length);
-  }, [skipTyping, paragraphs]);
+    if (skipTyping) {
+      setTypedTitle("Let me see if I understood:");
+      setTitleIndex("Let me see if I understood:".length);
+      setTypedInstruction(INSTRUCTION_LINE);
+      setInstructionIndex(INSTRUCTION_LINE.length);
+    }
+  }, [skipTyping]);
 
-  const titleDone = useMemo(() => titleIndex >= "Let me see if I understood:".length, [titleIndex]);
-
-  // Type the title first.
+  // Type the title once on first render.
   useEffect(() => {
-    const fullTitle = "Let me see if I understood:";
     if (skipTyping) return;
+    const fullTitle = "Let me see if I understood:";
     if (titleIndex < fullTitle.length) {
       const timer = setTimeout(() => {
         setTypedTitle(fullTitle.slice(0, titleIndex + 1));
@@ -84,27 +64,18 @@ export default function LearningGoalConfirmationPage() {
     return undefined;
   }, [titleIndex, skipTyping]);
 
-  // Then type each paragraph one by one.
+  // Then type the single instruction line.
   useEffect(() => {
-    if (skipTyping) return;
-    if (!titleDone || paragraphIndex >= paragraphs.length) return;
-    const currentText = paragraphs[paragraphIndex];
-    const currentTyped = typedParagraphs[paragraphIndex] || "";
-
-    if (currentTyped.length < currentText.length) {
+    if (skipTyping || !titleDone) return;
+    if (instructionIndex < INSTRUCTION_LINE.length) {
       const timer = setTimeout(() => {
-        setTypedParagraphs((prev) => {
-          const copy = [...prev];
-          copy[paragraphIndex] = currentText.slice(0, currentTyped.length + 1);
-          return copy;
-        });
+        setTypedInstruction(INSTRUCTION_LINE.slice(0, instructionIndex + 1));
+        setInstructionIndex((prev) => prev + 1);
       }, 14);
       return () => clearTimeout(timer);
     }
-
-    const nextTimer = setTimeout(() => setParagraphIndex((prev) => prev + 1), 120);
-    return () => clearTimeout(nextTimer);
-  }, [titleDone, paragraphIndex, paragraphs, typedParagraphs, skipTyping]);
+    return undefined;
+  }, [titleDone, instructionIndex, skipTyping]);
 
   const confirmHref = `/whats-next?goal=${encodeURIComponent(goal)}`;
 
@@ -117,16 +88,24 @@ export default function LearningGoalConfirmationPage() {
           </div>
           <div className="intro-text-col">
             <h1 className="intro-title">{typedTitle}</h1>
-            <p className="intro-paragraph">
-              {typedParagraphs[0]}
-              {hasStoredGoal && (skipTyping || paragraphsDone) && (
+            {!hasStoredGoal && <p className="intro-paragraph">{FALLBACK_GOAL_TEXT}</p>}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <input
+                ref={inputRef}
+                className="goal-input"
+                value={goal}
+                onChange={(event) => setGoal(event.target.value)}
+                aria-label="Learning goal text"
+                disabled={!hasStoredGoal}
+                style={{ width: "100%", maxWidth: "620px" }}
+              />
+              {hasStoredGoal && (
                 <button
                   className="secondary-button"
                   type="button"
-                  onClick={() => setIsEditing(!isEditing)}
+                  onClick={() => inputRef.current?.focus()}
                   aria-label="Edit goal"
                   style={{
-                    marginLeft: "12px",
                     padding: "6px 12px",
                     display: "inline-flex",
                     alignItems: "center",
@@ -149,19 +128,8 @@ export default function LearningGoalConfirmationPage() {
                   Edit
                 </button>
               )}
-            </p>
-            {hasStoredGoal && isEditing && (
-              <div style={{ margin: "8px 0 6px" }}>
-                <input
-                  className="goal-input"
-                  value={goal}
-                  onChange={(event) => setGoal(event.target.value)}
-                  aria-label="Learning goal text"
-                  style={{ width: "100%", maxWidth: "520px" }}
-                />
-              </div>
-            )}
-            <p className="intro-paragraph intro-paragraph-italic">{typedParagraphs[1]}</p>
+            </div>
+            <p className="intro-paragraph intro-paragraph-italic">{typedInstruction}</p>
           </div>
         </div>
         {hasStoredGoal ? (
