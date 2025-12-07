@@ -4,6 +4,7 @@ import { createRequire } from "module";
 import { execSync } from "child_process";
 import { Pool } from "pg";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -103,6 +104,7 @@ async function main() {
   await testPromptConstruction(outline.id, step.id);
   await testJsonCommandStorage(outline.id, step.id);
   await testApiPostRoundtrip(outline.id, step.id);
+  await testMockConversationCreatesGoalCommand(outline.id, step.id);
 
   console.log("\nNeed-analysis chat checks completed.");
 }
@@ -146,7 +148,7 @@ async function testNeedAnalysisRoute() {
   assert(step.sessionOutlineId === outline.id, "Step should store the outline id.");
   assert(outline.objective && outline.objective.length > 0, "Outline objective should not be empty.");
   assert(outline.content && outline.content.length > 0, "Outline content should not be empty.");
-  assert(outline.botTools && outline.botTools.includes('"command": "create_learning_goal"'), "botTools should mention create_learning_goal.");
+  assert(outline.botTools && outline.botTools.includes("create_learning_goal"), "botTools should mention create_learning_goal.");
   assert(outline.firstUserMessage && outline.firstUserMessage.length > 0, "firstUserMessage should be present.");
   logPass("Need-analysis outline and step look correct.");
 
@@ -301,6 +303,54 @@ async function testApiPostRoundtrip(sessionOutlineId, journeyStepId) {
   const storedMessages = await prisma.message.findMany({ where: { chatId: data.chatId } });
   assert(storedMessages.length >= 2, "Chat should have stored the user and assistant messages.");
   logPass("API roundtrip creates chat and messages as expected.");
+}
+
+// This reads the mock conversation script for the need-assessment flow.
+function loadMockConversation() {
+  const filePath = path.resolve(__dirname, "fixtures", "need-assessment-test-conversation.txt");
+  const raw = fs.readFileSync(filePath, "utf8").trim();
+  const hasBracket = raw.startsWith("[");
+  const cleaned = hasBracket ? raw : `${raw.endsWith("]") ? raw.slice(0, -1) : raw}`;
+  try {
+    return new Function(`return ${hasBracket ? cleaned : `[${cleaned}]`};`)();
+  } catch (error) {
+    throw new Error(`Failed to parse mock conversation file: ${error.message}`);
+  }
+}
+
+// This confirms the mock conversation leads to the expected JSON goal command.
+async function testMockConversationCreatesGoalCommand(sessionOutlineId, journeyStepId) {
+  logTest(
+    "[Chat] Mock need-assessment yields create_learning_goal JSON",
+    "Given the mock conversation, the model should reply with the expected command."
+  );
+  const conversation = loadMockConversation();
+  const expectedGoal =
+    "I want to create a clear, actionable plan by next week that defines specific time and energy boundaries between my full-time job and my personal business, so I can reduce overwhelm and operate more intentionally.";
+  let seenMessages = null;
+  const fakeModel = async ({ messages }) => {
+    seenMessages = messages;
+    const lastUser = messages.filter((m) => m.role === "user").slice(-1)[0]?.content || "";
+    assert(lastUser.toLowerCase().includes("redirect me to the next page"), "Final user prompt should reach the model.");
+    return JSON.stringify({ command: "create_learning_goal", learningGoal: expectedGoal });
+  };
+
+  const result = await handleChat({
+    userId: null,
+    sessionOutlineId,
+    journeyStepId,
+    chatId: null,
+    messages: conversation,
+    callChatModel: fakeModel,
+  });
+
+  assert(result.assistantMessage.command?.command === "create_learning_goal", "Assistant should return create_learning_goal.");
+  assert(
+    result.assistantMessage.command?.learningGoal === expectedGoal,
+    "learningGoal should match the expected text from the mock conversation."
+  );
+  assert(seenMessages && seenMessages.length >= conversation.length, "Model should receive the full conversation history.");
+  logPass("Mock conversation produced the expected create_learning_goal command.");
 }
 
 main()

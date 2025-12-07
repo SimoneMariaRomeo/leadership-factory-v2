@@ -112,7 +112,15 @@ export default function LearningGoalConfirmationPage() {
                 aria-label="Learning goal text"
                 disabled={!hasStoredGoal}
                 rows={3}
-                style={{ width: "100%", maxWidth: "720px", resize: "vertical", minHeight: "96px", lineHeight: 1.5, overflow: "auto" }}
+                style={{
+                  width: "100%",
+                  maxWidth: "720px",
+                  resize: "none",
+                  minHeight: "96px",
+                  lineHeight: 1.5,
+                  overflow: "hidden",
+                  fontFamily: "inherit",
+                }}
               />
               {hasStoredGoal && (
                 <button

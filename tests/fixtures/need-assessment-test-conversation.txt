@@ -1,0 +1,43 @@
+  {
+    role: 'user',
+    content: 'Before we begin, tell me briefly what brings you here.'
+  },
+  {
+    role: 'assistant',
+    content: 'Before we begin, tell me briefly what brings you here.'
+  },
+  { role: 'user', content: "I'm feeling a bit overwhelmed" },
+  {
+    role: 'assistant',
+    content: "I'm here to help you work through that. To get started, could you tell me what specifically is feeling overwhelming? Is there a particular area—like workload, communication, priorities, or something else—that you'd like to improve or change?"
+  },
+  {
+    role: 'user',
+    content: "My work and my personal buiness. I'm doing both at the same time"
+  },
+  {
+    role: 'assistant',
+    content: 'Thanks for sharing that. It makes sense—juggling a full-time job and a personal business can be a lot. To help clarify your goal, let me ask a few quick questions:\n' +
+      '\n' +
+      '1. What part of managing both is feeling most overwhelming right now? For example, time management, energy levels, focus, or setting boundaries?\n' +
+      '2. What would success look like for you? How will you know things have improved?\n' +
+      '3. Do you have a timeframe in mind—say 4 weeks, 8 weeks—within which you’d like to see meaningful progress?\n' +
+      '\n' +
+      'This will help us shape a clear and realistic learning goal.'
+  },
+  {
+    role: 'user',
+    content: '1. Setting boundaries 2. Having a clear actions plan on how much energy I should invest for both 3. Next week'
+  },
+  {
+    role: 'assistant',
+    content: "Got it. So you're feeling overwhelmed by balancing your job and personal business, and you want to improve by setting clearer boundaries and having a clear action plan for how much energy and time to invest in each—ideally seeing progress by next week.\n" +
+      '\n' +
+      'Let me propose a draft of your learning goal:\n' +
+      '\n' +
+      '"I want to create a clear, actionable plan by next week that defines specific time and energy boundaries between my full-time job and my personal business, so I can reduce overwhelm and operate more intentionally."\n' +
+      '\n' +
+      "Does this reflect what you're aiming for? If not, what would you adjust?"
+  },
+  { role: 'user', content: 'Yes, sounds good, redirect me to the next page through the JSON command' }
+]
