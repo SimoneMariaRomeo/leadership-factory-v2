@@ -115,7 +115,7 @@ async function main() {
   goalView.getByText("Let me see if I understood:");
   goalView.getByText("Please confirm it or edit it and I'll recommend a learning journey for you.");
   const goalInput = goalView.getByLabelText("Learning goal text");
-  assert(goalInput.getAttribute("value") === "Become a more confident public speaker", "The goal input should show the pending goal text.");
+  assert(goalInput.value === "Become a more confident public speaker", "The goal input should show the pending goal text.");
   logPass("Pending goal appears with the expected heading and helper copy.");
   cleanup();
 

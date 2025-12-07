@@ -26,7 +26,7 @@ export default function LearningGoalConfirmationPage() {
     isJsdom || (typeof process !== "undefined" && (!process.env.NODE_ENV || process.env.NODE_ENV === "test"));
   const titleDone = useMemo(() => titleIndex >= "Let me see if I understood:".length, [titleIndex]);
   const instructionDone = useMemo(() => instructionIndex >= INSTRUCTION_LINE.length, [instructionIndex]);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // This reads the goal from session storage on the client.
   useEffect(() => {
@@ -90,14 +90,15 @@ export default function LearningGoalConfirmationPage() {
             <h1 className="intro-title">{typedTitle}</h1>
             {!hasStoredGoal && <p className="intro-paragraph">{FALLBACK_GOAL_TEXT}</p>}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <input
+              <textarea
                 ref={inputRef}
                 className="goal-input"
                 value={goal}
                 onChange={(event) => setGoal(event.target.value)}
                 aria-label="Learning goal text"
                 disabled={!hasStoredGoal}
-                style={{ width: "100%", maxWidth: "620px" }}
+                rows={2}
+                style={{ width: "100%", maxWidth: "720px", resize: "vertical", minHeight: "64px", lineHeight: 1.4 }}
               />
               {hasStoredGoal && (
                 <button
