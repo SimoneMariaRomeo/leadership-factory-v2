@@ -39,7 +39,6 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
       <NeedAnalysisChat
         sessionOutlineId={step.sessionOutline.id}
         journeyStepId={step.id}
-        outlineTitle={step.sessionOutline.title}
         firstUserMessage={step.sessionOutline.firstUserMessage}
       />
     </main>

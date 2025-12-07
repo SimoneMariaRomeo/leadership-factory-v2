@@ -14,14 +14,12 @@ type ChatMessage = {
 type NeedAnalysisChatProps = {
   sessionOutlineId: string;
   journeyStepId?: string | null;
-  outlineTitle?: string;
   firstUserMessage?: string | null;
 };
 
 export default function NeedAnalysisChat({
   sessionOutlineId,
   journeyStepId = null,
-  outlineTitle,
   firstUserMessage,
 }: NeedAnalysisChatProps) {
   // This keeps the chat history on the page.
@@ -122,58 +120,63 @@ export default function NeedAnalysisChat({
   };
 
   return (
-    <div className="chat-card">
-      <div className="chat-header">
-        <div className="intro-logo">
-          <img className="intro-logo-img" src="/coai-logo.png" alt="Coach logo" />
-        </div>
-        <div className="chat-heading">
-          <p className="chat-label">Need Analysis</p>
-          <h1 className="chat-title">{outlineTitle || "Clarify your goal"}</h1>
-          <p className="chat-subtitle">Share what you want to work on and we will shape a clear learning goal.</p>
-        </div>
-      </div>
-
-      <div className="chat-body">
-        <div className="chat-messages" aria-live="polite">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`chat-bubble ${message.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}
-            >
+    <div className="chat-panel">
+      <div className="chat-messages" aria-live="polite">
+        {messages.map((message) => (
+          <div key={message.id} className={`chat-row ${message.role === "user" ? "chat-row-user" : ""}`}>
+            <div className={`chat-avatar ${message.role === "user" ? "chat-avatar-user" : ""}`}>
+              {message.role === "user" ? (
+                <span className="chat-avatar-initial">You</span>
+              ) : (
+                <img src="/coai-logo.png" alt="Coach avatar" />
+              )}
+            </div>
+            <div className={`chat-bubble ${message.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}>
               {message.content}
             </div>
-          ))}
-          {isSending && (
+          </div>
+        ))}
+
+        {isSending && (
+          <div className="chat-row">
+            <div className="chat-avatar">
+              <img src="/coai-logo.png" alt="Coach avatar" />
+            </div>
             <div className="chat-bubble chat-bubble-assistant typing-bubble" aria-label="Assistant is typing">
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {commandNotice && <div className="chat-banner">{commandNotice}</div>}
-        {error && (
-          <div className="chat-error" role="alert">
-            {error}
           </div>
         )}
+        <div ref={messagesEndRef} />
+      </div>
 
-        <div className="chat-input-row">
-          <textarea
-            className="chat-input"
-            placeholder="Share what you would like to improve..."
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
-            rows={2}
-            disabled={disabled}
-          />
-          <button className="primary-button chat-send" type="button" onClick={handleSend} disabled={disabled}>
-            {disabled ? "Sending..." : "Send"}
-          </button>
+      {commandNotice && <div className="chat-banner">{commandNotice}</div>}
+      {error && (
+        <div className="chat-error" role="alert">
+          {error}
         </div>
+      )}
+
+      <div className="chat-input-row">
+        <textarea
+          className="chat-input"
+          placeholder="Type your response..."
+          value={inputValue}
+          onChange={(event) => setInputValue(event.target.value)}
+          rows={2}
+          disabled={disabled}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              handleSend();
+            }
+          }}
+        />
+        <button className="primary-button chat-send" type="button" onClick={handleSend} disabled={disabled}>
+          {disabled ? "Sending..." : "Send"}
+        </button>
       </div>
     </div>
   );
