@@ -12,7 +12,7 @@ const FAKE_JSON_GOAL =
 
 export async function callChatModel({ messages, provider }: CallChatModelArgs): Promise<string> {
   const activeProvider = (provider || process.env.DEFAULT_API || "aliyun").toLowerCase();
-  const shouldLog = process.env.NODE_ENV !== "production" && process.env.LLM_LOG !== "silent";
+  const shouldLog = process.env.NODE_ENV !== "production";
 
   if (shouldLog) {
     console.log("[llm] request provider:", activeProvider);

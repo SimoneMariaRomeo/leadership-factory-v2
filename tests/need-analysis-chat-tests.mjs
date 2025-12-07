@@ -38,7 +38,7 @@ const ORIGINAL_DEFAULT_API = process.env.DEFAULT_API || "aliyun";
 process.env.DATABASE_URL = databaseUrl;
 process.env.SHADOW_DATABASE_URL = shadowDatabaseUrl;
 process.env.DEFAULT_API = ORIGINAL_DEFAULT_API;
-process.env.LLM_LOG = "silent";
+process.env.NODE_ENV = "test";
 
 const { handleChat } = require("../src/server/chat/handleChat.ts");
 const { POST } = require("../src/app/api/chat/route.ts");
@@ -108,6 +108,8 @@ async function main() {
   await testApiPostRoundtrip(outline.id, step.id);
   await testMockConversationCreatesGoalCommand(outline.id, step.id);
   await testProvidersWork(outline.id, step.id);
+  await testRealConversationReturnsJson(outline.id, step.id, "aliyun");
+  await testRealConversationReturnsJson(outline.id, step.id, "chatgpt");
 
   console.log("\nNeed-analysis chat checks completed.");
 }
@@ -371,6 +373,7 @@ async function testProvidersWork(sessionOutlineId, journeyStepId) {
   const providersToCheck = ["aliyun", "chatgpt"];
 
   for (const provider of providersToCheck) {
+    ensureProviderKeys(provider);
     process.env.DEFAULT_API = provider;
     let seenProvider = null;
     const fakeModel = async ({ provider: incomingProvider }) => {
@@ -393,6 +396,49 @@ async function testProvidersWork(sessionOutlineId, journeyStepId) {
 
   process.env.DEFAULT_API = originalProvider;
   logPass("Both aliyun and chatgpt providers were accepted.");
+}
+
+function ensureProviderKeys(provider) {
+  if (provider === "aliyun" && !process.env.ALIBABA_CLOUD_API_KEY) {
+    throw new Error("ALIBABA_CLOUD_API_KEY is required to run the aliyun provider test.");
+  }
+  if (provider === "chatgpt" && !process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is required to run the chatgpt provider test.");
+  }
+}
+
+// Integration: call the real provider with the full mock conversation and expect the JSON command.
+async function testRealConversationReturnsJson(sessionOutlineId, journeyStepId, provider) {
+  logTest(
+    `[Chat] ${provider} returns create_learning_goal JSON`,
+    "The real model should respond with the JSON command when given the mock conversation."
+  );
+  ensureProviderKeys(provider);
+  const originalProvider = process.env.DEFAULT_API;
+  process.env.DEFAULT_API = provider;
+
+  const conversation = loadMockConversation();
+  const expectedGoal =
+    "I want to create a clear, actionable plan by next week that defines specific time and energy boundaries between my full-time job and my personal business, so I can reduce overwhelm and operate more intentionally.";
+
+  const result = await handleChat({
+    userId: null,
+    sessionOutlineId,
+    journeyStepId,
+    chatId: null,
+    messages: conversation,
+  });
+
+  assert(result.assistantMessage.command?.command === "create_learning_goal", "Real model should return create_learning_goal.");
+  assert(
+    typeof result.assistantMessage.command?.learningGoal === "string" &&
+      result.assistantMessage.command.learningGoal.trim().length > 0,
+    "Real model should return a non-empty learningGoal string."
+  );
+  console.log(`[llm] ${provider} learningGoal:`, result.assistantMessage.command.learningGoal);
+
+  process.env.DEFAULT_API = originalProvider;
+  logPass(`${provider} returned the expected JSON command.`);
 }
 
 main()
