@@ -1,464 +1,241 @@
-feature/202512062021-chat-v2-need-analysis
+Step 4: Wire create_learning_goal → /learning-goal-confirmation
 
-Follow AGENTS.md, prisma-database-structure.md, features.md, implementation-steps.md, visual-guidelines.md, key-pages-additional-notes.md, image-checklist.md and env-contents.md.
+Step 4 — /api/chat → /learning-goal-confirmation
 
-This step is Step 3 — /api/chat + need-analysis chat using new models
+Goal: When the bot emits create_learning_goal, the app must navigate to /learning-goal-confirmation and show the real goal from the need-analysis chat (no more dummy text).
 
-1. STEP 3 – IMPLEMENTATION (/api/chat + need-analysis chat using new models)
-1.1 Goal & assumptions
+0. Context (read-only, do not re-specify)
 
-Goal
+Before you start, re-read these project docs and treat them as the single source of truth:
 
-Have a working need-analysis chat that:
+docs/features.md – overall product flow, routes, JSON commands (create_learning_goal), and behaviour of /learning-goal-confirmation.
 
-runs on a single /api/chat endpoint,
+docs/prisma-database-structure.md – Prisma models and relations (User, LearningSessionChat, LearningJourney, LearningSessionOutline, LearningJourneyStep).
 
-uses the new Prisma models (LearningSessionChat, Message, LearningSessionOutline, LearningJourney, LearningJourneyStep),
+docs/visual-guidelines.md – fonts, gradients, glass cards, gold buttons, motion, etc.
 
-loads the seeded “Goal Clarification” → “need-analysis” outline and step from DB,
+docs/image-checklist.md – required assets in public/.
 
-builds prompts as described in features.md (section on prompt construction & botTools),
+docs/env-contents.md – .env variables, including DEFAULT_API for Aliyun/ChatGPT.
 
-persists messages and JSON commands, including create_learning_goal.
+docs/implementation-steps.md – overall Step 1–5 roadmap.
 
-Assumptions
+Assume Step 1–3 are already done correctly:
 
-Step 1 (new Prisma schema + seed “Goal Clarification”) is complete and migrations are applied.
+DB schema + seed for Goal Clarification journey and need-analysis outline (with correct botTools containing the create_learning_goal JSON spec).
 
-Step 2 (public funnel pages) is implemented as Next.js App Router pages under src/app and already uses the shared visual style.
+Next.js app router is in place (src/app/**), with the public funnel pages (/, /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next) implemented visually per the visual guidelines.
 
-The database contains:
+The need-analysis step page (/journeys/goal-clarification/steps/[stepId]) renders chat UI using src/lib/useChat.ts and calls POST /api/chat, which:
 
-a standard journey "Goal Clarification" with slug = "goal-clarification",
+builds prompts from User, LearningSessionOutline, LearningJourney,
 
-a LearningSessionOutline with slug = "need-analysis" attached to that journey,
+persists LearningSessionChat + Message records,
 
-a LearningJourneyStep that uses that outline as its only step.
+supports Message.command JSON, including { "command": "create_learning_goal", "learningGoal": "..." } for need-analysis.
 
-Do not touch goal confirmation, /whats-next, auth, journey creation, or admin flows in this step. Those belong to later steps.
+Do not change any of that unless explicitly requested below.
 
-1.2 Need-analysis step route (replace the TEST placeholder)
+1. Scope of Step 4 (what you must implement)
 
-In Step 2, /learning-guide-intro routed the “I’M READY” button to a temporary placeholder:
+High-level objective
 
-/journeys/goal-clarification/steps/TEST.
-
-For Step 3:
-
-Remove the placeholder page at:
-
-src/app/journeys/goal-clarification/steps/TEST/page.tsx.
-
-Implement the real dynamic step route:
-
-File: src/app/journeys/[slug]/steps/[stepId]/page.tsx.
-
-Behaviour:
-
-Route /journeys/goal-clarification/steps/need-analysis must be valid.
-
-Treat params.slug as the journey slug and params.stepId as the session outline slug for this step (for now).
-
-Use Prisma to find the corresponding LearningJourneyStep:
-
-Join on LearningJourney.slug = params.slug
-
-Join on LearningSessionOutline.slug = params.stepId for that journey.
-
-Include:
-
-the LearningSessionOutline record,
-
-the LearningJourney record if needed.
-
-If the step or outline is not found, render a simple 404-style card (same visual style) explaining that the step does not exist.
-
-Update /learning-guide-intro CTA
-
-In src/app/learning-guide-intro/page.tsx, update the “I’M READY” button to use next/link to:
-
-/journeys/goal-clarification/steps/need-analysis
-
-Keep the existing visual style and text exactly as described in key-pages-additional-notes.md.
-
-1.3 Chat UI for the need-analysis step (client component)
-
-Create a small, focused chat UI for the need-analysis step.
-
-Component structure
-
-Create a client component under the step route, e.g.:
-
-src/app/journeys/[slug]/steps/[stepId]/NeedAnalysisChat.tsx
-
-page.tsx (server) should:
-
-Load the relevant LearningJourneyStep + LearningSessionOutline with Prisma.
-
-Pass to the client component:
-
-sessionOutlineId
-
-journeyStepId (can be null for now if you want, but wire it if it’s available)
-
-any display info (e.g. outline title).
-
-UI requirements
-
-Layout should follow the chat-style glass card described in visual-guidelines.md:
-
-glass-effect card on top of the gradient background,
-
-messages in bubbles, aligned left/right,
-
-gold accents for key elements.
-
-Elements:
-
-scrollable message area,
-
-text input (textarea or single line),
-
-“Send” button (gold primary button),
-
-typing indicator when waiting for the model response.
-
-State & behaviour
-
-Maintain an in-memory messages state in the client component:
-
-Each message: { id, role: "user" | "assistant", content: string }.
-
-Initial state:
-
-Option A (simpler): start empty and, on first user send, backend injects firstUserMessage into the prompt.
-
-Option B: Show LearningSessionOutline.firstUserMessage as a first “assistant” bubble on the client, and only send user replies to /api/chat.
-
-Either is acceptable, as long as the backend uses firstUserMessage when building the LLM prompt (see 1.4).
-
-On send:
-
-Push the user message into local messages.
-
-Call /api/chat with:
-
-chatId (if known, can be null for first request),
-
-sessionOutlineId,
-
-journeyStepId (optional),
-
-the list of user/assistant messages so far (excluding any system/prompt text).
-
-Disable the input while waiting.
-
-Append the assistant reply to messages when the response returns.
-
-If the response contains a JSON command (see 1.5), do not render that JSON as plain text in the chat bubbles.
-
-No streaming required for now: a simple fetch with full response is enough.
-
-1.4 /api/chat endpoint and core chat logic
-
-Implement a reusable chat handler plus a thin API route.
-
-Core handler (testable function)
-
-Create a pure async function in e.g.:
-
-src/server/chat/handleChat.ts
-
-Suggested signature (you can adjust names, but keep the idea):
-
-export async function handleChat({
-  userId,               // string | null
-  sessionOutlineId,     // string
-  journeyStepId,        // string | null
-  chatId,               // string | null
-  messages              // Array<{ role: "user" | "assistant"; content: string }>
-}): Promise<{
-  chatId: string;
-  assistantMessage: { role: "assistant"; content: string | null; command: any | null };
-}>
-
-
-Responsibilities:
-
-Load DB entities
-
-Load the LearningSessionOutline by sessionOutlineId.
-
-If journeyStepId is provided, load the LearningJourneyStep and its LearningJourney.
-
-If journeyStepId is null (for a pure outline-based session), you can skip loading the step and journey, but still handle chat creation.
-
-Build the LLM prompt (as in features.md → prompt structure):
-
-Use:
-
-User.botRole if userId is available, or a safe default if not.
-
-LearningSessionOutline.objective
-
-LearningSessionOutline.content
-
-LearningSessionOutline.botTools
-
-LearningJourney.userGoalSummary when available (otherwise “not defined yet” or omitted).
-
-LearningSessionOutline.firstUserMessage as the first user message for the model on the backend side.
-
-The client messages represent the interactive part; backend combines them with the static preamble.
-
-LLM provider abstraction
-
-Implement a small callChatModel helper in e.g. src/server/llm/client.ts:
-
-Reads process.env.DEFAULT_API ("aliyun" or "chatgpt").
-
-Dispatches to either:
-
-Aliyun Qwen client (using ALIBABA_CLOUD_API_KEY), or
-
-OpenAI ChatGPT client (using OPENAI_API_KEY).
-
-No need for streaming; return the full assistant text as a string.
-
-handleChat calls callChatModel(...) with the constructed prompt.
-
-Persist chat and messages
-
-If chatId is null:
-
-Create a new LearningSessionChat row with:
-
-userId (can be null for guests at this stage),
-
-sessionOutlineId,
-
-journeyStepId (if provided),
-
-appropriate timestamps (startedAt, lastMessageAt).
-
-If chatId is provided:
-
-Load that LearningSessionChat and update lastMessageAt.
-
-For every user message in the request, ensure there is a Message row with:
-
-chatId,
-
-role = "user",
-
-content as provided.
-
-Create a Message row for the assistant reply with:
-
-role = "assistant",
-
-content = full raw assistant reply as string, even if it is JSON.
-
-command = parsed JSON object if the content is exactly a JSON command, otherwise null.
-
-(Parsing rules in 1.5.)
-
-Return value to the API route
-
-Return:
-
-chatId (newly created or existing),
-
-assistantMessage object with:
-
-content = plain text content if it’s a normal reply, or null if the reply was a pure JSON command,
-
-command = parsed JSON command object if a valid create_learning_goal command was detected, otherwise null.
-
-API route
-
-File: src/app/api/chat/route.ts.
-
-Implement export async function POST(req: Request) that:
-
-Parses JSON body with:
-
-chatId (string | null),
-
-sessionOutlineId (string),
-
-journeyStepId (string | null),
-
-messages (the client-side messages array).
-
-Calls handleChat({ ... }).
-
-Returns JSON:
+When the assistant, during the need-analysis chat, emits:
 
 {
-  "chatId": "...",
-  "assistantMessage": {
-    "content": "string | null",
-    "command": { ... } | null
-  }
+  "command": "create_learning_goal",
+  "learningGoal": "<final goal text>"
 }
 
 
-Handles errors with a 500 status and a simple JSON error structure (and console.error in dev).
+the frontend must:
 
-Client wiring
+Capture this command from the chat response.
 
-The NeedAnalysisChat component should:
+Store the learningGoal on the client (pending goal state).
 
-Call /api/chat on submit, passing the current chatId (if any), sessionOutlineId, journeyStepId, and messages.
+Navigate the browser to /learning-goal-confirmation.
 
-Update local chatId from the response.
+Render the goal on /learning-goal-confirmation using that stored value, with a safe fallback if none is available.
 
-If assistantMessage.content is non-null, append it to the chat bubbles.
+1.1. Command handling in the chat flow
 
-If assistantMessage.command is non-null, do not render the raw JSON; for Step 3, you can:
+Work in the frontend chat layer, not in the DB or API schema.
 
-log it to the console, or
+Extend src/lib/useChat.ts (or the module that currently handles assistant messages) to:
 
-show a small non-intrusive banner like “Goal command detected (Step 4 will use this).”
+Inspect the latest assistant message for Message.command with command === "create_learning_goal" and a string learningGoal.
 
-Important: Do not implement the redirect to /learning-goal-confirmation yet. That belongs to Step 4.
+When detected:
 
-2. STEP 3 – TESTS (NEED-ANALYSIS CHAT + JSON COMMAND)
+Do not render the raw JSON as a visible assistant bubble.
 
-Create a dedicated test file for Step 3 only.
+Call a small helper to store the goal in a client-side “pending goal” store.
 
-File: tests/need-analysis-chat-tests.mjs (or .js, but be consistent).
+Trigger navigation to /learning-goal-confirmation via the Next.js App Router.
 
-Add a script in package.json (do not remove existing ones):
+Guard against double-fire:
+
+Ensure you only react once to a given create_learning_goal command (e.g., via a hasPendingGoalRedirect flag in hook state or checking if a pending goal is already set).
+
+1.2. Pending goal storage (client-side)
+
+Create a tiny abstraction for the “pending learning goal”, instead of poking window.sessionStorage directly all over the code:
+
+New file: src/lib/pending-goal-store.ts (or similar), exporting three helpers:
+
+setPendingGoal(goal: string): void
+
+getPendingGoal(): string | null
+
+clearPendingGoal(): void
+
+Implementation details:
+
+Use sessionStorage only in the browser; guard with typeof window !== "undefined".
+
+If sessionStorage is unavailable (SSR), getPendingGoal() should just return null and setPendingGoal() should no-op.
+
+useChat should use setPendingGoal when it sees create_learning_goal.
+
+1.3. /learning-goal-confirmation behaviour with real data
+
+Update the existing Next.js page at src/app/learning-goal-confirmation/page.tsx (or its current location) so that:
+
+On initial render (client side), it calls getPendingGoal() to retrieve the goal text.
+
+It uses that goal to populate the goal paragraph / edit field that is already present from Step 2 (do not change the copy or layout beyond what is necessary to inject data).
+
+It does not hardcode any dummy goal text anymore.
+
+Fallback when there is no pending goal
+
+Define clear behaviour for direct access or stale state:
+
+If getPendingGoal() returns null or an empty string:
+
+Show a safe fallback message inside the same card, such as:
+
+“No learning goal is available. Please start from the beginning.”
+
+Show a button “Start again” that links back to /learning-guide-intro.
+
+Do not redirect silently; make the behaviour explicit and testable.
+
+Keeping the existing UX
+
+Do not redesign this page. Preserve:
+
+Title: “Let me see if I understood:”
+
+The italic instruction line.
+
+The edit behaviour (pencil icon) and Confirm button from Step 2.
+
+Just change where the goal text comes from (pending store instead of dummy).
+
+Important: Step 4 only wires data into /learning-goal-confirmation. The /whats-next page can still use dummy goal text for now; real goal wiring to /whats-next and goal commit/journey creation belong to later steps.
+
+2. Non-goals (what you must NOT touch)
+
+To avoid scope creep and breaking previous steps:
+
+Do not change the Prisma schema or any migration files.
+
+Do not modify seeded journeys/outlines or botTools JSON spec for create_learning_goal.
+
+Do not alter the visual design in ways that conflict with docs/visual-guidelines.md.
+
+Do not implement the login, goal commit, or journey creation logic for /whats-next (that’s a separate step).
+
+Do not introduce new routes beyond those already defined in the spec.
+
+Do not add tests marked as “pending”. Every test you add for Step 4 must assert real behaviour.
+
+If you feel something must change outside this scope to make Step 4 work, keep the change minimal and document it clearly in comments and test logs.
+
+3. Implementation checklist (Step 4 only)
+
+Follow this sequence:
+
+Create pending goal helper
+
+Add src/lib/pending-goal-store.ts with setPendingGoal, getPendingGoal, clearPendingGoal.
+
+Use sessionStorage under a typeof window !== "undefined" guard.
+
+Extend chat command handling
+
+In src/lib/useChat.ts (or equivalent):
+
+After receiving an assistant message from /api/chat, inspect its command payload.
+
+When command === "create_learning_goal" and learningGoal is a non-empty string:
+
+Call setPendingGoal(learningGoal).
+
+Avoid rendering the raw JSON message as user-visible text.
+
+Use the Next.js router (useRouter().push("/learning-goal-confirmation")) to navigate.
+
+Prevent double redirects for the same command.
+
+Wire /learning-goal-confirmation to the pending goal
+
+Mark the page as "use client" if necessary to access the pending goal store.
+
+On mount, read getPendingGoal() and:
+
+If you have a goal:
+
+Use it as the initial value of the displayed/editable goal text.
+
+If you don’t:
+
+Show the fallback message and “Start again” button → /learning-guide-intro.
+
+Keep the existing headings, italic text, layout, and edit/Confirm UI logic.
+
+Manual sanity check
+
+Run the app.
+
+Go through:
+
+/welcome → /learning-guide-intro → start need-analysis.
+
+Use a mocked/chat shortcut to force an assistant response with a valid create_learning_goal command.
+
+Confirm:
+
+You are redirected to /learning-goal-confirmation.
+
+The goal on the page matches the value in the JSON command.
+
+If you hit /learning-goal-confirmation fresh in a new tab, you see the fallback message and “Start again” button.
+
+4. Tests checklist for Step 4
+
+Add or extend a test file, e.g. tests/step4-create-learning-goal-tests.js, and a script in package.json:
 
 "scripts": {
-  ...
-  "test:need-analysis-chat": "node tests/need-analysis-chat-tests.mjs"
+  "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js"
 }
 
 
-Follow the same style as tests/schema-and-seed-tests.js and the updated tests/public-funnel-tests.mjs:
+You can use node + minimal mocks; you don’t have to spin up a full browser, but tests must check real code paths (helpers, command handlers, etc.), not just files on disk.
 
-Node script, no Jest.
+4.1. Command handling → pending goal + redirect
 
-Natural-language logs that describe expectations and results.
+Test name: create_learning_goal command stores pending goal and requests redirect
 
-The tests must focus strictly on Step 3 scope:
+Arrange:
 
-Need-analysis route → chat UI.
+Import the command-handling helper or a small wrapper you expose from useChat for tests (e.g. handleAssistantCommandForTest), so you can pass in a fake message and a fake router object.
 
-/api/chat behaviour and prompt wiring.
+Act:
 
-JSON command persistence and non-visualisation.
-
-No goal-confirmation redirects, no /whats-next, no profile/journey creation.
-
-2.1 Test: Need-analysis route uses the correct outline
-
-Name suggestion: "[Chat] Need-analysis route loads correct outline and step"
-
-Steps:
-
-Use Prisma in the test to confirm that the DB contains:
-
-A LearningJourney with slug = "goal-clarification".
-
-A LearningSessionOutline with journey.slug = "goal-clarification" and slug = "need-analysis".
-
-A LearningJourneyStep that references that outline.
-
-Assert:
-
-LearningJourneyStep.sessionOutlineId matches the LearningSessionOutline.id.
-
-The outline has non-empty objective, content, botTools, and firstUserMessage.
-
-Log clear messages like:
-
-"ok: found Goal Clarification journey and need-analysis outline."
-
-"ok: need-analysis step correctly wired to the outline."
-
-2.2 Test: Chat handler creates and reuses LearningSessionChat
-
-Name suggestion: "[Chat] handleChat creates and reuses LearningSessionChat records"
-
-Steps:
-
-Import handleChat directly from src/server/chat/handleChat.ts in the test.
-
-Prepare:
-
-A fake LLM function that always returns a simple assistant message, e.g. "Hello, this is a test reply.".
-
-First call:
-
-Call handleChat with:
-
-userId: null,
-
-the real sessionOutlineId and journeyStepId from the DB (from 2.1),
-
-chatId: null,
-
-messages: [{ role: "user", content: "Hi, I'd like to improve my communication." }],
-
-callChatModel: fakeModel.
-
-Assert:
-
-The returned chatId is a non-empty string.
-
-Prisma now has exactly one LearningSessionChat row with that id, pointing to the correct sessionOutlineId and journeyStepId.
-
-Prisma has one user Message + one assistant Message for that chat.
-
-Second call:
-
-Call handleChat again with the same chatId and a new user message.
-
-Assert:
-
-No new LearningSessionChat is created.
-
-Additional Message rows are appended for that same chatId.
-
-2.3 Test: Prompt construction includes outline fields and goal summary
-
-Name suggestion: "[Chat] handleChat builds prompt with outline fields and goal summary"
-
-Goal: Verify that handleChat uses the required fields when calling the model.
-
-Steps:
-
-Modify the fake LLM function in this test to record the prompt it receives and then return a dummy reply.
-
-Call handleChat for the need-analysis step.
-
-Assert (via logs):
-
-The prompt text passed to callChatModel contains:
-
-The objective of the outline.
-
-The content of the outline.
-
-The botTools block (or at least a recognisable portion).
-
-The phrase “Current user goal:” followed by either the actual userGoalSummary or “not defined yet”.
-
-It also uses LearningSessionOutline.firstUserMessage as the first user turn, either in the constructed messages or clearly in the prompt structure.
-
-You don’t need to check for exact string equality; checking inclusion of key substrings is enough.
-
-2.4 Test: Assistant can emit create_learning_goal JSON and it is parsed correctly
-
-Name suggestion: "[Chat] create_learning_goal JSON is stored in Message.command and not rendered as text"
-
-Steps:
-
-Write a fake LLM function that returns exactly the JSON string:
+Call it with a message whose command payload is:
 
 {
   "command": "create_learning_goal",
@@ -466,68 +243,52 @@ Write a fake LLM function that returns exactly the JSON string:
 }
 
 
-as the assistant’s reply.
+Assert:
 
-Call handleChat with this fake model.
+getPendingGoal() returns that exact string.
 
-After the call:
+The fake router was called with "/learning-goal-confirmation".
 
-Use Prisma to fetch the latest assistant Message for that chatId.
+No second redirect happens if you call it again with the same command.
+
+4.2. /learning-goal-confirmation renders pending goal
+
+Test name: learning-goal-confirmation shows the pending goal when available
+
+Arrange:
+
+Use the pending goal store to set a goal (e.g. "Become a more confident public speaker").
+
+Render the component logic in a minimal JS/JSX harness or call a function that computes its initial state (whichever you expose for testability).
 
 Assert:
 
-Message.content equals the raw JSON string (the content as returned by the model).
+The heading text “Let me see if I understood:” is present.
 
-Message.command is a parsed object with:
+The italic instruction line matches the spec from the design docs.
 
-command === "create_learning_goal",
+The goal text matches the pending goal set in the store.
 
-learningGoal === "Improve my executive communication skills".
+4.3. Fallback behaviour without goal
 
-Check the handler’s return value:
+Test name: learning-goal-confirmation shows fallback when no pending goal
 
-assistantMessage.content is null (or an empty string) because pure JSON commands should not be rendered as normal text.
+Arrange:
 
-assistantMessage.command is the same parsed object.
+Ensure pending goal is cleared (clearPendingGoal()).
 
-(Optional, but recommended) In a small React test helper or manual check, confirm that the chat UI:
-
-Does not show the raw JSON as a bubble.
-
-Can detect that assistantMessage.command is non-null (e.g. by logging a message).
-
-No redirect or navigation to /learning-goal-confirmation should happen in Step 3 tests.
-
-2.5 Test: /api/chat POST roundtrip for need-analysis
-
-Name suggestion: "[Chat] /api/chat POST works end-to-end for need-analysis"
-
-Goal: Validate the JSON contract between the client and the API route.
-
-Steps:
-
-In the test, import the POST handler from src/app/api/chat/route.ts (or better, the underlying handleChat plus a thin wrapper that mimics the route).
-
-Create a fake Request object with a JSON body containing:
-
-chatId: null,
-
-real sessionOutlineId and journeyStepId,
-
-messages: [{ role: "user", content: "I want to work on my confidence." }].
-
-Call POST(request) and parse the JSON response.
+Render the page logic as above.
 
 Assert:
 
-Status is 200.
+A fallback message is present (e.g. containing “No learning goal is available”).
 
-Response JSON has a non-empty chatId.
+There is a button or link labelled “Start again”.
 
-assistantMessage exists with either:
+That button points to /learning-guide-intro.
 
-content being a string and command null, or
+When Step 4 is done:
 
-content null and command an object, in the JSON-command case.
+Chat → create_learning_goal → /learning-goal-confirmation is fully wired with real data.
 
-Use Prisma to confirm that the returned chatId corresponds to a LearningSessionChat row with the correct foreign keys, and that there are Message rows created as expected.
+/learning-goal-confirmation no longer uses dummy goals and behaves safely when accessed in isolation.

@@ -38,7 +38,8 @@
     "test:schema-and-seed": "node tests/schema-and-seed-tests.js",
     "test:public-funnel": "node tests/public-funnel-tests.mjs",
     "test:need-analysis-chat": "node tests/need-analysis-chat-tests.mjs",
-    "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js"
+    "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js",
+    "test:all": "node run-all-tests.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
