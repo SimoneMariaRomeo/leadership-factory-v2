@@ -1,7 +1,9 @@
 "use client";
 
 // This component shows the need-analysis chat box and talks to the chat API.
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { handleAssistantGoalCommand } from "../../../../../lib/assistant-command-handler";
 
 type ChatRole = "user" | "assistant";
 
@@ -22,6 +24,8 @@ export default function NeedAnalysisChat({
   journeyStepId = null,
   firstUserMessage,
 }: NeedAnalysisChatProps) {
+  // This lets us move the user to the goal confirmation page.
+  const router = useRouter();
   // This keeps the chat history on the page.
   const startingMessages = useMemo<ChatMessage[]>(
     () =>
@@ -47,6 +51,8 @@ export default function NeedAnalysisChat({
   const [error, setError] = useState<string | null>(null);
   // This tells the user when a JSON command was detected.
   const [commandNotice, setCommandNotice] = useState<string | null>(null);
+  // This stops double redirects when the goal command appears twice.
+  const [hasPendingGoalRedirect, setHasPendingGoalRedirect] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // This scrolls to the latest message after each change.
@@ -99,8 +105,13 @@ export default function NeedAnalysisChat({
       }
 
       if (data.assistantMessage?.command) {
-        setCommandNotice("Goal command detected. Step 4 will use this.");
-        console.log("Assistant command:", data.assistantMessage.command);
+        const handledGoal = handleAssistantGoalCommand(data.assistantMessage.command, router, {
+          hasRedirected: hasPendingGoalRedirect,
+          markRedirected: () => setHasPendingGoalRedirect(true),
+        });
+        if (handledGoal) {
+          setCommandNotice("I saved your goal and will take you to confirm it.");
+        }
       }
 
       if (data.assistantMessage?.content) {

@@ -73,6 +73,7 @@ const { default: WelcomePage } = require("../src/app/welcome/page.tsx");
 const { default: LearningGuideIntroPage } = require("../src/app/learning-guide-intro/page.tsx");
 const { default: LearningGoalConfirmationPage } = require("../src/app/learning-goal-confirmation/page.tsx");
 const { default: WhatsNextPage } = require("../src/app/whats-next/page.tsx");
+const { clearPendingGoal } = require("../src/lib/pending-goal-store.ts");
 
 // Main runner.
 async function main() {
@@ -119,26 +120,17 @@ async function main() {
   cleanup();
 
   logTest(
-    "Learning-goal-confirmation dummy behaviour",
-    "The page should show the dummy goal, allow edits, and move to /whats-next?goal=..."
+    "Learning-goal-confirmation fallback behaviour",
+    "The page should show a friendly fallback and a Start again link when no pending goal is stored."
   );
+  clearPendingGoal();
   const confirm = render(React.createElement(LearningGoalConfirmationPage));
   confirm.getByText("Let me see if I understood:");
   confirm.getByText("Please confirm it or edit it and I'll recommend a learning journey for you.");
-  confirm.getByText("Improve my executive communication skills");
-  const editButton = confirm.getByRole("button", { name: "Edit goal" });
-  await user.click(editButton);
-  const input = confirm.getByLabelText("Learning goal text");
-  // jsdom does not ship attachEvent, so we stub it to keep React happy during typing.
-  input.attachEvent = () => {};
-  await user.clear(input);
-  await user.type(input, "Edited Goal Text");
-  const confirmLink = confirm.getByRole("link", { name: "Confirm" });
-  assert(
-    confirmLink.getAttribute("href") === "/whats-next?goal=Edited%20Goal%20Text",
-    "Confirm should link to /whats-next with the edited goal in the query."
-  );
-  logPass("Goal edit updates the confirm link with the new goal.");
+  confirm.getByText("No learning goal is available. Please start from the beginning.");
+  const startAgainLink = confirm.getByRole("link", { name: "Start again" });
+  assert(startAgainLink.getAttribute("href") === "/learning-guide-intro", "Start again should point to /learning-guide-intro.");
+  logPass("Fallback message and Start again link appear when no goal is stored.");
   cleanup();
 
   logTest(

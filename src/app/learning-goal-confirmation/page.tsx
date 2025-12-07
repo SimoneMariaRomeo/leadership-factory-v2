@@ -1,23 +1,27 @@
-﻿"use client";
+"use client";
 
-// This page shows the dummy goal, lets people edit it, and moves to what's-next.
+// This page shows the saved goal (or a fallback), lets people edit it, and moves to what's-next.
 import { useEffect, useMemo, useState } from "react";
 import GoldButton from "../components/GoldButton";
+import { getPendingGoal } from "../../lib/pending-goal-store";
 
-const DEFAULT_GOAL = "Improve my executive communication skills";
+const FALLBACK_GOAL_TEXT = "No learning goal is available. Please start from the beginning.";
 
 export default function LearningGoalConfirmationPage() {
-  // This stores the current goal text in simple component state.
-  const [goal, setGoal] = useState<string>(DEFAULT_GOAL);
+  // This stores the current goal text or a fallback message.
+  const [goal, setGoal] = useState<string>("");
+  // This flag notes when a real goal is available.
+  const [hasStoredGoal, setHasStoredGoal] = useState<boolean>(false);
   // This toggles whether the edit box is open.
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   // Typewriter state for title and paragraphs.
   const [typedTitle, setTypedTitle] = useState("");
   const [titleIndex, setTitleIndex] = useState(0);
+  const displayGoal = hasStoredGoal ? goal : FALLBACK_GOAL_TEXT;
   const paragraphs = useMemo(
-    () => [goal, "Please confirm it or edit it and I'll recommend a learning journey for you."],
-    [goal]
+    () => [displayGoal, "Please confirm it or edit it and I'll recommend a learning journey for you."],
+    [displayGoal]
   );
   const [typedParagraphs, setTypedParagraphs] = useState<string[]>(() => paragraphs.map(() => ""));
   const [paragraphIndex, setParagraphIndex] = useState(0);
@@ -28,6 +32,25 @@ export default function LearningGoalConfirmationPage() {
     () => typedParagraphs.length === paragraphs.length && typedParagraphs.every((text, idx) => text.length === paragraphs[idx].length),
     [typedParagraphs, paragraphs]
   );
+
+  // This reads the goal from session storage on the client.
+  useEffect(() => {
+    const storedGoal = getPendingGoal();
+    if (storedGoal) {
+      setGoal(storedGoal);
+      setHasStoredGoal(true);
+    } else {
+      setGoal("");
+      setHasStoredGoal(false);
+    }
+  }, []);
+
+  // This keeps edit mode closed when no goal is present.
+  useEffect(() => {
+    if (!hasStoredGoal) {
+      setIsEditing(false);
+    }
+  }, [hasStoredGoal]);
 
   useEffect(() => {
     setTypedTitle("");
@@ -96,7 +119,7 @@ export default function LearningGoalConfirmationPage() {
             <h1 className="intro-title">{typedTitle}</h1>
             <p className="intro-paragraph">
               {typedParagraphs[0]}
-              {(skipTyping || paragraphsDone) && (
+              {hasStoredGoal && (skipTyping || paragraphsDone) && (
                 <button
                   className="secondary-button"
                   type="button"
@@ -105,13 +128,13 @@ export default function LearningGoalConfirmationPage() {
                   style={{ marginLeft: "12px", padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
                 >
                   <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                    ✏️
+                    ??
                   </span>
                   Edit
                 </button>
               )}
             </p>
-            {isEditing && (
+            {hasStoredGoal && isEditing && (
               <div style={{ margin: "8px 0 6px" }}>
                 <input
                   className="goal-input"
@@ -125,7 +148,13 @@ export default function LearningGoalConfirmationPage() {
             <p className="intro-paragraph intro-paragraph-italic">{typedParagraphs[1]}</p>
           </div>
         </div>
-        <GoldButton href={confirmHref}>Confirm</GoldButton>
+        {hasStoredGoal ? (
+          <GoldButton href={confirmHref}>Confirm</GoldButton>
+        ) : (
+          <GoldButton href="/learning-guide-intro" asSecondary>
+            Start again
+          </GoldButton>
+        )}
       </main>
     </div>
   );
