@@ -27,6 +27,12 @@ export default function LearningGoalConfirmationPage() {
   const titleDone = useMemo(() => titleIndex >= "Let me see if I understood:".length, [titleIndex]);
   const instructionDone = useMemo(() => instructionIndex >= INSTRUCTION_LINE.length, [instructionIndex]);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const resizeGoalTextarea = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(el.scrollHeight, 96)}px`;
+  };
 
   // This reads the goal from session storage on the client.
   useEffect(() => {
@@ -34,11 +40,16 @@ export default function LearningGoalConfirmationPage() {
     if (storedGoal) {
       setGoal(storedGoal);
       setHasStoredGoal(true);
+      setTimeout(resizeGoalTextarea, 0);
     } else {
       setGoal("");
       setHasStoredGoal(false);
     }
   }, []);
+
+  useEffect(() => {
+    resizeGoalTextarea();
+  }, [goal]);
 
   // In tests we skip typing so assertions can read the full text immediately.
   useEffect(() => {
@@ -94,11 +105,14 @@ export default function LearningGoalConfirmationPage() {
                 ref={inputRef}
                 className="goal-input"
                 value={goal}
-                onChange={(event) => setGoal(event.target.value)}
+                onChange={(event) => {
+                  setGoal(event.target.value);
+                  resizeGoalTextarea();
+                }}
                 aria-label="Learning goal text"
                 disabled={!hasStoredGoal}
-                rows={2}
-                style={{ width: "100%", maxWidth: "720px", resize: "vertical", minHeight: "64px", lineHeight: 1.4 }}
+                rows={3}
+                style={{ width: "100%", maxWidth: "720px", resize: "vertical", minHeight: "96px", lineHeight: 1.5, overflow: "auto" }}
               />
               {hasStoredGoal && (
                 <button
