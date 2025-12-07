@@ -29,7 +29,7 @@ export default function NoOpButton() {
         <span />
         <span />
       </span>
-      <span className="btn-label">{loading ? "Loading..." : "YES, I'M IN!"}</span>
+      <span className="btn-label">YES, I'M IN!</span>
     </button>
   );
 }

@@ -128,7 +128,16 @@ export default function LearningGoalConfirmationPage() {
                   style={{ marginLeft: "12px", padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
                 >
                   <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                    ??
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M13.5 3.5L16.5 6.5L6.5 16.5H3.5V13.5L13.5 3.5Z"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path d="M11.5 5.5L14.5 8.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </span>
                   Edit
                 </button>

@@ -22,11 +22,9 @@ export default function GoldButton({ href, children, className = "", asSecondary
       event.preventDefault();
       return;
     }
-    setLoading(true);
     event.preventDefault();
-    setTimeout(() => {
-      router.push(href);
-    }, 380);
+    setLoading(true);
+    router.push(href);
   };
 
   const tailwindHover = asSecondary
@@ -50,7 +48,7 @@ export default function GoldButton({ href, children, className = "", asSecondary
           <span />
         </span>
       )}
-      <span className="btn-label">{loading ? "Loading..." : children}</span>
+      <span className="btn-label">{children}</span>
     </Link>
   );
 }
