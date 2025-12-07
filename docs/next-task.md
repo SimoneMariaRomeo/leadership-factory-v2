@@ -1,294 +1,491 @@
-Step 4: Wire create_learning_goal → /learning-goal-confirmation
+Step 5: Auth + goal commit endpoint from /whats-next
 
-Step 4 — /api/chat → /learning-goal-confirmation
+Goal: Make /whats-next persist the confirmed learning goal and create a personalized journey for the authenticated user (no admin UI yet).
 
-Goal: When the bot emits create_learning_goal, the app must navigate to /learning-goal-confirmation and show the real goal from the need-analysis chat (no more dummy text).
+You must follow AGENTS.md, the product spec, the Prisma schema, the visual guidelines, and existing implementation notes. Do not re-invent architecture, do not add extra features, and do not break Steps 1–4.
 
-0. Context (read-only, do not re-specify)
+0. Context & Assumptions
 
-Before you start, re-read these project docs and treat them as the single source of truth:
+Assume the following are already working and tested from previous steps:
 
-docs/features.md – overall product flow, routes, JSON commands (create_learning_goal), and behaviour of /learning-goal-confirmation.
+Prisma schema and seed for:
 
-docs/prisma-database-structure.md – Prisma models and relations (User, LearningSessionChat, LearningJourney, LearningSessionOutline, LearningJourneyStep).
+User, LearningJourney, LearningSessionOutline, LearningJourneyStep, LearningSessionChat, Message.
 
-docs/visual-guidelines.md – fonts, gradients, glass cards, gold buttons, motion, etc.
+Need-analysis:
 
-docs/image-checklist.md – required assets in public/.
+Standard journey “Goal Clarification” with need-analysis outline and step.
 
-docs/env-contents.md – .env variables, including DEFAULT_API for Aliyun/ChatGPT.
+/journeys/goal-clarification/steps/[need-analysis-step-id] runs chat via /api/chat.
 
-docs/implementation-steps.md – overall Step 1–5 roadmap.
+Bot can emit { "command": "create_learning_goal", "learningGoal": "..." }, handled by useChat to:
 
-Assume Step 1–3 are already done correctly:
+Store learningGoalPending client-side.
 
-DB schema + seed for Goal Clarification journey and need-analysis outline (with correct botTools containing the create_learning_goal JSON spec).
+Navigate to /learning-goal-confirmation.
 
-Next.js app router is in place (src/app/**), with the public funnel pages (/, /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next) implemented visually per the visual guidelines.
+/learning-goal-confirmation:
 
-The need-analysis step page (/journeys/goal-clarification/steps/[stepId]) renders chat UI using src/lib/useChat.ts and calls POST /api/chat, which:
+Reads the pending goal (from client state) and displays it.
 
-builds prompts from User, LearningSessionOutline, LearningJourney,
+Allows inline edit.
 
-persists LearningSessionChat + Message records,
+On Confirm → stores the edited goal into pending state and redirects to /whats-next.
 
-supports Message.command JSON, including { "command": "create_learning_goal", "learningGoal": "..." } for need-analysis.
+/whats-next:
 
-Do not change any of that unless explicitly requested below.
+Layout, copy, and goal box are implemented following the visual guidelines.
 
-1. Scope of Step 4 (what you must implement)
+The YES, I’M IN! button exists but currently has either a no-op or placeholder handler.
 
-High-level objective
+.env values for:
 
-When the assistant, during the need-analysis chat, emits:
+JWT_SECRET
+
+NOTIFICATION_EMAIL_*
+
+DB URLs, DEFAULT_API, etc.
+
+This step is only about:
+
+Implementing minimal email/password auth with JWT cookies (/api/auth/*) so we can know currentUser.
+
+Implementing a goal-commit backend (via /api/whats-next) that:
+
+Requires an authenticated user.
+
+Writes User.learningGoal and User.learningGoalConfirmedAt.
+
+Creates a non-standard, personalized LearningJourney for that user.
+
+Sends user + admin emails.
+
+Wiring /whats-next so that YES, I’M IN! correctly:
+
+Forces login/signup if needed.
+
+Calls the goal-commit endpoint.
+
+Redirects to /my-profile on success.
+
+No admin UI. No journey steps generation. No AI call for journey content yet.
+
+1. Implementation — Auth (/api/auth/*)
+1.1 Backend routes
+
+Implement the following Next.js route handlers in src/app/api/auth (App Router style), matching the behaviour described in the product spec:
+
+POST /api/auth/signup
+
+Body: { email: string, password: string, name?: string }.
+
+Validate email format and minimum password length.
+
+If a user with that email already exists → return 400 with a clear error.
+
+Hash password using a standard algorithm (e.g. bcrypt) and store in User.passwordHash.
+
+Create User row; leave learningGoal and other optional fields as null.
+
+Generate a JWT with at least userId and set it as HttpOnly cookie (respecting JWT_SECRET).
+
+Response: 200 with a small JSON payload such as { user: { id, email, name } }.
+
+POST /api/auth/login
+
+Body: { email: string, password: string }.
+
+Look up user by email; compare password with stored hash.
+
+On failure → 401 with generic “invalid credentials” (don’t leak which field is wrong).
+
+On success → issue the same HttpOnly JWT cookie as in signup.
+
+Response: 200 with { user: { id, email, name, learningGoal? } }.
+
+POST /api/auth/logout
+
+Clear the JWT cookie (set expired).
+
+Response: 200 { success: true }.
+
+GET /api/auth/me
+
+Read JWT cookie, verify using JWT_SECRET.
+
+If invalid or missing → 200 with { user: null }.
+
+If valid → load user from DB and return { user: { id, email, name, learningGoal? } }.
+
+1.2 Auth utility
+
+Create a small shared helper (e.g. src/server/auth/session.ts):
+
+getCurrentUser(req):
+
+Reads JWT from request cookies.
+
+Verifies token and fetches the user row (id, email, name, learningGoal).
+
+Returns null when not authenticated.
+
+requireUser(req):
+
+Uses getCurrentUser.
+
+If no user → throws/returns a 401 response.
+
+If user exists → returns the user.
+
+Use this helper in /api/whats-next (see below) and for any future endpoints that need auth.
+
+1.3 Frontend auth usage (for this step)
+
+Do not build full nav-level login/logout yet.
+
+You only need enough auth hooks for /whats-next:
+
+A tiny useAuth helper or inline logic that can:
+
+Call GET /api/auth/me (on mount or on demand) to know if the user is logged in.
+
+Open a minimal auth modal when the user clicks YES, I’M IN! and they’re not authenticated.
+
+Inside the modal:
+
+Toggle between Login and Sign up modes.
+
+Call the corresponding /api/auth/login or /api/auth/signup.
+
+On success, close the modal and mark the user as logged in.
+
+Keep UI minimal and consistent with existing styles (Playfair + Inter, glass cards, gold buttons). Reuse the gold button styling already in the project; do not invent a new style system.
+
+2. Implementation — Goal commit endpoint (/api/whats-next)
+2.1 Route handler
+
+Implement POST /api/whats-next as the single source of truth for:
+
+Persisting the confirmed goal for the current user.
+
+Creating a fresh personalized journey.
+
+Triggering emails.
+
+Returning redirect info to the frontend.
+
+Input:
+
+JSON body: { learningGoal: string }.
+
+Frontend must send the final goal text shown in /whats-next (which originated from need-analysis + possible edits).
+
+Auth:
+
+Use requireUser(req) to ensure the user is authenticated.
+
+If unauthenticated → return 401, do not write anything to DB, do not send emails.
+
+2.2 DB logic (Prisma)
+
+Using a single Prisma transaction:
+
+Update the user:
+
+user.learningGoal = learningGoal (from request).
+
+user.learningGoalConfirmedAt = new Date() (now).
+
+Create a personalized journey:
+
+Model: LearningJourney.
+
+Fields:
+
+title: simple placeholder for now, e.g. Personal journey for: ${learningGoal}.
+
+intro: null (AI-driven intro will be added in a later step).
+
+objectives: null or [] (will be populated later).
+
+isStandard = false.
+
+personalizedForUserId = user.id.
+
+userGoalSummary = learningGoal.
+
+status = "awaiting_review".
+
+slug = null for now (slugging and email links for journeys will be handled in a later step; don’t over-engineer).
+
+Do not create steps yet. This step only creates the journey “shell”.
+
+Make sure the transaction returns the created journey (at least id and personalizedForUserId) to the handler.
+
+2.3 Email sending
+
+Using the SMTP config from .env:
+
+User email:
+
+To: current user email.
+
+Subject: something like “Your new learning goal is confirmed”.
+
+Body (plain text or simple HTML):
+
+Congratulate the user.
+
+Include the goal text.
+
+Mention that their personalized journey is being prepared.
+
+Provide a link to https://www.leadership-factory.cn/my-profile (hardcode domain for now).
+
+Admin email:
+
+To: NOTIFICATION_EMAIL_TO.
+
+Subject: e.g. “New learning goal from ${user.email}”.
+
+Body:
+
+User email.
+
+Learning goal text.
+
+New journey id (and possibly status).
+
+A future-facing link such as https://www.leadership-factory.cn/admin/journeys/${journey.id} (even if admin UI is not implemented yet).
+
+Implement email sending in a small utility (e.g. src/server/notifications/email.ts) so tests can stub/mock it:
+
+The goal-commit handler should not contain raw SMTP wiring; it should call a function like sendGoalCommitEmails({ user, learningGoal, journey }).
+
+If sending fails, log the error and still return 200 if DB writes succeeded (for now). Do not roll back the whole transaction on email failure.
+
+2.4 Response shape
+
+Return 200 with JSON like:
 
 {
-  "command": "create_learning_goal",
-  "learningGoal": "<final goal text>"
+  "success": true,
+  "journeyId": "<new-journey-id>"
 }
 
 
-the frontend must:
+No redirect from the API itself; frontend will handle navigation to /my-profile.
 
-Capture this command from the chat response.
+3. Implementation — Wiring /whats-next
 
-Store the learningGoal on the client (pending goal state).
+Update /whats-next page to follow this exact behaviour:
 
-Navigate the browser to /learning-goal-confirmation.
+3.1 Goal display
 
-Render the goal on /learning-goal-confirmation using that stored value, with a safe fallback if none is available.
+Read the pending goal from the same client state used in Step 4 (e.g. sessionStorage.learningGoalPending or an equivalent mechanism already implemented).
 
-1.1. Command handling in the chat flow
+If a goal is available:
 
-Work in the frontend chat layer, not in the DB or API schema.
+Show it inside the highlighted learning goal box (purple-tinted background).
 
-Extend src/lib/useChat.ts (or the module that currently handles assistant messages) to:
+If no goal is available:
 
-Inspect the latest assistant message for Message.command with command === "create_learning_goal" and a string learningGoal.
+Show a safe fallback message like:
 
-When detected:
+“No learning goal found. Please start again from the beginning.”
 
-Do not render the raw JSON as a visible assistant bubble.
+Disable/hide the YES, I’M IN! button or link back to /learning-guide-intro.
 
-Call a small helper to store the goal in a client-side “pending goal” store.
+Do not call the backend in this case.
 
-Trigger navigation to /learning-goal-confirmation via the Next.js App Router.
+3.2 YES, I’M IN! button logic
 
-Guard against double-fire:
+When the user clicks YES, I’M IN!:
 
-Ensure you only react once to a given create_learning_goal command (e.g., via a hasPendingGoalRedirect flag in hook state or checking if a pending goal is already set).
+If no pending goal → do nothing except maybe redirect back as per fallback (see 3.1).
 
-1.2. Pending goal storage (client-side)
+If goal present but user not authenticated:
 
-Create a tiny abstraction for the “pending learning goal”, instead of poking window.sessionStorage directly all over the code:
+Open the auth modal.
 
-New file: src/lib/pending-goal-store.ts (or similar), exporting three helpers:
+After successful login/signup:
 
-setPendingGoal(goal: string): void
+Close the modal.
 
-getPendingGoal(): string | null
+Automatically proceed to Step 3 (commit).
 
-clearPendingGoal(): void
+If goal present and user authenticated:
 
-Implementation details:
+Call POST /api/whats-next with body { learningGoal }.
 
-Use sessionStorage only in the browser; guard with typeof window !== "undefined".
+While the request is in flight:
 
-If sessionStorage is unavailable (SSR), getPendingGoal() should just return null and setPendingGoal() should no-op.
+Disable the button or show a small loading state.
 
-useChat should use setPendingGoal when it sees create_learning_goal.
+On 200:
 
-1.3. /learning-goal-confirmation behaviour with real data
+Clear the pending goal from client state (learningGoalPending).
 
-Update the existing Next.js page at src/app/learning-goal-confirmation/page.tsx (or its current location) so that:
+Redirect the user to /my-profile.
 
-On initial render (client side), it calls getPendingGoal() to retrieve the goal text.
+On error (4xx/5xx):
 
-It uses that goal to populate the goal paragraph / edit field that is already present from Step 2 (do not change the copy or layout beyond what is necessary to inject data).
+Show a simple error message on the page.
 
-It does not hardcode any dummy goal text anymore.
+Re-enable the button.
 
-Fallback when there is no pending goal
+Important: Do not call /api/whats-next before the user is logged in.
 
-Define clear behaviour for direct access or stale state:
+4. Tests — tests/goal-commit-tests.js
 
-If getPendingGoal() returns null or an empty string:
-
-Show a safe fallback message inside the same card, such as:
-
-“No learning goal is available. Please start from the beginning.”
-
-Show a button “Start again” that links back to /learning-guide-intro.
-
-Do not redirect silently; make the behaviour explicit and testable.
-
-Keeping the existing UX
-
-Do not redesign this page. Preserve:
-
-Title: “Let me see if I understood:”
-
-The italic instruction line.
-
-The edit behaviour (pencil icon) and Confirm button from Step 2.
-
-Just change where the goal text comes from (pending store instead of dummy).
-
-Important: Step 4 only wires data into /learning-goal-confirmation. The /whats-next page can still use dummy goal text for now; real goal wiring to /whats-next and goal commit/journey creation belong to later steps.
-
-2. Non-goals (what you must NOT touch)
-
-To avoid scope creep and breaking previous steps:
-
-Do not change the Prisma schema or any migration files.
-
-Do not modify seeded journeys/outlines or botTools JSON spec for create_learning_goal.
-
-Do not alter the visual design in ways that conflict with docs/visual-guidelines.md.
-
-Do not implement the login, goal commit, or journey creation logic for /whats-next (that’s a separate step).
-
-Do not introduce new routes beyond those already defined in the spec.
-
-Do not add tests marked as “pending”. Every test you add for Step 4 must assert real behaviour.
-
-If you feel something must change outside this scope to make Step 4 work, keep the change minimal and document it clearly in comments and test logs.
-
-3. Implementation checklist (Step 4 only)
-
-Follow this sequence:
-
-Create pending goal helper
-
-Add src/lib/pending-goal-store.ts with setPendingGoal, getPendingGoal, clearPendingGoal.
-
-Use sessionStorage under a typeof window !== "undefined" guard.
-
-Extend chat command handling
-
-In src/lib/useChat.ts (or equivalent):
-
-After receiving an assistant message from /api/chat, inspect its command payload.
-
-When command === "create_learning_goal" and learningGoal is a non-empty string:
-
-Call setPendingGoal(learningGoal).
-
-Avoid rendering the raw JSON message as user-visible text.
-
-Use the Next.js router (useRouter().push("/learning-goal-confirmation")) to navigate.
-
-Prevent double redirects for the same command.
-
-Wire /learning-goal-confirmation to the pending goal
-
-Mark the page as "use client" if necessary to access the pending goal store.
-
-On mount, read getPendingGoal() and:
-
-If you have a goal:
-
-Use it as the initial value of the displayed/editable goal text.
-
-If you don’t:
-
-Show the fallback message and “Start again” button → /learning-guide-intro.
-
-Keep the existing headings, italic text, layout, and edit/Confirm UI logic.
-
-Manual sanity check
-
-Run the app.
-
-Go through:
-
-/welcome → /learning-guide-intro → start need-analysis.
-
-Use a mocked/chat shortcut to force an assistant response with a valid create_learning_goal command.
-
-Confirm:
-
-You are redirected to /learning-goal-confirmation.
-
-The goal on the page matches the value in the JSON command.
-
-If you hit /learning-goal-confirmation fresh in a new tab, you see the fallback message and “Start again” button.
-
-4. Tests checklist for Step 4
-
-Add or extend a test file, e.g. tests/step4-create-learning-goal-tests.js, and a script in package.json:
+Create a new Node test script tests/goal-commit-tests.js and wire it in package.json:
 
 "scripts": {
-  "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js"
+  ...
+  "test:goal-commit": "node tests/goal-commit-tests.js"
 }
 
 
-You can use node + minimal mocks; you don’t have to spin up a full browser, but tests must check real code paths (helpers, command handlers, etc.), not just files on disk.
+Follow the style of existing tests:
 
-4.1. Command handling → pending goal + redirect
+No external test framework required (you can just console.log and throw on failure).
 
-Test name: create_learning_goal command stores pending goal and requests redirect
+Each test block logs a human-readable description of what is being validated.
+
+Reuse the existing Prisma setup/tests pattern (e.g. from tests/schema-and-seed-tests.js).
+
+You do not need to spin up a full HTTP server. Instead:
+
+Import the POST handler from src/app/api/whats-next/route and the auth helpers.
+
+Use Prisma directly to inspect DB state.
+
+For auth, you can:
+
+Either generate a JWT manually and mock a NextRequest with cookies.
+
+Or factor the goal commit logic into a pure function that takes { userId, learningGoal } and test that directly, leaving the route handler thin.
+
+4.1 Suggested test scenarios
+
+You must cover at least the following:
+
+Unauthenticated user cannot commit goal
+
+Arrange: no JWT / getCurrentUser returns null.
+
+Act: call POST /api/whats-next with a learningGoal.
+
+Assert:
+
+Response status is 401.
+
+No User.learningGoal is changed in DB.
+
+No new LearningJourney is created.
+
+Goal commit persists user goal and timestamp
 
 Arrange:
 
-Import the command-handling helper or a small wrapper you expose from useChat for tests (e.g. handleAssistantCommandForTest), so you can pass in a fake message and a fake router object.
+Create a User via Prisma with learningGoal = null.
 
 Act:
 
-Call it with a message whose command payload is:
-
-{
-  "command": "create_learning_goal",
-  "learningGoal": "Improve my executive communication skills"
-}
-
+Simulate an authenticated request as that user, calling POST /api/whats-next with learningGoal = "Improve my executive communication skills".
 
 Assert:
 
-getPendingGoal() returns that exact string.
+Response status 200 and success: true.
 
-The fake router was called with "/learning-goal-confirmation".
+User row now has:
 
-No second redirect happens if you call it again with the same command.
+learningGoal === "Improve my executive communication skills".
 
-4.2. /learning-goal-confirmation renders pending goal
+learningGoalConfirmedAt is set to a recent timestamp.
 
-Test name: learning-goal-confirmation shows the pending goal when available
+Goal commit creates a personalized journey
 
 Arrange:
 
-Use the pending goal store to set a goal (e.g. "Become a more confident public speaker").
+Same user as in test 2 (or reset).
 
-Render the component logic in a minimal JS/JSX harness or call a function that computes its initial state (whichever you expose for testability).
+Act:
+
+Call the endpoint with a goal.
 
 Assert:
 
-The heading text “Let me see if I understood:” is present.
+Exactly one new LearningJourney is created for that user with:
 
-The italic instruction line matches the spec from the design docs.
+isStandard === false.
 
-The goal text matches the pending goal set in the store.
+personalizedForUserId === user.id.
 
-4.3. Fallback behaviour without goal
+userGoalSummary === learningGoal.
 
-Test name: learning-goal-confirmation shows fallback when no pending goal
+status === "awaiting_review".
+
+No steps are created for that journey yet.
+
+Repeat commit creates additional journeys, keeps history
 
 Arrange:
 
-Ensure pending goal is cleared (clearPendingGoal()).
+Existing user with one personalized journey already.
 
-Render the page logic as above.
+Act:
+
+Call POST /api/whats-next again with a different goal.
 
 Assert:
 
-A fallback message is present (e.g. containing “No learning goal is available”).
+User.learningGoal is overwritten with the new goal.
 
-There is a button or link labelled “Start again”.
+learningGoalConfirmedAt is updated.
 
-That button points to /learning-guide-intro.
+A second LearningJourney is created (total two).
 
-When Step 4 is done:
+The old journey still exists and retains its original userGoalSummary.
 
-Chat → create_learning_goal → /learning-goal-confirmation is fully wired with real data.
+Emails are triggered with correct payload (mocked)
 
-/learning-goal-confirmation no longer uses dummy goals and behaves safely when accessed in isolation.
+Arrange:
+
+Stub/mocking layer for the email utility so that it records calls instead of sending real emails.
+
+Act:
+
+Successful goal commit for a user with email test@example.com.
+
+Assert:
+
+Email mock records:
+
+One email to the user address including the goal in the body.
+
+One email to the admin address (NOTIFICATION_EMAIL_TO) including:
+
+User email.
+
+Goal.
+
+Created journey id (or URL containing it).
+
+Endpoint ignores client-supplied userId
+
+Arrange:
+
+User A (authenticated) and some fake userId B.
+
+Act:
+
+Call POST /api/whats-next with body { learningGoal, userId: "B" }.
+
+Assert:
+
+The journey is created only for user A (personalizedForUserId === A.id).
+
+No journey is created for any other user.
+
+This confirms backend derives user solely from auth, not from request body.

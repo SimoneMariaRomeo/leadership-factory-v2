@@ -48,6 +48,15 @@ global.HTMLElement = dom.window.HTMLElement;
 global.Node = dom.window.Node;
 global.Text = dom.window.Text;
 global.getComputedStyle = dom.window.getComputedStyle;
+global.fetch = async (url) => {
+  if (typeof url === "string" && url.includes("/api/auth/me")) {
+    return { ok: true, status: 200, json: async () => ({ user: null }) };
+  }
+  if (typeof url === "string" && url.includes("/api/whats-next")) {
+    return { ok: true, status: 200, json: async () => ({ success: true, journeyId: "test-journey-id" }) };
+  }
+  return { ok: true, status: 200, json: async () => ({}) };
+};
 
 // This tiny logger keeps the output human friendly.
 function logTest(title, expectation) {
@@ -73,7 +82,7 @@ const { default: WelcomePage } = require("../src/app/welcome/page.tsx");
 const { default: LearningGuideIntroPage } = require("../src/app/learning-guide-intro/page.tsx");
 const { default: LearningGoalConfirmationPage } = require("../src/app/learning-goal-confirmation/page.tsx");
 const { default: WhatsNextPage } = require("../src/app/whats-next/page.tsx");
-const { clearPendingGoal } = require("../src/lib/pending-goal-store.ts");
+const { clearPendingGoal, setPendingGoal } = require("../src/lib/pending-goal-store.ts");
 
 // Main runner.
 async function main() {
@@ -134,11 +143,13 @@ async function main() {
   cleanup();
 
   logTest(
-    "Whats-next dummy behaviour",
-    "The page should show the goal box, static paragraphs, and a no-op YES, I'M IN! button."
+    "Whats-next shows pending goal and opens auth modal",
+    "The page should read the stored goal and show the auth modal when clicking the CTA while logged out."
   );
-  const whatsNext = render(React.createElement(WhatsNextPage, { searchParams: { goal: "Edited Goal Text" } }));
-  whatsNext.getByText("You did it!");
+  clearPendingGoal();
+  setPendingGoal("Edited Goal Text");
+  const whatsNext = render(React.createElement(WhatsNextPage, { searchParams: {} }));
+  await whatsNext.findByText("You did it!");
   whatsNext.getByText(
     "Congratulations on writing down your learning goal. You just unlocked the very first step toward the best version of yourself."
   );
@@ -146,15 +157,27 @@ async function main() {
   whatsNext.getByText("We will reach out very soon. In the meantime, please make sure you are signed in so we can send the details to your inbox.");
   whatsNext.getByText("Edited Goal Text");
   const yesButton = whatsNext.getByRole("button", { name: "YES, I'M IN!" });
-  let loggedMessage = "";
-  const originalLog = console.log;
-  console.log = (message) => {
-    loggedMessage = String(message);
-  };
   await user.click(yesButton);
-  console.log = originalLog;
-  assert(loggedMessage.includes("Next steps coming in Step 3."), "The no-op handler should log a friendly message.");
-  logPass("Whats-next shows the goal and keeps the CTA as a no-op for now.");
+  whatsNext.getByText("Welcome back");
+  const loginButtons = whatsNext.getAllByRole("button", { name: "Login" });
+  assert(loginButtons.length >= 1, "At least one Login control should appear.");
+  whatsNext.getByRole("button", { name: "Sign up" });
+  logPass("Whats-next shows the saved goal and opens the auth modal for guests.");
+  cleanup();
+
+  logTest(
+    "Whats-next shows fallback when no pending goal",
+    "With no stored goal, the page should show a safe message and a Start again link."
+  );
+  clearPendingGoal();
+  const whatsNextFallback = render(React.createElement(WhatsNextPage, { searchParams: {} }));
+  whatsNextFallback.getByText("No learning goal found. Please start again from the beginning.");
+  const fallbackStartLink = whatsNextFallback.getByRole("link", { name: "Start again" });
+  assert(
+    fallbackStartLink.getAttribute("href") === "/learning-guide-intro",
+    "Start again should point to /learning-guide-intro."
+  );
+  logPass("Whats-next fallback message and link appear when no goal is stored.");
   cleanup();
 
   console.log("\nPublic funnel checks completed for Step 2.");

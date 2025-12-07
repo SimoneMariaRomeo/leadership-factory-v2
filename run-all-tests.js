@@ -5,6 +5,7 @@ const commands = [
   "npm run test:schema-and-seed",
   "npm run test:public-funnel",
   "npm run test:step4-create-learning-goal",
+  "npm run test:goal-commit",
   "npm run test:need-analysis-chat",
 ];
 
