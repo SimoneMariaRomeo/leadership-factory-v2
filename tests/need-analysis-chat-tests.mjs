@@ -33,10 +33,12 @@ const databaseUrl = withDbName(process.env.DATABASE_URL, TEST_DB_NAME);
 const shadowDatabaseUrl = withDbName(process.env.SHADOW_DATABASE_URL || process.env.DATABASE_URL, TEST_SHADOW_DB_NAME);
 const adminDatabaseUrl = withDbName(process.env.DATABASE_URL, "postgres");
 const shadowAdminDatabaseUrl = withDbName(process.env.SHADOW_DATABASE_URL || process.env.DATABASE_URL, "postgres");
+const ORIGINAL_DEFAULT_API = process.env.DEFAULT_API || "aliyun";
 
 process.env.DATABASE_URL = databaseUrl;
 process.env.SHADOW_DATABASE_URL = shadowDatabaseUrl;
-process.env.DEFAULT_API = "fake";
+process.env.DEFAULT_API = ORIGINAL_DEFAULT_API;
+process.env.LLM_LOG = "silent";
 
 const { handleChat } = require("../src/server/chat/handleChat.ts");
 const { POST } = require("../src/app/api/chat/route.ts");
@@ -278,6 +280,9 @@ async function testApiPostRoundtrip(sessionOutlineId, journeyStepId) {
     "The API should return a chatId and assistant message with content or command."
   );
 
+  const originalProvider = process.env.DEFAULT_API;
+  process.env.DEFAULT_API = "fake";
+
   const body = {
     chatId: null,
     sessionOutlineId,
@@ -304,6 +309,8 @@ async function testApiPostRoundtrip(sessionOutlineId, journeyStepId) {
   const storedMessages = await prisma.message.findMany({ where: { chatId: data.chatId } });
   assert(storedMessages.length >= 2, "Chat should have stored the user and assistant messages.");
   logPass("API roundtrip creates chat and messages as expected.");
+
+  process.env.DEFAULT_API = originalProvider;
 }
 
 // This reads the mock conversation script for the need-assessment flow.
