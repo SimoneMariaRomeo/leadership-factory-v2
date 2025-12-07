@@ -7,6 +7,8 @@ type CallChatModelArgs = {
 };
 
 const FALLBACK_REPLY = "I am here to help you shape a clear learning goal.";
+const FAKE_JSON_GOAL =
+  '{"command":"create_learning_goal","learningGoal":"I want to create a clear, actionable plan by next week that defines specific time and energy boundaries between my full-time job and my personal business, so I can reduce overwhelm and operate more intentionally."}';
 
 export async function callChatModel({ messages, provider }: CallChatModelArgs): Promise<string> {
   const activeProvider = (provider || process.env.DEFAULT_API || "aliyun").toLowerCase();
@@ -15,6 +17,10 @@ export async function callChatModel({ messages, provider }: CallChatModelArgs): 
   if (shouldLog) {
     console.log("[llm] request provider:", activeProvider);
     console.log("[llm] request messages:", messages);
+  }
+
+  if (activeProvider === "fake") {
+    return FAKE_JSON_GOAL;
   }
 
   if (activeProvider === "chatgpt") {
