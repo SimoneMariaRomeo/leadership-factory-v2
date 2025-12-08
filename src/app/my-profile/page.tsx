@@ -76,7 +76,7 @@ export default async function MyProfilePage() {
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner">
         <div className="profile-outer-card">
-          <ProfileTour />
+          <ProfileTour userId={user.id} />
 
           <section className="profile-section">
             <div className="profile-row">

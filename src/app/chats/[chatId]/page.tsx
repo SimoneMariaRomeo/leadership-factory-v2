@@ -63,32 +63,15 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
   }));
 
   return (
-    <div className="content-shell">
+    <main className="page-shell">
       <div className="bg-orbs" aria-hidden="true" />
-      <div className="content-inner">
-        <div className="profile-outer-card">
-          <div className="section-card" style={{ marginBottom: "12px" }}>
-            <h1 className="hero-title" style={{ marginBottom: "6px" }}>
-              Continue conversation
-            </h1>
-            <p className="hero-lead" style={{ marginBottom: "0px" }}>
-              Session: {chat.sessionTitle || "Conversation"}
-            </p>
-          </div>
-          <NeedAnalysisChat
-            sessionOutlineId={chat.sessionOutlineId || ""}
-            journeyStepId={null}
-            firstUserMessage={null}
-            initialChatId={chat.id}
-            initialMessages={initialMessages}
-          />
-          <div style={{ marginTop: "14px" }}>
-            <Link href="/my-profile" className="secondary-button nav-button">
-              Back to profile
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
+      <NeedAnalysisChat
+        sessionOutlineId={chat.sessionOutlineId || ""}
+        journeyStepId={null}
+        firstUserMessage={null}
+        initialChatId={chat.id}
+        initialMessages={initialMessages}
+      />
+    </main>
   );
 }
