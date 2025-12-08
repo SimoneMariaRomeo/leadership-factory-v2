@@ -1100,6 +1100,12 @@ a {
   color: var(--gold);
 }
 
+.signout-row {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
 .welcome-title {
   text-decoration: underline;
   text-decoration-color: var(--gold);

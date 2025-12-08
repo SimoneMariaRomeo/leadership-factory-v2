@@ -172,10 +172,7 @@ export default async function MyProfilePage() {
           </section>
 
           <section className="profile-section">
-            <div className="section-card">
-              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
-                Sign out
-              </h2>
+            <div className="signout-row">
               <SignOutButton />
             </div>
           </section>

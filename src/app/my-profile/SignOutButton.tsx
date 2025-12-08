@@ -23,7 +23,7 @@ export default function SignOutButton() {
   };
 
   return (
-    <button type="button" className="secondary-button nav-button" onClick={handleSignOut} disabled={signingOut}>
+    <button type="button" className="primary-button" onClick={handleSignOut} disabled={signingOut}>
       {signingOut ? "Signing out..." : "Sign out"}
     </button>
   );
