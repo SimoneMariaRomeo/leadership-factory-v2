@@ -357,6 +357,10 @@ a {
   margin-bottom: 10px;
 }
 
+.tour-text {
+  white-space: pre-wrap;
+}
+
 .hero-title {
   font-family: "Playfair Display", serif;
   font-size: clamp(28px, 4vw, 47px);

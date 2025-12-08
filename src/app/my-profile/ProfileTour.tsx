@@ -26,15 +26,15 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
     () => [
       {
         id: "tour-start-anchor",
-        title: "Take a quick tour",
-        description: "We will quickly highlight the main areas of your profile. Click Next to begin.",
+        title: "Welcome to your profile!",
+        description: "Take a quick tour to discover the main areas of your profile.",
       },
-      { id: "tour-avatar", title: "Avatar", description: "This is your profile picture. Click it anytime to change it." },
-      { id: "tour-goal", title: "Your learning goal", description: "Edit your goal here so we can tailor your journey." },
+      { id: "tour-avatar", title: "This is your profile avatar", description: "Click it anytime to change it." },
+      { id: "tour-goal", title: "This is your learning goal", description: "Edit your goal here, or create a new one from the main page. It will be used to tailor your journey." },
       {
         id: "tour-personalized",
         title: "Your personalized journey",
-        description: "When ready, your tailored journey appears here. Open it to continue.",
+        description: "When ready, your tailored journey appears here. We'll send you an email when there's an update.",
       },
       {
         id: "tour-conversations",
