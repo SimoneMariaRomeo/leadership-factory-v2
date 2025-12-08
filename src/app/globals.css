@@ -1052,6 +1052,17 @@ a {
   gap: 12px;
 }
 
+.profile-outer-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 18px;
+  border: 1px solid rgba(17, 24, 39, 0.05);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .profile-top-card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
