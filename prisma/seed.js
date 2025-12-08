@@ -3,6 +3,7 @@ require("dotenv").config();
 const { Pool } = require("pg");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const { PrismaClient } = require("../generated/prisma");
+const bcrypt = require("bcryptjs");
 
 // Uses a pg pool with the Prisma adapter.
 const pool = new Pool({
@@ -136,6 +137,25 @@ async function main() {
       ahaText: null,
       unlockedAt: null,
       completedAt: null,
+    },
+  });
+
+  // This seeds a simple admin account so tests and humans can log in.
+  const adminPasswordHash = await bcrypt.hash("admin12345", 10);
+  await prisma.user.upsert({
+    where: { email: "admin@leadership-factory.cn" },
+    update: {
+      name: "admin",
+      passwordHash: adminPasswordHash,
+      role: "admin",
+      botRole: "admin",
+    },
+    create: {
+      email: "admin@leadership-factory.cn",
+      name: "admin",
+      passwordHash: adminPasswordHash,
+      role: "admin",
+      botRole: "admin",
     },
   });
 

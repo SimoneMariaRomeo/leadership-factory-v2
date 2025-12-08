@@ -133,6 +133,12 @@ async function main() {
   );
   await testSeedSmoke();
 
+  logTest(
+    "10) Admin is present in the database",
+    "Seed should create an admin user with the admin role."
+  );
+  await testAdminUserPresent();
+
   console.log("\nAll schema-and-seed checks passed.");
 }
 
@@ -500,6 +506,15 @@ async function testSeedSmoke() {
   const goal = await prisma.learningJourney.findFirst({ where: { slug: GOAL_JOURNEY_SLUG } });
   assert(goal, "Seed should leave Goal Clarification journey in place.");
   logPass("Seed created or kept Goal Clarification journey.");
+}
+
+// Checks that the seed creates the admin account.
+async function testAdminUserPresent() {
+  runCommand("npx prisma db seed --schema prisma/schema.prisma", "Seed script executed");
+  const admin = await prisma.user.findUnique({ where: { email: "admin@leadership-factory.cn" } });
+  assert(admin, "Admin user should exist after seed.");
+  assert(admin.role === "admin", "Admin role should be admin.");
+  logPass("Admin account exists with the admin role.");
 }
 
 main()
