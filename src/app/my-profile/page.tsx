@@ -5,6 +5,7 @@ import LoginPrompt from "../components/LoginPrompt";
 import ProfileTour from "./ProfileTour";
 import EditableGoalCard from "./EditableGoalCard";
 import AvatarPicker from "./AvatarPicker";
+import SignOutButton from "./SignOutButton";
 import { prisma } from "../../server/prismaClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../server/auth/session";
 
@@ -159,14 +160,23 @@ export default async function MyProfilePage() {
                 <ul className="chat-list">
                   {recentChats.map((chat) => (
                     <li key={chat.id} className="chat-list-item">
-                      <div>
+                      <Link href={`/chats/${chat.id}`} className="chat-list-link" aria-label={chat.sessionTitle || "Conversation"}>
                         <p className="chat-title">{chat.sessionTitle || "Conversation"}</p>
                         <p className="tiny-note">{formatDate(chat.startedAt)}</p>
-                      </div>
+                      </Link>
                     </li>
                   ))}
                 </ul>
               )}
+            </div>
+          </section>
+
+          <section className="profile-section">
+            <div className="section-card">
+              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
+                Sign out
+              </h2>
+              <SignOutButton />
             </div>
           </section>
         </div>

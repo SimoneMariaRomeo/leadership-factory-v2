@@ -69,7 +69,7 @@ On `/my-profile` for a logged-in user:
 
    - A hero card using the same glass / gold gradient language as the funnel.
    - Shows:
-     - A welcome line like: “Welcome back, [first name or email]”.
+     - A welcome line like: “Welcome back, [first name or email]”!.
      - If `User.learningGoal` is set:
        - Title: “Your current learning goal”
        - The goal text.

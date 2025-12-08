@@ -50,10 +50,10 @@ export default function EditableGoalCard({ initialGoal, confirmedAt }: EditableG
   };
 
   return (
-    <div className="goal-card">
+    <div className="goal-card section-card">
       <div className="goal-card-head">
         <div>
-          <h2 className="hero-kicker goal-heading">Your learning goal</h2>
+          <h2 className="hero-kicker section-title">Your learning goal</h2>
           {formattedDate ? <p className="tiny-note">Last updated on {formattedDate}</p> : null}
         </div>
         <button

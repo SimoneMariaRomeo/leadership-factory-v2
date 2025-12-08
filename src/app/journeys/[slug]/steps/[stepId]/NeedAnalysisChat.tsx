@@ -17,12 +17,16 @@ type NeedAnalysisChatProps = {
   sessionOutlineId: string;
   journeyStepId?: string | null;
   firstUserMessage?: string | null;
+  initialChatId?: string | null;
+  initialMessages?: ChatMessage[];
 };
 
 export default function NeedAnalysisChat({
   sessionOutlineId,
   journeyStepId = null,
   firstUserMessage,
+  initialChatId = null,
+  initialMessages = [],
 }: NeedAnalysisChatProps) {
   // This lets us move the user to the goal confirmation page.
   const router = useRouter();
@@ -40,9 +44,9 @@ export default function NeedAnalysisChat({
         : [],
     [firstUserMessage]
   );
-  const [messages, setMessages] = useState<ChatMessage[]>(startingMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages.length ? initialMessages : startingMessages);
   // This stores the chat id from the backend once created.
-  const [chatId, setChatId] = useState<string | null>(null);
+  const [chatId, setChatId] = useState<string | null>(initialChatId || null);
   // This holds the current input value.
   const [inputValue, setInputValue] = useState<string>("");
   // This flag shows when a request is running.

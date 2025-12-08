@@ -1314,6 +1314,19 @@ a {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
 }
 
+.chat-list-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 2px;
+  border-radius: 10px;
+  transition: color 0.15s ease-in-out;
+}
+
+.chat-list-link:hover {
+  color: var(--gold);
+}
+
 .chat-title {
   margin: 0;
   font-weight: 700;
