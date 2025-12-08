@@ -67,11 +67,14 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
       <div className="bg-orbs" aria-hidden="true" />
       <NeedAnalysisChat
         sessionOutlineId={chat.sessionOutlineId || ""}
-        journeyStepId={null}
-        firstUserMessage={null}
-        initialChatId={chat.id}
-        initialMessages={initialMessages}
-      />
+            journeyStepId={null}
+            firstUserMessage={null}
+            initialChatId={chat.id}
+            initialMessages={initialMessages}
+            userName={user.name}
+            userEmail={user.email}
+            userPicture={(user as any).picture || null}
+          />
     </main>
   );
 }

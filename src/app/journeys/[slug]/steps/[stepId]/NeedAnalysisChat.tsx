@@ -19,6 +19,9 @@ type NeedAnalysisChatProps = {
   firstUserMessage?: string | null;
   initialChatId?: string | null;
   initialMessages?: ChatMessage[];
+  userName?: string | null;
+  userEmail?: string | null;
+  userPicture?: string | null;
 };
 
 export default function NeedAnalysisChat({
@@ -27,6 +30,9 @@ export default function NeedAnalysisChat({
   firstUserMessage,
   initialChatId = null,
   initialMessages = [],
+  userName = null,
+  userEmail = null,
+  userPicture = null,
 }: NeedAnalysisChatProps) {
   // This lets us move the user to the goal confirmation page.
   const router = useRouter();
@@ -65,6 +71,7 @@ export default function NeedAnalysisChat({
   }, [messages]);
 
   const disabled = isSending;
+  const userInitial = (userName || userEmail || "You").trim().charAt(0).toUpperCase();
 
   // This handles sending a user message to the API.
   const handleSend = async () => {
@@ -141,7 +148,11 @@ export default function NeedAnalysisChat({
           <div key={message.id} className={`chat-row ${message.role === "user" ? "chat-row-user" : ""}`}>
             <div className={`chat-avatar ${message.role === "user" ? "chat-avatar-user" : ""}`}>
               {message.role === "user" ? (
-                <span className="chat-avatar-initial">You</span>
+                userPicture ? (
+                  <img src={userPicture} alt="Your avatar" />
+                ) : (
+                  <span className="chat-avatar-initial">{userInitial}</span>
+                )
               ) : (
                 <img src="/coai-logo.png" alt="Coach avatar" />
               )}

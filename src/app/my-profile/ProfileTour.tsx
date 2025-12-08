@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "lf_my_profile_seen";
 
 type ProfileTourProps = {
-  userId: string;
+  userId: string | null;
 };
 
 function buildKey(userId: string) {
@@ -19,13 +19,14 @@ export default function ProfileTour({ userId }: ProfileTourProps) {
   // This checks localStorage on the client to decide if the tour should show.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!userId) return;
     const seen = window.localStorage.getItem(buildKey(userId));
     setShow(!seen);
   }, [userId]);
 
   // This hides the tour and records that it was acknowledged.
   const handleGotIt = () => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && userId) {
       window.localStorage.setItem(buildKey(userId), "true");
     }
     setShow(false);

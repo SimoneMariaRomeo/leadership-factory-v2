@@ -1,6 +1,8 @@
 // This page loads the need-analysis step by slug and shows the chat card.
 import NeedAnalysisChat from "./NeedAnalysisChat";
+import { headers } from "next/headers";
 import { prisma } from "../../../../../server/prismaClient";
+import { getCurrentUser, requestFromCookieHeader } from "../../../../../server/auth/session";
 
 type StepPageProps = {
   params: { slug: string; stepId: string };
@@ -10,6 +12,10 @@ type StepPageProps = {
 export const dynamic = "force-dynamic";
 
 export default async function JourneyStepPage({ params }: StepPageProps) {
+  const headerStore = headers();
+  const cookieHeader = headerStore.get("cookie");
+  const currentUser = await getCurrentUser(requestFromCookieHeader(cookieHeader));
+
   const step = await prisma.learningJourneyStep.findFirst({
     where: {
       journey: { slug: params.slug },
@@ -40,6 +46,9 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
         sessionOutlineId={step.sessionOutline.id}
         journeyStepId={step.id}
         firstUserMessage={step.sessionOutline.firstUserMessage}
+        userName={currentUser?.name || null}
+        userEmail={currentUser?.email || null}
+        userPicture={(currentUser as any)?.picture || null}
       />
     </main>
   );
