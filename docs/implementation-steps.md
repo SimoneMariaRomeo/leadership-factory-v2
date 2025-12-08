@@ -39,17 +39,18 @@ Step 10 — Email infrastructure & polish
 Goal: Production-grade notifications and logging.
 
 Git branches for each implementation:
-feature/2025xx-schema-and-seed
 
-feature/2025xx-public-funnel
+feature/202512051223-step-1-schema-and-seed
 
-feature/2025xx-chat-v2-need-analysis
+feature/202512051537-step-2-public-funnel
 
-feature/2025xx-goal-confirmation-flow
+feature/202512062021-step-3-chat-v2-need-analysis
 
-feature/2025xx-whats-next-commit-goal
+feature/202512071559-step-4-goal-confirmation-flow
 
-feature/2025xx-profile-and-journey-list
+feature/202512072009-step-5-auth-whats-next-commit-goal
+
+feature/202512081003-step-6-profile-and-journey-list
 
 feature/2025xx-journeys-and-steps
 
