@@ -367,7 +367,7 @@ a {
 
 .hero-lead {
   margin: 0 0 14px;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.6;
   color: var(--text-soft);
 }
@@ -903,7 +903,7 @@ a {
 
 .journey-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text-strong);
 }
@@ -1067,6 +1067,28 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.section-card {
+  background: #ffffff;
+  border: 1px solid rgba(199, 157, 45, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+  padding: 18px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.section-title {
+  transition: color 0.15s ease-in-out;
+}
+
+.section-card:hover {
+  border-color: rgba(199, 157, 45, 0.8);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.section-card:hover .section-title {
+  color: var(--gold);
 }
 
 .avatar {

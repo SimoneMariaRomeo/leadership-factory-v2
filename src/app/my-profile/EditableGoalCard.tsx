@@ -53,7 +53,7 @@ export default function EditableGoalCard({ initialGoal, confirmedAt }: EditableG
     <div className="goal-card">
       <div className="goal-card-head">
         <div>
-          <p className="hero-kicker">Your learning goal</p>
+          <h2 className="hero-kicker goal-heading">Your learning goal</h2>
           {formattedDate ? <p className="tiny-note">Last updated on {formattedDate}</p> : null}
         </div>
         <button
@@ -88,7 +88,7 @@ export default function EditableGoalCard({ initialGoal, confirmedAt }: EditableG
         </div>
       ) : (
         <div className="goal-box flat">
-          <div className="goal-text">{goal || "No learning goal yet. Add yours to guide your journeys."}</div>
+          <div className="goal-text hero-lead">{goal || "No learning goal yet. Add yours to guide your journeys."}</div>
         </div>
       )}
     </div>

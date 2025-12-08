@@ -92,89 +92,95 @@ export default async function MyProfilePage() {
           <section className="profile-section">
             <div className="section-head">
               <div>
-                <h2 className="hero-kicker" style={{ marginBottom: "6px" }}>
+                <h2 className="hero-kicker section-title" style={{ marginBottom: "6px" }}>
                   Your Personalized Learning Journey
                 </h2>
               </div>
             </div>
 
-            {recommendedJourney ? (
-              <Link
-                href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
-                className="journey-card minimal journey-card-link-wrapper"
-              >
-                <h3 className="journey-title">{recommendedJourney.title}</h3>
-                <p className="journey-intro">
-                  {recommendedJourney.intro ||
-                    recommendedJourney.userGoalSummary ||
-                    "Your tailored journey is active. Open it to continue."}
-                </p>
-              </Link>
-            ) : (
-              <div className="journey-empty">
-                <p className="hero-lead" style={{ marginBottom: 0 }}>
-                  We are preparing your personalized journey. It will appear here soon.
-                </p>
-              </div>
-            )}
+            <div className="section-card">
+              {recommendedJourney ? (
+                <Link
+                  href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
+                  className="journey-card minimal journey-card-link-wrapper"
+                >
+                  <h3 className="journey-title">{recommendedJourney.title}</h3>
+                  <p className="journey-intro">
+                    {recommendedJourney.intro ||
+                      recommendedJourney.userGoalSummary ||
+                      "Your tailored journey is active. Open it to continue."}
+                  </p>
+                </Link>
+              ) : (
+                <div className="journey-empty">
+                  <p className="hero-lead" style={{ marginBottom: 0 }}>
+                    We are preparing your personalized journey. It will appear here soon.
+                  </p>
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="profile-section">
             <div className="section-head">
               <div>
-                <h2 className="hero-kicker" style={{ marginBottom: "6px" }}>
+                <h2 className="hero-kicker section-title" style={{ marginBottom: "6px" }}>
                   Learning Journeys
                 </h2>
               </div>
             </div>
 
-            {combinedJourneys.length > 0 ? (
-              <div className="journey-grid">
-                {combinedJourneys.map((journey) => (
-                  <Link
-                    key={journey.id}
-                    href={`/journeys/${journey.slug || journey.id}`}
-                    className="journey-card journey-card-link-wrapper"
-                    aria-label={journey.title}
-                  >
-                    <h3 className="journey-title">{journey.title}</h3>
-                    <p className="journey-intro">
-                      {journey.intro ||
-                        (journey as any).userGoalSummary ||
-                        "Open to see more once details are added in the next step."}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            ) : null}
+            <div className="section-card">
+              {combinedJourneys.length > 0 ? (
+                <div className="journey-grid">
+                  {combinedJourneys.map((journey) => (
+                    <Link
+                      key={journey.id}
+                      href={`/journeys/${journey.slug || journey.id}`}
+                      className="journey-card journey-card-link-wrapper"
+                      aria-label={journey.title}
+                    >
+                      <h3 className="journey-title">{journey.title}</h3>
+                      <p className="journey-intro">
+                        {journey.intro ||
+                          (journey as any).userGoalSummary ||
+                          "Open to see more once details are added in the next step."}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </section>
 
           <section className="profile-section">
             <div className="section-head">
               <div>
-                <h2 className="hero-kicker" style={{ marginBottom: "6px" }}>
+                <h2 className="hero-kicker section-title" style={{ marginBottom: "6px" }}>
                   Your Previous Conversations
                 </h2>
               </div>
             </div>
-            {recentChats.length === 0 ? (
-              <div className="journey-empty">
-                <p className="hero-lead" style={{ marginBottom: 0 }}>
-                  No conversations yet. Start a session to see it here.
-                </p>
-              </div>
-            ) : (
-              <ul className="chat-list">
-                {recentChats.map((chat) => (
-                  <li key={chat.id} className="chat-list-item">
-                    <div>
-                      <p className="chat-title">{chat.sessionTitle || "Conversation"}</p>
-                      <p className="tiny-note">{formatDate(chat.startedAt)}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="section-card">
+              {recentChats.length === 0 ? (
+                <div className="journey-empty">
+                  <p className="hero-lead" style={{ marginBottom: 0 }}>
+                    No conversations yet. Start a session to see it here.
+                  </p>
+                </div>
+              ) : (
+                <ul className="chat-list">
+                  {recentChats.map((chat) => (
+                    <li key={chat.id} className="chat-list-item">
+                      <div>
+                        <p className="chat-title">{chat.sessionTitle || "Conversation"}</p>
+                        <p className="tiny-note">{formatDate(chat.startedAt)}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
         </div>
       </div>
