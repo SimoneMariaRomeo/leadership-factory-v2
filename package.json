@@ -45,6 +45,7 @@
     "test:need-analysis-chat": "node tests/need-analysis-chat-tests.mjs",
     "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js",
     "test:goal-commit": "node tests/goal-commit-tests.js",
+    "test:live-admin": "node tests/live-admin-check.js",
     "test:all": "node run-all-tests.js"
   },
   "prisma": {
