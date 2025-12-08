@@ -359,7 +359,7 @@ a {
 
 .hero-title {
   font-family: "Playfair Display", serif;
-  font-size: clamp(28px, 4vw, 32px);
+  font-size: clamp(28px, 4vw, 47px);
   margin: 0 0 14px;
   color: var(--text-strong);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -1091,12 +1091,32 @@ a {
   color: var(--gold);
 }
 
+.goal-card:hover {
+  border-color: rgba(199, 157, 45, 0.8);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.goal-card:hover .section-title {
+  color: var(--gold);
+}
+
+.welcome-title {
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.welcome-name {
+  color: var(--gold);
+}
+
 .avatar {
-  width: 48px;
-  height: 48px;
+  width: 128px;
+  height: 128px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(199, 157, 45, 0.18), rgba(247, 215, 116, 0.18));
-  border: 2px solid rgba(199, 157, 45, 0.35);
+  border: 3px solid rgba(199, 157, 45, 0.35);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1181,12 +1201,13 @@ a {
 .goal-card {
   background: #ffffff;
   border-radius: 14px;
-  border: 1px solid rgba(17, 24, 39, 0.06);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(199, 157, 45, 0.45);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
 .goal-card-head {

@@ -81,8 +81,9 @@ export default async function MyProfilePage() {
             <div className="profile-row">
               <AvatarPicker name={user.name} email={user.email} picture={(user as any).picture || null} />
               <div>
-                <h1 className="hero-title" style={{ margin: 0 }}>
-                  Welcome back, {user.name || user.email || "your profile"}
+                <h1 className="hero-title welcome-title" style={{ margin: 0 }}>
+                  <span className="welcome-underline">Welcome back, </span>
+                  <span className="welcome-name">{user.name || user.email || "your profile"}!</span>
                 </h1>
               </div>
             </div>
