@@ -719,3 +719,436 @@ a {
     transform: rotate(360deg);
   }
 }
+
+/* Top navigation styles */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.top-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.top-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--gold) 0%, #f7d774 100%);
+  color: #fff;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px rgba(212, 175, 55, 0.26);
+}
+
+.top-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-nav-link {
+  padding: 10px 14px;
+  border-radius: 14px;
+  color: var(--text-strong);
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.top-nav-link:hover {
+  background: rgba(199, 157, 45, 0.12);
+}
+
+.top-nav-link-active {
+  background: rgba(199, 157, 45, 0.16);
+  border: 1px solid rgba(199, 157, 45, 0.25);
+  box-shadow: 0 8px 18px rgba(212, 175, 55, 0.18);
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-button {
+  height: 42px;
+  padding-inline: 18px;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(199, 157, 45, 0.35);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.nav-user-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 6px rgba(199, 157, 45, 0.15);
+}
+
+.nav-user-text {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+/* Shared stacked page layout */
+.content-shell {
+  position: relative;
+  min-height: 100vh;
+  padding: 80px 20px 120px;
+  display: flex;
+  justify-content: center;
+}
+
+.content-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  z-index: 1;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+/* Cards and sections */
+.journey-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.journey-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journey-card-wide {
+  padding: 26px;
+}
+
+.journey-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.journey-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+  background: rgba(199, 157, 45, 0.12);
+  border: 1px solid rgba(199, 157, 45, 0.28);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(47, 59, 80, 0.06);
+  color: var(--text-strong);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.journey-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.journey-intro {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+
+.journey-link {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.journey-empty {
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.journey-detail {
+  background: #ffffff;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journey-detail-box {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(199, 157, 45, 0.08);
+  border: 1px solid rgba(199, 157, 45, 0.2);
+}
+
+.journey-detail-label {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.journey-detail-text {
+  margin: 6px 0 0;
+  color: var(--text-strong);
+}
+
+.journey-detail-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.profile-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+.profile-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-hero-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(199, 157, 45, 0.08), rgba(247, 215, 116, 0.1));
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.profile-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.mini-stat {
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+}
+
+.mini-stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.mini-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.standard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.standard-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text-strong);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+.standard-item:hover {
+  border-color: rgba(199, 157, 45, 0.35);
+  box-shadow: 0 12px 20px rgba(212, 175, 55, 0.15);
+}
+
+/* Auth gate and tour */
+.gate-card {
+  padding: 32px 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gate-copy {
+  max-width: 740px;
+}
+
+.gate-actions {
+  display: flex;
+  align-items: center;
+}
+
+.tour-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(199, 157, 45, 0.25);
+  background: rgba(199, 157, 45, 0.08);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+.tour-kicker {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.tour-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--text-strong);
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .top-nav-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+
+  .top-nav-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .content-shell {
+    padding: 70px 16px 90px;
+  }
+
+  .journey-card,
+  .journey-card-wide,
+  .journey-detail,
+  .journey-empty,
+  .profile-hero {
+    padding: 18px;
+  }
+
+  .gate-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tour-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

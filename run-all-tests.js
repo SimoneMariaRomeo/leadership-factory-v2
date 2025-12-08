@@ -7,6 +7,7 @@ const commands = [
   "npm run test:step4-create-learning-goal",
   "npm run test:goal-commit",
   "npm run test:need-analysis-chat",
+  "npm run test:profile-and-journeys",
 ];
 
 for (const command of commands) {

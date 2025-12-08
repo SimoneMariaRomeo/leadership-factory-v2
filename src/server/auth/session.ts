@@ -16,6 +16,7 @@ type SafeUser = {
   email: string | null;
   name: string | null;
   learningGoal: string | null;
+  learningGoalConfirmedAt: Date | null;
 };
 
 // This tiny error marks when no user is present.
@@ -77,7 +78,7 @@ export async function getCurrentUser(req: Request): Promise<SafeUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, email: true, name: true, learningGoal: true },
+    select: { id: true, email: true, name: true, learningGoal: true, learningGoalConfirmedAt: true },
   });
 
   if (!user) return null;
@@ -105,4 +106,11 @@ export function buildLogoutCookie() {
     maxAge: 0,
     expires: new Date(0),
   };
+}
+
+// This helper builds a Request object from a cookie header so server components can reuse the auth helpers.
+export function requestFromCookieHeader(cookieHeader: string | null | undefined) {
+  return new Request("http://localhost", {
+    headers: cookieHeader ? { cookie: cookieHeader } : {},
+  });
 }
