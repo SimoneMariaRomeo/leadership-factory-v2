@@ -16,6 +16,9 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
 
   useEffect(() => {
     setShow(initialShow);
+    if (initialShow) {
+      setStepIndex(0);
+    }
   }, [initialShow]);
 
   const steps = useMemo(
@@ -114,25 +117,9 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
 
   return (
     <>
-      <div className="tour-card">
-        <div>
-          <p className="tour-kicker">Profile tour</p>
-          <p className="hero-lead" style={{ margin: 0 }}>
-            {currentStep.title}
-          </p>
-        </div>
-        <div className="tour-actions">
-          <button type="button" className="secondary-button nav-button" onClick={handleSkip}>
-            Skip
-          </button>
-          <button type="button" className="primary-button nav-button" onClick={handleNext}>
-            Next
-          </button>
-        </div>
-      </div>
-
       {highlightRect ? (
         <div className="tour-overlay" aria-hidden="true">
+          <div className="tour-backdrop" />
           <div
             className="tour-highlight"
             style={{
@@ -151,6 +138,14 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
           >
             <p className="tour-title">{currentStep.title}</p>
             <p className="tour-text">{currentStep.description}</p>
+            <div className="tour-tooltip-actions">
+              <button type="button" className="secondary-button nav-button" onClick={handleSkip}>
+                Skip
+              </button>
+              <button type="button" className="primary-button nav-button" onClick={handleNext}>
+                Next
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
