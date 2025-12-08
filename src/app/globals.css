@@ -1157,10 +1157,10 @@ a {
 }
 
 .goal-card {
-  background: #ffffff;
+  background: var(--lavender);
   border-radius: 14px;
-  border: 1px solid rgba(17, 24, 39, 0.06);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.15);
   padding: 14px;
   display: flex;
   flex-direction: column;

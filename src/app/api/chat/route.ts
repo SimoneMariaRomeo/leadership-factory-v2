@@ -1,6 +1,7 @@
 // This API endpoint forwards chat requests to the shared handler.
 import { NextResponse } from "next/server";
 import { handleChat } from "../../../server/chat/handleChat";
+import { getCurrentUser } from "../../../server/auth/session";
 
 export async function POST(req: Request) {
   try {
@@ -11,8 +12,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing sessionOutlineId or messages." }, { status: 400 });
     }
 
+    const currentUser = await getCurrentUser(req);
     const result = await handleChat({
-      userId: null,
+      userId: currentUser?.id || null,
       sessionOutlineId,
       journeyStepId,
       chatId,

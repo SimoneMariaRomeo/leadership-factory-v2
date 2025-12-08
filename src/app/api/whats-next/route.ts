@@ -22,6 +22,27 @@ export async function POST(req: Request) {
         select: { id: true, email: true, name: true, learningGoal: true },
       });
 
+      // Link the latest need-analysis chat to this user if it exists.
+      const needAnalysisOutline = await tx.learningSessionOutline.findFirst({
+        where: { slug: "need-analysis" },
+        select: { id: true },
+      });
+      let linkedChatId: string | null = null;
+      if (needAnalysisOutline) {
+        const latestChat = await tx.learningSessionChat.findFirst({
+          where: { userId: null, sessionOutlineId: needAnalysisOutline.id },
+          orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
+          select: { id: true },
+        });
+        if (latestChat) {
+          await tx.learningSessionChat.update({
+            where: { id: latestChat.id },
+            data: { userId: user.id },
+          });
+          linkedChatId = latestChat.id;
+        }
+      }
+
       const journey = await tx.learningJourney.create({
         data: {
           title: `Personal journey for: ${learningGoal}`,
@@ -36,7 +57,7 @@ export async function POST(req: Request) {
         select: { id: true, personalizedForUserId: true },
       });
 
-      return { updatedUser, journey };
+      return { updatedUser, journey, linkedChatId };
     });
 
     try {

@@ -65,8 +65,7 @@ export default async function MyProfilePage() {
   ]);
 
   const recommendedJourney = personalizedJourneys[0] || null;
-  const additionalPersonalized = recommendedJourney ? personalizedJourneys.slice(1) : personalizedJourneys;
-  const combinedJourneys = [...additionalPersonalized, ...standardJourneys];
+  const combinedJourneys = [...personalizedJourneys, ...standardJourneys];
 
   const formatDate = (date: Date | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null;
@@ -112,6 +111,16 @@ export default async function MyProfilePage() {
               </p>
             </Link>
           ) : null}
+        </section>
+
+        <section className="profile-section">
+          <div className="section-head">
+            <div>
+              <h2 className="hero-title" style={{ marginBottom: "6px" }}>
+                Learning Journeys
+              </h2>
+            </div>
+          </div>
 
           {combinedJourneys.length > 0 ? (
             <div className="journey-grid">
