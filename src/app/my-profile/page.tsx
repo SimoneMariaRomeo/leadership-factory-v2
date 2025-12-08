@@ -77,7 +77,7 @@ export default async function MyProfilePage() {
         <div className="profile-outer-card">
           <ProfileTour />
 
-          <section className="profile-top-card">
+          <section className="profile-section">
             <div className="profile-row">
               <AvatarPicker name={user.name} email={user.email} picture={(user as any).picture || null} />
               <div>
