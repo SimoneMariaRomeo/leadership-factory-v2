@@ -6,10 +6,9 @@ import { useEffect, useState } from "react";
 type ProfileTourProps = {
   userId: string | null;
   show: boolean;
-  onComplete: () => void;
 };
 
-export default function ProfileTour({ userId, show: initialShow, onComplete }: ProfileTourProps) {
+export default function ProfileTour({ userId, show: initialShow }: ProfileTourProps) {
   const [show, setShow] = useState(initialShow);
 
   useEffect(() => {
@@ -23,7 +22,6 @@ export default function ProfileTour({ userId, show: initialShow, onComplete }: P
       console.error("Marking tour complete failed:", err);
     }
     setShow(false);
-    onComplete();
   };
 
   if (!show || !userId) {
