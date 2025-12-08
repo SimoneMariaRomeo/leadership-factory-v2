@@ -110,7 +110,13 @@ export default async function MyProfilePage() {
                   "Your tailored journey is active. Open it to continue."}
               </p>
             </Link>
-          ) : null}
+          ) : (
+            <div className="journey-empty">
+              <p className="hero-lead" style={{ marginBottom: 0 }}>
+                We are preparing your personalized journey. It will appear here soon.
+              </p>
+            </div>
+          )}
         </section>
 
         <section className="profile-section">
