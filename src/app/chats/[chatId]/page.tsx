@@ -35,7 +35,9 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
 
   const chat = await prisma.learningSessionChat.findUnique({
     where: { id: params.chatId },
-    include: { messages: { orderBy: { createdAt: "asc" }, select: { id: true, role: true, content: true } } },
+    include: {
+      messages: { orderBy: { createdAt: "asc" }, select: { id: true, role: true, content: true, command: true } },
+    },
   });
 
   if (!chat || (chat.userId && chat.userId !== user.id) || !chat.sessionOutlineId) {
@@ -59,7 +61,8 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
   const initialMessages = chat.messages.map((message) => ({
     id: message.id,
     role: message.role as "user" | "assistant",
-    content: message.content,
+    content: message.command ? null : message.content,
+    command: message.command,
   }));
 
   return (
@@ -67,14 +70,14 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
       <div className="bg-orbs" aria-hidden="true" />
       <NeedAnalysisChat
         sessionOutlineId={chat.sessionOutlineId || ""}
-            journeyStepId={null}
-            firstUserMessage={null}
-            initialChatId={chat.id}
-            initialMessages={initialMessages}
-            userName={user.name}
-            userEmail={user.email}
-            userPicture={(user as any).picture || null}
-          />
+        journeyStepId={null}
+        firstUserMessage={null}
+        initialChatId={chat.id}
+        initialMessages={initialMessages}
+        userName={user.name}
+        userEmail={user.email}
+        userPicture={(user as any).picture || null}
+      />
     </main>
   );
 }

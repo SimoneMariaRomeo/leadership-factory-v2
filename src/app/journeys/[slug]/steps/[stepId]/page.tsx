@@ -1,7 +1,10 @@
-// This page loads the need-analysis step by slug and shows the chat card.
-import NeedAnalysisChat from "./NeedAnalysisChat";
+// This page loads a journey step, checks access, and shows the chat for that step.
+import Link from "next/link";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import NeedAnalysisChat from "./NeedAnalysisChat";
 import { prisma } from "../../../../../server/prismaClient";
+import { loadStepWithAccess, getOrCreateStepChat, journeySlugOrId } from "../../../../../lib/journeys";
 import { getCurrentUser, requestFromCookieHeader } from "../../../../../server/auth/session";
 
 type StepPageProps = {
@@ -15,19 +18,13 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   const headerStore = headers();
   const cookieHeader = headerStore.get("cookie");
   const currentUser = await getCurrentUser(requestFromCookieHeader(cookieHeader));
+  const access = await loadStepWithAccess(params.stepId, currentUser?.id || null);
 
-  const step = await prisma.learningJourneyStep.findFirst({
-    where: {
-      journey: { slug: params.slug },
-      sessionOutline: { slug: params.stepId },
-    },
-    include: {
-      sessionOutline: true,
-      journey: true,
-    },
-  });
+  if (access.status === "forbidden") {
+    redirect(currentUser ? "/my-profile" : "/");
+  }
 
-  if (!step || !step.sessionOutline) {
+  if (access.status === "not_found") {
     return (
       <main className="page-shell">
         <div className="bg-orbs" aria-hidden="true" />
@@ -39,17 +36,81 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
     );
   }
 
+  const step = access.step;
+  const journeySlug = journeySlugOrId(step.journey);
+  if (params.slug !== step.journey.slug && params.slug !== step.journey.id) {
+    redirect("/journeys");
+  }
+
+  if (step.status === "locked") {
+    return (
+      <main className="page-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="glass-card">
+          <h1 className="hero-title">This step is locked.</h1>
+          <p className="hero-lead">Finish the previous step to unlock this one.</p>
+          <Link href={`/journeys/${journeySlug}`} className="primary-button" style={{ marginTop: "12px" }}>
+            Back to journey
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const chatLink = await getOrCreateStepChat(step.id, currentUser?.id || null);
+  const chatId = chatLink.status === "ok" ? chatLink.chat.id : null;
+  const chatMessages =
+    chatId && chatLink.status === "ok"
+      ? await prisma.message.findMany({
+          where: { chatId },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, role: true, content: true, command: true },
+        })
+      : [];
+
   return (
     <main className="page-shell">
       <div className="bg-orbs" aria-hidden="true" />
-      <NeedAnalysisChat
-        sessionOutlineId={step.sessionOutline.id}
-        journeyStepId={step.id}
-        firstUserMessage={step.sessionOutline.firstUserMessage}
-        userName={currentUser?.name || null}
-        userEmail={currentUser?.email || null}
-        userPicture={(currentUser as any)?.picture || null}
-      />
+      <div className="content-inner" style={{ gap: "16px" }}>
+        <div className="journey-detail" style={{ gap: "8px" }}>
+          <p className="hero-kicker">{step.journey.title}</p>
+          <div className="journey-card-top">
+            <h1 className="hero-title" style={{ marginBottom: 0, fontSize: "28px" }}>
+              {step.sessionOutline.title}
+            </h1>
+            <span className="status-badge" style={{ textTransform: "none", letterSpacing: 0 }}>
+              {step.status === "completed" ? "Completed" : "In progress"}
+            </span>
+          </div>
+          {step.sessionOutline.objective ? (
+            <p className="hero-lead">{step.sessionOutline.objective}</p>
+          ) : (
+            <p className="hero-lead">Work through the prompts with the coach to complete this step.</p>
+          )}
+          <div className="journey-detail-actions">
+            <Link href={`/journeys/${journeySlug}`} className="secondary-button">
+              Back to journey
+            </Link>
+          </div>
+        </div>
+
+        <NeedAnalysisChat
+          sessionOutlineId={step.sessionOutline.id}
+          journeyStepId={step.id}
+          journeySlug={journeySlug}
+          firstUserMessage={step.sessionOutline.firstUserMessage}
+          initialChatId={chatId}
+          initialMessages={chatMessages.map((message) => ({
+            id: message.id,
+            role: message.role as "user" | "assistant",
+            content: message.command ? null : message.content,
+            command: message.command,
+          }))}
+          userName={currentUser?.name || null}
+          userEmail={currentUser?.email || null}
+          userPicture={(currentUser as any)?.picture || null}
+        />
+      </div>
     </main>
   );
 }

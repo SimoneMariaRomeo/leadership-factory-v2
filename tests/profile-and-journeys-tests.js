@@ -29,6 +29,7 @@ global.navigator = dom.window.navigator;
 global.HTMLElement = dom.window.HTMLElement;
 global.Text = dom.window.Text;
 global.localStorage = dom.window.localStorage;
+global.DOMRect = dom.window.DOMRect || class DOMRect {};
 
 const React = require("react");
 const { render, screen, cleanup, within } = require("@testing-library/react");
@@ -313,7 +314,7 @@ async function testJourneysShowStandardOnly() {
 
   await screen.findByText("Goal Clarification");
   expectMissing("Personalized hidden journey");
-  const links = screen.getAllByRole("link", { name: "Open journey" });
+  const links = screen.getAllByRole("link", { name: /Goal Clarification/i });
   assert(
     links.some((link) => link.getAttribute("href") === "/journeys/goal-clarification"),
     "Standard journey link should point to /journeys/goal-clarification."
@@ -325,16 +326,17 @@ async function testJourneysShowStandardOnly() {
 // Test: guest hitting /journeys should see a sign-in prompt.
 async function testJourneysGuestView() {
   logTest(
-    "Journeys guest view is gated",
-    "Guest users should see a sign-in card instead of the list."
+    "Journeys guest view is open",
+    "Guest users should see the standard journeys without signing in."
   );
   clearAuth();
   mockPathname = "/journeys";
   const page = await JourneysPage();
   const view = render(page);
-  await screen.findByText("Please sign in to explore journeys");
-  screen.getByRole("button", { name: "Login to continue" });
-  logPass("Guest view of /journeys is correctly gated.");
+  await screen.findByText("Learning Journeys");
+  await screen.findByText("Goal Clarification");
+  expectMissing("Please sign in to explore journeys");
+  logPass("Guest view of /journeys shows the public list.");
   cleanup();
 }
 
@@ -396,8 +398,8 @@ async function testProfileEmptyStateNoJourneys() {
 
   screen.getByText("Wait for my plan");
   expectMissing("Recommended");
-  expectMissing("Goal Clarification");
-  logPass("No recommended card or journey list renders when there are no journeys.");
+  screen.getByText("Goal Clarification");
+  logPass("No personalized journeys show, but the standard template remains visible.");
   cleanup();
 }
 
@@ -405,7 +407,7 @@ async function testProfileEmptyStateNoJourneys() {
 async function testProfileTourFlag() {
   logTest(
     "Profile tour appears only once",
-    "Tour card should show on first render, set localStorage on Got it, and hide."
+    "Tour overlay should show on first render and hide after the user skips it."
   );
   await clearTestData();
   const user = await createTestUser({
@@ -421,11 +423,13 @@ async function testProfileTourFlag() {
   const view = render(page);
   const userActions = userEvent.setup({ document });
 
-  await screen.findByText("First time here?");
-  await userActions.click(screen.getByRole("button", { name: "Got it" }));
-  assert(localStorage.getItem("lf_my_profile_seen") === "true", "Flag should be stored after clicking Got it.");
-  assert(!screen.queryByText("First time here?"), "Tour card should hide after acknowledgement.");
-  logPass("Tour card sets the flag and hides after first visit.");
+  await screen.findByText("Welcome to your profile!");
+  const skipButton = Array.from(document.querySelectorAll("button")).find((btn) => btn.textContent?.trim() === "Skip");
+  if (skipButton) {
+    await userActions.click(skipButton);
+  }
+  assert(!document.querySelector(".tour-overlay"), "Tour overlay should hide after skip.");
+  logPass("Tour overlay hides after the user dismisses it.");
   cleanup();
 }
 

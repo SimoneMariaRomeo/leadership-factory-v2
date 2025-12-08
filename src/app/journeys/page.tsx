@@ -1,35 +1,12 @@
-// This page lists the active standard journeys and asks guests to log in before exploring.
+// This page lists the active standard journeys for anyone to browse.
 import Link from "next/link";
-import { headers } from "next/headers";
-import LoginPrompt from "../components/LoginPrompt";
 import { prisma } from "../../server/prismaClient";
-import { getCurrentUser, requestFromCookieHeader } from "../../server/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function JourneysPage() {
-  const headerStore = headers();
-  const cookieHeader = headerStore.get("cookie");
-  const user = await getCurrentUser(requestFromCookieHeader(cookieHeader));
-
-  if (!user) {
-    return (
-      <div className="content-shell">
-        <div className="bg-orbs" aria-hidden="true" />
-        <div className="content-inner">
-          <LoginPrompt
-            title="Please sign in to explore journeys"
-            message="Log in to browse the standard journeys and keep your place."
-            buttonLabel="Login to continue"
-            afterLoginPath="/journeys"
-          />
-        </div>
-      </div>
-    );
-  }
-
   const standardJourneys = await prisma.learningJourney.findMany({
-    where: { isStandard: true, status: "active" },
+    where: { isStandard: true, status: "active", personalizedForUserId: null },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     select: { id: true, title: true, intro: true, slug: true, status: true },
   });
@@ -42,7 +19,7 @@ export default async function JourneysPage() {
           <h1 className="hero-title" style={{ marginBottom: "8px" }}>
             Learning Journeys
           </h1>
-          <p className="hero-lead">Choose a journey to explore its outline. Full details arrive in the next step.</p>
+          <p className="hero-lead">Pick a journey to read its outline and steps.</p>
         </div>
 
         {standardJourneys.length === 0 ? (

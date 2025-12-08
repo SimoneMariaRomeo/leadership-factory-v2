@@ -1,419 +1,547 @@
-# NEXT TASK — Step 6: full working /my-profile & /journeys listing (final v1 profile)
+Step 7: full working /my-profile & /journeys listing (final v1 profile)
 
-Branch: `feature/202512081003-step-6-profile-and-journey-list`
+follow the AGENTS.md instructions and implement the step below. Check the overall features to ensure your implementation is aligned to the bigger picture/project scope. After that, implement the tests below.
 
-Follow **AGENTS.md** and available /docs. Reuse the patterns, style, and choices already made in Steps 1–5.
+Read these project docs BEFORE coding anything:
+- docs/features.md
+- docs/prisma-database-structure.md
+- docs/visual-guidelines.md
+- docs/env-contents.md
+- docs/image-checklist.md
+- docs/implementation-steps.md
+- docs/key-pages-additional-notes.md
 
-This step assumes:
+Use Next.js 14 App Router (TypeScript + React) and the existing styling approach (Tailwind-like utility classes + gold/glass visual system). Do NOT implement new features as static HTML files under public/. All journeys and steps must be real app/ routes that can evolve and be tested properly.
 
-- Prisma schema and seed for journeys/sessions are in place (Step 1).
-- Public funnel + visual style are implemented in the real Next.js app (Step 2 rework).
-- `/api/chat` + need-analysis chat work with the new models (Step 3).
-- `create_learning_goal` is wired to `/learning-goal-confirmation` (Step 4).
-- Auth + goal-commit from `/whats-next` are implemented and create a personalized journey (Step 5).
+Step 7 builds on:
+- Step 3–4: /api/chat and need-analysis chat that emits create_learning_goal and redirects to /learning-goal-confirmation.
+- Step 5: auth + goal-commit endpoint that creates personalized journeys (awaiting_review).
+- Step 6: minimal /my-profile and /journeys listing (standard + personalized).
 
-Your mission now: give the user a **real, meaningful home** after committing their goal: `/my-profile` + `/journeys` listing, with nav + logout and a small first-time profile tour.
+Your job now is to make journeys and step sessions fully usable, including the mark_step_completed command.
 
----
-
-## 1. Scope & non-goals
-
-**In scope for Step 6**
-
-- Implement **/my-profile** page:
-  - Auth-protected.
-  - Shows the user’s current goal and journeys.
-  - Has a “Recommended journey” box with the latest personalized journey (if any).
-  - Lists **all personalized journeys** for that user.
-  - Includes links to **standard journeys**.
-  - Includes a simple **first-time user tour** stored on the user record.
-
-- Implement **/journeys** list page:
-  - Lists **standard journeys only** (`isStandard = true AND status = "active"`).
-  - Uses the same gold / glass visual language as the funnel pages.
-  - Each journey card links to `/journeys/[slug]` (even if that page is still a placeholder for Step 7).
-
-- Implement or extend a **shared top nav**:
-  - `Home` → `/`
-  - `Learning Journeys` → `/journeys`
-  - `Profile` → `/my-profile`
-  - Login/logout on the right side, reusing the auth state from Step 5.
-
-- Implement a **Logout** flow (in terms of UI and wiring to existing auth), using the same cookies / session mechanism created for Step 5.
-- Persist a profile-tour flag on the user (e.g. `User.profileTour`, default `true` at creation) and flip it to `false` when the tour is completed.
 
 ---
 
-## 2. Behaviour & data rules
+## 1. STEP 7 – IMPLEMENTATION (JOURNEY OVERVIEW + STEPS + mark_step_completed)
 
-### 2.1 Auth and access rules
+### 1.1 Scope of Step 7
 
-- `/my-profile`:
-  - **Requires auth**.
-  - For unauthenticated users:
-    - Use the same pattern you used for `/whats-next` to force login/signup (redirect or inline modal, whichever is already implemented).
-  - After successful login, redirect back to `/my-profile`.
+Implement fully working journeys and step sessions:
 
-- `/journeys`:
-  - Route itself can remain technically “public”, but for Step 6:
-    - In the **top nav**, show `Learning Journeys` only when the user is **logged in**.
-    - If a **guest** hits `/journeys` directly:
-      - Show a simple centered card: “Please sign in to explore journeys” and a button that triggers login using the existing auth flow.
-    - If a **logged-in user** hits `/journeys`:
-      - Show the list of **standard journeys** (see below).
+- User-facing routes:
+  - `/journeys` (public list of standard journeys – mostly done in Step 6, refine if needed).
+  - `/journeys/[slug]` – journey overview (standard or personalized).
+  - `/journeys/[slug]/steps/[stepId]` – step session chat (standard or personalized).
+- Behaviour:
+  - Correctly load journeys and their steps from the DB.
+  - Enforce basic access rules for personalized journeys.
+  - Allow users to open unlocked/completed steps and run a chat session for that step via /api/chat.
+  - Implement mark_step_completed end-to-end so completing a step:
+    - updates LearningJourneyStep in DB,
+    - unlocks the next step,
+    - and navigates the user back to the journey overview page.
 
-### 2.2 /my-profile — what to show
 
-On `/my-profile` for a logged-in user:
+### 1.2 Data & rules you must respect
 
-1. **Top section — Hero + current goal**
+Use docs/features.md and docs/prisma-database-structure.md as source of truth for semantics. In particular:
 
-   - A hero card using the same glass / gold gradient language as the funnel.
-   - Shows:
-     - A welcome line like: “Welcome back, [first name or email]”!.
-     - If `User.learningGoal` is set:
-       - Title: “Your current learning goal”
-       - The goal text.
-       - Optionally the date from `learningGoalConfirmedAt`.
-     - If `User.learningGoal` is **not** set:
-       - Friendly empty state:
-         - “You haven’t committed a learning goal yet.”
-         - A button linking to `/welcome` to start the flow.
+- Journeys:
+  - `LearningJourney.isStandard = true` and `status = "active"` and `personalizedForUserId = null` → standard journey, public.
+  - `LearningJourney.isStandard = false` and `personalizedForUserId = user.id` → personalized journey, visible only to that user.
+  - Slug:
+    - Used in `/journeys/[slug]` and `/journeys/[slug]/steps/[stepId]`.
+    - Slugs already exist for at least:
+      - “Goal Clarification” → `"goal-clarification"`.
+    - Do NOT make slug editable from the UI in this step.
 
-2. **Recommended journey card**
+- Steps:
+  - `LearningJourneyStep` belongs to one journey and one `LearningSessionOutline`.
+  - `status` is `"locked" | "unlocked" | "completed"` (enforced by code, not necessarily DB).
+  - `chatId` (on the step) links the step to its `LearningSessionChat` (one chat per step per journey per user).
+  - `unlockedAt` is set when the step becomes available.
+  - `completedAt` is set when the step is marked completed (once).
 
-   - Logic:
-     - Query all **personalized journeys** for this user:
-       - `isStandard = false`
-       - `personalizedForUserId = currentUser.id`
-       - `status NOT IN ["archived"]`
-     - Pick the **latest** by `createdAt` (if tie, break by `updatedAt`).
-   - If one exists:
-     - Show a glass card titled “Recommended journey”.
-     - Display:
-       - Journey `title`
-       - `status` badge (`awaiting_review`, `active`, `completed`, etc.).
-       - Short snippet from `intro` (if present).
-     - Add a primary button:
-       - Label: “View journey”
-       - Link to `/journeys/[slug]`.  
-         For Step 6, `/journeys/[slug]` can be a **placeholder page** that just says “Journey details coming soon in the next step”.
-   - If none exists:
-     - Show a friendly placeholder card:
-       - “Your recommended journey will appear here as soon as we build it from your goal.”
-       - If the user has a `learningGoal`, you can mention:  
-         “We’ll soon build a journey around: [goal text]”.
+- Step unlocking model:
+  - First step in a journey is unlocked by default when the journey becomes active (you can assume data is seeded / created accordingly).
+  - A step can be opened if:
+    - `status = "unlocked"` or `"completed"`.
+  - When a step is marked completed:
+    - Its `status` becomes `"completed"` (if not already).
+    - Its `completedAt` is set (only the first time).
+    - The next step (if any) becomes unlocked:
+      - `status = "unlocked"` if it was `"locked"`.
+      - `unlockedAt` is set if it was null.
+  - Re-completing an already completed step must not regress or double-set timestamps.
 
-3. **Personalized journeys list**
+- Chat model:
+  - `LearningSessionChat` is the chat container.
+  - For need-analysis, you already create/use a chat linked to the need-analysis outline and user.
+  - For steps:
+    - You must create and reuse a single chat per (journey step, user) using the `LearningJourneyStep.chatId` relation (do NOT add a journeyStepId field to LearningSessionChat).
+    - Chat messages are stored in `Message` with optional `command` JSON field.
 
-   - Below the recommended journey card, show a section:
-     - Title: “Your journeys”.
-   - Query personalized journeys again (same criteria as above).
-   - If there are journeys:
-     - Render a list or grid of cards, one per journey:
-       - `title`
-       - `status` badge
-       - Optionally `userGoalSummary` snippet.
-       - A small secondary link/button: “Open journey” → `/journeys/[slug]` (placeholder for now).
-   - If there are **no** journeys:
-     - Show an empty-state card:
-       - “You don’t have any journeys yet.”
-       - If the user **has** a goal:
-         - Text: “We’ll turn your goal into a journey soon. You’ll see it here.”
-       - If the user **has no goal**:
-         - Button: “Start from the beginning” → `/welcome`.
 
-4. **Standard journeys access**
+### 1.3 `/journeys` – public list of standard journeys (refine only if needed)
 
-   - At the bottom or in a side section, add a small block:
-     - Title: “Explore standard journeys”.
-     - Either:
-       - Add a button: “Browse journeys” → `/journeys`.
-       - Or list a few top standard journeys (titles only) and a “View all” link to `/journeys`.
+If Step 6 already implemented `/journeys`, keep it and only adjust where necessary to match the rules:
 
-### 2.3 /journeys — list of standard journeys
+- Data:
+  - Query all `LearningJourney` where:
+    - `isStandard = true`
+    - `status = "active"`
+    - `personalizedForUserId IS NULL`
+  - Order by `order` or `createdAt` (you choose, but be consistent).
 
-On `/journeys`:
+- UI:
+  - Show a grid or list of glass-effect cards with:
+    - Journey title.
+    - Short intro.
+  - Each card links to `/journeys/[slug]`.
 
-- Only show **standard journeys**:
+- Do NOT:
+  - Show personalized journeys on this page.
+  - Implement any admin controls here.
 
-  ```ts
-  where: {
-    isStandard: true,
-    status: "active",
-  }
-For each standard journey:
 
-Show:
+### 1.4 `/journeys/[slug]` – journey overview
 
-title
+Implement a Next.js App Router route at `app/journeys/[slug]/page.tsx` (or equivalent) with the following behaviour:
 
-intro snippet.
+**1. Route resolution & access rules**
 
-A small “Template” tag or similar (to distinguish from personalized journeys in future steps).
+- Fetch the journey by slug from the main DB.
+- If no journey exists → show a friendly 404-style “Journey not found” page within the existing layout.
 
-Each card links to /journeys/[slug].
-For Step 6, /journeys/[slug] is still a placeholder like:
+- If `isStandard = true`:
+  - Page is accessible to anyone (even unauthenticated).
+  - No user-specific restrictions.
 
-Title: journey title
+- If `isStandard = false` (personalized):
+  - Require an authenticated user.
+  - Only allow access if:
+    - `personalizedForUserId === currentUser.id`.
+  - If anonymous or different user:
+    - Redirect to `/` or `/my-profile` with a lightweight error message.
+    - Do NOT leak the existence of someone else’s journey.
 
-Text: “Full journey view (steps + sessions) will be implemented in the next step.”
+**2. Data to load**
 
-If there are no standard journeys seeded yet:
+For a valid journey:
 
-Show a neutral empty-state card:
+- Journey fields:
+  - `title`
+  - `intro`
+  - `objectives` (JSON array)
 
-“No standard journeys are available yet. An admin will add them soon.”
 
-2.4 Top navigation & logout
-Implement a shared nav used across the app (reuse or refactor any existing header into one consistent component).
+- Steps:
+  - Load `LearningJourneyStep[]`:
+    - Filter by `journeyId = journey.id`.
+    - Order by `order` ascending.
+  - For each step include:
+    - `status`
+    - Linked `LearningSessionOutline.title`
 
-Nav content for desktop:
+**3. UI layout**
 
-Left side:
+Align with the visual guidelines -- give a minimal luxury feeling:
 
-Logo / brand.
+- Background:
+  - Same luxury gradient + glass card style as the funnel pages.
+- Header:
+  - Journey title in Playfair Display.
+- Content:
+  - Journey intro in a body paragraph.
+  - Objectives as a bullet list if present.
+- Steps list:
+  - One row/card per step with:
+    - Step title (from `sessionOutline.title`).
+    - Optional status pill:
+      - Completed → subtle green pill - text: Completed.
+      - Unlocked → gold pill - text: Start.
+      - Locked → grey pill - text: Locked.
 
-Links:
 
-Home → /
+**4. Interaction**
 
-Learning Journeys → /journeys (only show when logged in)
+- Clicking on a step row:
 
-Profile → /my-profile (only show when logged in)
+  - If `status = "locked"`:
+    - Do NOT navigate.
 
-Right side:
 
-If not logged in:
+  - If `status = "unlocked"` or `"completed"`:
+    - Navigate to `/journeys/[slug]/steps/[stepId]`.
 
-Show a Login button that triggers the existing auth mechanism from Step 5.
+- For personalized journeys:
+  - Ensure links preserve any needed query params (e.g. `/journeys/[slug]/steps/[stepId]` should be enough, as you resolve the user from session).
 
-If logged in:
 
-Show the user email or avatar (if available).
+### 1.5 `/journeys/[slug]/steps/[stepId]` – step session chat
 
-Show a Logout button.
+Implement a Next.js route at `app/journeys/[slug]/steps/[stepId]/page.tsx` (or equivalent) that hosts the chat for a specific step.
 
-Logout behaviour:
+**1. Route resolution & guards**
 
-Reuse the same auth system as Step 5 (do NOT invent a new one).
+- Load the journey by slug and step by id and ensure:
+  - `step.journeyId === journey.id`.
+- Apply the same access rules as in `/journeys/[slug]`:
+  - Standard journeys → open to all.
+  - Personalized journeys → require current user and `personalizedForUserId === currentUser.id`.
 
-Implement a small endpoint (if not already present), e.g. /api/auth/logout, that:
+- If any of these checks fail:
+  - Return a friendly error or redirect to the journey page.
 
-Clears the auth cookie / token.
+**2. Get or create the step chat**
 
-Returns 200.
+You must use the existing schema (no new columns):
 
-Hook the Logout button to:
+- If `step.chatId` is set:
+  - Load the corresponding `LearningSessionChat` (and its messages, as your chat UI expects).
 
-Call the logout endpoint.
+- If `step.chatId` is null:
+  - Create a new `LearningSessionChat` row with:
+    - `userId` = current user id (or null if you decide to allow anonymous runs on standard journeys).
+    - `sessionOutlineId` = `step.sessionOutlineId`.
+    - Any other required fields (timestamps, metadata).
+  - Update the step:
+    - `chatId = newChat.id`.
+    - If this is the first time the user opens this step and `status = "locked"`, you may:
+      - Either prevent entry (preferable) – but since you guard via status already, this situation ideally doesn’t happen.
+      - Or upgrade to `status = "unlocked"` and set `unlockedAt`.
 
-On success, redirect the user to / and refresh client-side auth state.
+Keep the “one chat per step per user” invariant via `chatId` on the step.
 
-3. /my-profile first-time tour
-Implement a lightweight tour for /my-profile that is stored on the user record:
+**3. Chat UI integration**
 
-- Add a boolean flag on User (e.g. `profileTour`, default `true` on creation).
-- On first visit (logged-in), if `profileTour` is true: show a dismissible tour card at the top of the page.
-- Example content:
-  - Title: “Welcome to your profile”
-  - Bullets: “See your current learning goal.” / “Follow your recommended journey.” / “Browse all your journeys and standard programs.”
-  - Primary button: “Got it”.
-- When clicking “Got it”: hide the card and set `profileTour` to false in the database.
-- On subsequent visits: do not show the tour card if `profileTour` is false.
+- Reuse the same chat component / hook you implemented for need-analysis (Step 3–4), but configured for step sessions:
+  - Pass the `sessionOutlineId` and `step.id` (journeyStepId) into the initial call to `/api/chat`.
+- The step page should:
+  - Render the chat UI with the coach avatar, bubbles, etc., using the existing visual style.
+  - Show the step title and a short description at the top (from `LearningSessionOutline`).
 
-4. Implementation constraints
-- Schema change is allowed for adding `User.profileTour` to persist the tour state; keep other schema changes out of scope.
-- Do NOT modify /api/chat or the goal-commit logic created in Step 5.
-- Do NOT change the need-analysis behaviour.
-- Respect the visual guidelines (fonts, colours, gold gradients, glass cards) already specified in the design docs.
-- Keep the CSS / component structure consistent with what you created in Steps 2–5.
+**4. /api/chat extension for step sessions**
 
-5. TESTS TO CREATE — tests/profile-and-journeys-tests.js
-Create a new test file:
+Extend the existing `/api/chat` implementation (do not create a new endpoint) so that it supports both modes:
 
-tests/profile-and-journeys-tests.js
+- Need-analysis (already done).
+- Journey step sessions (new for Step 7).
 
-Add a script in package.json (if not already present):
+For journey step sessions:
 
-json
-Copy code
-"test:profile-and-journeys": "node tests/profile-and-journeys-tests.js"
-The tests should focus on real behaviour (auth, DB state, routes, and rendered content), not pure unit tests.
+- The client should include:
+  - `sessionOutlineId` (always).
+  - `journeyStepId` (for step sessions).
+  - Chat identifier (if you already use one); or the backend can infer the `LearningSessionChat` via `journeyStepId` → `chatId`.
 
-For each test, log a human-readable explanation before assertions (same style as test:schema-and-seed and test:public-funnel).
+Backend behaviour (high-level):
 
-A. Auth gating and nav visibility
-/my-profile requires login
+- Resolve the correct `LearningSessionChat` for the step:
+  - If `step.chatId` exists → use that.
+  - If not → create the chat and update the step as described above.
+- Build the prompt using:
+  - `User.botRole`
+  - `LearningSessionOutline.objective`
+  - `LearningSessionOutline.content`
+  - `LearningSessionOutline.botTools`
+  - `LearningJourney.userGoalSummary` (if applicable)
+- Stream / return messages as in need-analysis.
+- Persist `Message` rows as you already do.
+- If the assistant returns a JSON command, set `Message.command` for that assistant message.
 
-Start with no auth cookie.
 
-Request /my-profile.
+### 1.6 mark_step_completed command handling
+
+Implement the full flow for:
+
+```json
+{
+  "command": "mark_step_completed"
+}
+generated by the assistant at the end of a step session.
+
+1. Assistant side (botTools)
+
+For step session outlines (not need-analysis), ensure LearningSessionOutline.botTools includes instructions telling the assistant:
+
+When the user has clearly finished the step, send exactly:
+
+{"command": "mark_step_completed"} as a pure JSON message (no extra text).
+
+Only once per completion.
+
+Do NOT break or change the need-analysis botTools (which use create_learning_goal).
+
+2. Frontend – useChat handling
+
+In your chat client logic (hook/component):
+
+Detect when the last assistant message has command.command === "mark_step_completed" (or equivalent depending on how you store it).
+
+When that happens:
+
+Do NOT render the raw JSON in the chat bubbles.
+
+Call a dedicated endpoint (see below) to mark the step as completed in the DB.
+
+After a successful response:
+
+Navigate back to /journeys/[slug].
+
+Optionally show a minimal inline toast / banner “Step completed” on the journey page.
+
+3. Backend – mark-step-completed endpoint
+
+Implement a small API endpoint, e.g.:
+
+POST /api/journeys/steps/[stepId]/complete
+
+Or similar; pick a sane, REST-like path.
+
+Behaviour:
+
+Require an authenticated user if the journey is personalized (and enforce ownership).
+
+Validate that the step exists and belongs to a journey the user is allowed to access.
+
+Update the step:
+
+If status !== "completed":
+
+Set status = "completed".
+
+Set completedAt = now() if null.
+
+If already completed, keep completedAt unchanged.
+
+Unlock next step (if any):
+
+Load all steps for that journey ordered by order.
+
+Find the next step after the completed one.
+
+If next step’s status is "locked":
+
+Set status = "unlocked".
+
+Set unlockedAt = now() if null.
+
+Return a JSON payload with the information the frontend needs to redirect and/or refresh:
+
+nextUrl: "/journeys/[slug]".
+
+Optionally, a summary of step statuses (but not required for this step).
+
+Do NOT:
+
+Write complex business logic into the route handler; prefer to extract a small helper function (e.g. completeStepAndUnlockNext(stepId, userId)) into a separate module (e.g. src/lib/journeys.ts) that you can test directly.
+
+1.7 Edge cases / guardrails
+Handle at least these cases gracefully:
+
+User tries to open a personalized journey or step that belongs to another user:
+
+Respond with a redirect or minimal error message, no data leakage.
+
+User tries to call the mark-step-completed endpoint for a step they don’t own:
+
+Return 403 and do not update the DB.
+
+User opens a step where:
+
+status = "locked":
+
+They should not be able to run the chat; either redirect or show a “locked” message instead of the chat UI.
+
+status = "completed":
+
+They can re-open the chat, but mark_step_completed should be idempotent (no double unlocks or inconsistent state).
+
+2. STEP 7 – TESTS (JOURNEYS + STEPS + mark_step_completed)
+Create a new test file and script for Step 7.
+
+2.1 Test harness setup
+Add a new script in package.json:
+
+"test:journeys-and-steps": "node tests/journeys-and-steps-tests.js"
+
+Create tests/journeys-and-steps-tests.js that:
+
+Uses plain Node.js (no heavy test framework).
+
+Connects to the same Postgres DB as other tests, using the existing prisma config.
+
+Prints clear, human-readable logs:
+
+"[Test] ..."
+
+" - Expectation: ..."
+
+" ok: ..." / " FAIL: ..." with error details.
+
+Cleans up any test data it creates (or uses a dedicated test schema if that’s already established).
+
+Do NOT:
+
+Call real LLM APIs or send real emails in tests.
+
+Hit Next.js pages through a browser; focus on DB + server-side logic and small helper functions.
+
+2.2 Tests to implement
+You don’t need dozens of tests, but each of the following behaviours should be covered at least once. Feel free to factor out helpers to keep the file readable.
+
+A. Journey access rules
+Test: Standard journey is publicly visible
+
+Seed or create a standard journey:
+
+isStandard = true, status = "active", personalizedForUserId = null.
+
+Check that your “load journey by slug” helper (the same logic used by /journeys/[slug]) returns the journey when no user is provided.
+
+Log that standard journeys are visible without auth.
+
+Test: Personalized journey is only visible to the owner
+
+Create:
+
+User A, User B.
+
+Journey J with isStandard = false, personalizedForUserId = userA.id.
+
+Using your load helper:
+
+With user A → journey is returned.
+
+With user B → journey is rejected (null / error).
+
+With no user → journey is rejected.
+
+Log these behaviours clearly.
+
+B. Step list + statuses
+Test: Steps are returned ordered and decorated correctly
+
+For a given journey, create three steps with explicit order and varying statuses:
+
+Step1: order = 1, status = "completed", completedAt set.
+
+Step2: order = 2, status = "unlocked", unlockedAt set, completedAt = null.
+
+Step3: order = 3, status = "locked".
+
+Call a small helper used by /journeys/[slug] to fetch and map steps into the UI shape.
 
 Assert:
 
-Response is either:
+Steps are in order 1, 2, 3.
 
-A redirect to the login/auth flow, OR
+The mapped statuses match.
 
-An HTML page that contains the inline auth UI (use the same pattern as /whats-next).
+Completed step includes a completedAt value; unlocked step has no completedAt.
 
-Log clearly which behaviour is expected based on your existing auth implementation.
+C. Step chat wiring
+Test: Opening a step creates (or reuses) a chat and links it via chatId
 
-Nav items depend on auth
+Set up a journey + step with status = "unlocked" and chatId = null.
 
-As guest (no auth):
-
-Fetch the home page.
-
-Assert nav does not show links to /journeys or /my-profile.
-
-Assert a Login button is visible.
-
-As logged-in user:
-
-Fetch the home page with a valid auth session.
-
-Assert nav does show links to /journeys and /my-profile.
-
-Assert Logout is visible.
-
-B. /journeys standard list vs personalized
-/journeys shows only standard journeys
-
-Seed DB (or rely on existing seed) with:
-
-At least one standard journey (isStandard = true, status = "active").
-
-At least one personalized journey for some user (isStandard = false, personalizedForUserId not null).
-
-As logged-in user:
-
-Request /journeys.
+Call a helper that encapsulates what the step page does for chat resolution (e.g. getOrCreateStepChat({ stepId, userId })).
 
 Assert:
 
-The titles of standard journeys appear.
+A LearningSessionChat record is created with:
 
-Titles of personalized journeys do not appear.
+sessionOutlineId = step.sessionOutlineId.
 
-Assert that each journey card links to /journeys/[slug].
+userId = user.id (if passed).
 
-Guest view of /journeys
+The step now has chatId = chat.id.
 
-As guest:
+Call the helper again for the same step and user:
 
-Request /journeys.
+Assert it reuses the same chat (no new DB row created).
 
-Assert you see a gating message (e.g. “Please sign in to explore journeys”) instead of the full journey list.
+D. mark_step_completed behaviour
+Test: Completing a step updates its status and unlocks the next
 
-C. /my-profile content & journeys
-Profile shows current goal and recommended journey
+Prepare:
 
-Use a test user who:
+Journey J with three steps S1, S2, S3 ordered 1, 2, 3:
 
-Has learningGoal set.
+S1: status = "unlocked".
 
-Has at least one personalized journey (created via the goal commit endpoint from Step 5).
+S2: status = "locked".
 
-As that user:
+S3: status = "locked".
 
-Request /my-profile.
+Call the same helper used by /api/journeys/steps/[stepId]/complete, e.g. completeStepAndUnlockNext(stepId, userId) on S1.
 
-Assert:
+Assert in DB:
 
-The current goal text is visible.
+S1:
 
-A “Recommended journey” card is visible.
+status = "completed".
 
-The journey shown as recommended is the latest personalized journey for that user (by createdAt).
+completedAt is set (around now).
 
-The card includes its title and a status label.
+S2:
 
-Profile shows all personalized journeys
+status = "unlocked".
 
-For the same user, create at least two personalized journeys with different statuses.
+unlockedAt is set.
 
-Request /my-profile.
+S3:
 
-Assert:
+Still status = "locked".
 
-A “Your journeys” section is visible.
+Test: Completing an already completed step is idempotent
 
-Both journeys appear in the list with their correct statuses.
-
-Each has some link/button pointing to /journeys/[slug].
-
-Empty-state behaviour when no journeys
-
-Use a user that:
-
-Either has no learningGoal, or has a goal but no personalized journeys yet.
-
-As that user:
-
-Request /my-profile.
+Call the helper again on S1.
 
 Assert:
 
-The recommended journey card shows the empty placeholder text (no journey details).
+completedAt for S1 did NOT change.
 
-The “Your journeys” section shows a friendly “no journeys yet” message.
+S2 and S3 statuses remain the same.
 
-There is a clear CTA to either:
+Log clearly that the operation is idempotent.
 
-Start the funnel (/welcome), or
+E. Access control on completion
+Test: User cannot complete another user’s personalized step
 
-Wait for journeys (if a goal already exists).
+Create:
 
-D. First-time /my-profile tour
-Profile tour appears only on first visit (client-side)
+User A, User B.
 
-This test can be a higher-level or pseudo-browser test if needed:
+Personalized journey J owned by A with one step S (unlocked).
 
-Simulate a logged-in browser context with cleared localStorage.
-
-Load /my-profile.
+Call completeStepAndUnlockNext(S.id, userB.id) or hit the API with a mocked session for user B.
 
 Assert:
 
-A tour card with welcome text is rendered.
+The function/API returns an error/forbidden result.
 
-Simulate clicking “Got it”.
+S’s status, completedAt, and next steps are unchanged.
 
-Assert:
+F. Integration glue (lightweight)
+You don’t need full E2E, but add at least one “integration-style” check that the JSON returned from your completion endpoint is sane.
 
-localStorage now contains lf_my_profile_seen = "true".
+Test: Completion endpoint returns a nextUrl
 
-Reload /my-profile.
+Simulate an HTTP-like call to the completion endpoint handler with:
 
-The tour card is no longer rendered.
+Valid user.
 
-If this is hard to do in pure Node tests, at minimum:
-
-Document the expected behaviour in test logs.
-
-Add a small check using your chosen browser/test framework later.
-
-E. Logout flow
-Logout clears session and updates nav
-
-Start as logged-in user.
-
-Request /my-profile (assert it loads correctly).
-
-Trigger Logout (e.g. send POST/GET to the logout endpoint you implement).
-
-After logout:
-
-Request /.
+Valid step.
 
 Assert:
 
-Nav no longer shows /journeys and /my-profile links.
+The response status is 200.
 
-Login button is visible again.
+The JSON payload contains:
 
-Request /my-profile:
+nextUrl (e.g. /journeys/goal-clarification or the relevant slug).
 
-Assert you are redirected / gated by auth again (same as in test A.1).
+Log that the frontend can safely redirect based on this.

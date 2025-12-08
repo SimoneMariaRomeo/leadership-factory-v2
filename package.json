@@ -46,6 +46,7 @@
     "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js",
     "test:goal-commit": "node tests/goal-commit-tests.js",
     "test:profile-and-journeys": "node tests/profile-and-journeys-tests.js",
+    "test:journeys-and-steps": "node tests/journeys-and-steps-tests.js",
     "test:live-admin": "node tests/live-admin-check.js",
     "test:all": "node run-all-tests.js"
   },
