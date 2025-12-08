@@ -171,11 +171,9 @@ export default async function MyProfilePage() {
             </div>
           </section>
 
-          <section className="profile-section">
-            <div className="signout-row">
-              <SignOutButton />
-            </div>
-          </section>
+        </div>
+        <div className="signout-row">
+          <SignOutButton />
         </div>
       </div>
     </div>
