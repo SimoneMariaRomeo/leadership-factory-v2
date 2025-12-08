@@ -13,6 +13,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [liveSteps, setLiveSteps] = useState<{ id: string; title: string; description: string }[]>([]);
 
   useEffect(() => {
     setShow(initialShow);
@@ -44,10 +45,18 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
     []
   );
 
-  const availableSteps = useMemo(() => {
-    if (!show) return [];
-    return steps.filter((step) => document.getElementById(step.id));
-  }, [steps, show]);
+  useEffect(() => {
+    if (!show) {
+      setLiveSteps([]);
+      return;
+    }
+    // Defer to ensure the DOM has rendered before querying.
+    const timer = setTimeout(() => {
+      setLiveSteps(steps);
+      setStepIndex(0);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [show, steps]);
 
   const positionTooltip = useCallback(
     (rect: DOMRect | null) => {
@@ -61,21 +70,27 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
   );
 
   const updateHighlight = useCallback(() => {
-    if (!show) return;
-    const step = availableSteps[stepIndex];
+    if (!show || liveSteps.length === 0) return;
+    const safeIndex = Math.min(stepIndex, liveSteps.length - 1);
+    const step = liveSteps[safeIndex];
     if (!step) {
       setHighlightRect(null);
       return;
     }
     const el = document.getElementById(step.id);
     if (!el) {
-      setHighlightRect(null);
+      // Skip missing targets and finish if none remain.
+      if (safeIndex >= liveSteps.length - 1) {
+        handleGotIt();
+      } else {
+        setStepIndex((prev) => prev + 1);
+      }
       return;
     }
     const rect = el.getBoundingClientRect();
     setHighlightRect(rect);
     positionTooltip(rect);
-  }, [availableSteps, positionTooltip, show, stepIndex]);
+  }, [liveSteps, positionTooltip, show, stepIndex]);
 
   useEffect(() => {
     if (!show) return;
@@ -98,7 +113,11 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
   };
 
   const handleNext = () => {
-    if (stepIndex >= availableSteps.length - 1) {
+    if (liveSteps.length === 0) {
+      handleGotIt();
+      return;
+    }
+    if (stepIndex >= liveSteps.length - 1) {
       handleGotIt();
       return;
     }
@@ -109,11 +128,12 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
     handleGotIt();
   };
 
-  if (!show || !userId || availableSteps.length === 0) {
+  if (!show || !userId || liveSteps.length === 0) {
     return null;
   }
 
-  const currentStep = availableSteps[stepIndex];
+  const safeIndex = Math.min(stepIndex, liveSteps.length - 1);
+  const currentStep = liveSteps[safeIndex];
 
   return (
     <>
