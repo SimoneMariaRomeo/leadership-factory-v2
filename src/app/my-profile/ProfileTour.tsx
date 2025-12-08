@@ -24,6 +24,11 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
 
   const steps = useMemo(
     () => [
+      {
+        id: "tour-start-anchor",
+        title: "Take a quick tour",
+        description: "We will quickly highlight the main areas of your profile. Click Next to begin.",
+      },
       { id: "tour-avatar", title: "Avatar", description: "This is your profile picture. Click it anytime to change it." },
       { id: "tour-goal", title: "Your learning goal", description: "Edit your goal here so we can tailor your journey." },
       {
@@ -59,15 +64,38 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
   }, [show, steps]);
 
   const positionTooltip = useCallback(
-    (rect: DOMRect | null) => {
+    (rect: DOMRect | null, stepId?: string) => {
       if (!rect) return;
       const tooltipWidth = 280;
-      const left = Math.max(16, Math.min(rect.left, window.innerWidth - tooltipWidth - 16));
-      const top = Math.max(16, Math.min(rect.bottom + 12, window.innerHeight - 160));
+      const tooltipHeight = 180;
+      const navGuard = 72; // keeps the tooltip clear of the top nav
+
+      if (stepId === "tour-start-anchor") {
+        const left = Math.max(16, (window.innerWidth - tooltipWidth) / 2);
+        const top = Math.max(navGuard + 8, (window.innerHeight - tooltipHeight) / 2);
+        setTooltipPos({ top, left });
+        return;
+      }
+
+      const preferRight = rect.right + 16;
+      const leftCandidate = preferRight + tooltipWidth + 16 <= window.innerWidth ? preferRight : rect.left;
+      const left = Math.max(16, Math.min(leftCandidate, window.innerWidth - tooltipWidth - 16));
+      const below = rect.bottom + 12;
+      const topCandidate = Math.max(navGuard + 8, below);
+      const top = Math.min(topCandidate, window.innerHeight - tooltipHeight - 16);
       setTooltipPos({ top, left });
     },
     [setTooltipPos]
   );
+
+  const handleGotIt = useCallback(async () => {
+    try {
+      await fetch("/api/profile/tour", { method: "POST", credentials: "include" });
+    } catch (err) {
+      console.error("Marking tour complete failed:", err);
+    }
+    setShow(false);
+  }, []);
 
   const updateHighlight = useCallback(() => {
     if (!show || liveSteps.length === 0) return;
@@ -87,9 +115,28 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
       }
       return;
     }
+
+    // Special case: intro step uses a synthetic center rect.
+    if (step.id === "tour-start-anchor") {
+      const centerRect = new DOMRect(window.innerWidth / 2 - 1, window.innerHeight / 2 - 1, 2, 2);
+      setHighlightRect(centerRect);
+      positionTooltip(centerRect, step.id);
+      return;
+    }
+
     const rect = el.getBoundingClientRect();
-    setHighlightRect(rect);
-    positionTooltip(rect);
+    const needsScroll = rect.top < 0 || rect.bottom > window.innerHeight;
+    if (needsScroll) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        const nextRect = el.getBoundingClientRect();
+        setHighlightRect(nextRect);
+        positionTooltip(nextRect, step.id);
+      }, 260);
+    } else {
+      setHighlightRect(rect);
+      positionTooltip(rect, step.id);
+    }
   }, [liveSteps, positionTooltip, show, stepIndex]);
 
   useEffect(() => {
@@ -102,15 +149,6 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
       window.removeEventListener("scroll", updateHighlight, true);
     };
   }, [show, updateHighlight]);
-
-  const handleGotIt = async () => {
-    try {
-      await fetch("/api/profile/tour", { method: "POST", credentials: "include" });
-    } catch (err) {
-      console.error("Marking tour complete failed:", err);
-    }
-    setShow(false);
-  };
 
   const handleNext = () => {
     if (liveSteps.length === 0) {

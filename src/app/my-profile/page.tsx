@@ -76,11 +76,18 @@ export default async function MyProfilePage() {
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner">
         <div className="profile-outer-card">
+          <div
+            id="tour-start-anchor"
+            aria-hidden="true"
+            style={{ position: "absolute", top: 16, left: 16, width: 1, height: 1, pointerEvents: "none" }}
+          />
           <ProfileTour userId={user.id} show={user.profileTour ?? false} />
 
-          <section className="profile-section" id="tour-avatar">
+          <section className="profile-section">
             <div className="profile-row">
-              <AvatarPicker name={user.name} email={user.email} picture={(user as any).picture || null} />
+              <div id="tour-avatar">
+                <AvatarPicker name={user.name} email={user.email} picture={(user as any).picture || null} />
+              </div>
               <div>
                 <h1 className="hero-title welcome-title" style={{ margin: 0 }}>
                   <span className="welcome-underline">Welcome back, </span>
