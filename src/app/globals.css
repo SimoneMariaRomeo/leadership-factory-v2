@@ -464,6 +464,12 @@ a {
   color: var(--text-strong);
 }
 
+.goal-box.flat {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  margin: 0;
+}
+
 .goal-label {
   display: inline-block;
   font-size: 12px;
@@ -726,7 +732,7 @@ a {
   top: 0;
   z-index: 30;
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.5);
   border-bottom: 1px solid rgba(17, 24, 39, 0.06);
 }
 
@@ -734,9 +740,9 @@ a {
   max-width: 1200px;
   margin: 0 auto;
   padding: 14px 20px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
@@ -771,6 +777,7 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: center;
 }
 
 .top-nav-link {
@@ -848,7 +855,7 @@ a {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
   z-index: 1;
 }
 
@@ -875,6 +882,11 @@ a {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.journey-card.minimal {
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
 }
 
 .journey-card-wide {
@@ -980,13 +992,13 @@ a {
 
 .profile-hero {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 18px;
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid rgba(17, 24, 39, 0.06);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.08);
-  padding: 24px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  border: 1px solid rgba(17, 24, 39, 0.05);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+  padding: 18px;
 }
 
 .profile-hero-text {
@@ -1037,7 +1049,7 @@ a {
 .profile-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .section-head {
@@ -1046,6 +1058,67 @@ a {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(199, 157, 45, 0.2), rgba(247, 215, 116, 0.2));
+  border: 1px solid rgba(199, 157, 45, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--text-strong);
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.goal-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.goal-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.goal-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .standard-list {
@@ -1096,11 +1169,11 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 20px;
-  border-radius: 14px;
-  border: 1px solid rgba(199, 157, 45, 0.25);
-  background: rgba(199, 157, 45, 0.08);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(199, 157, 45, 0.2);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
 }
 
 .tour-kicker {
@@ -1118,10 +1191,32 @@ a {
   line-height: 1.5;
 }
 
+.chat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.chat-list-item {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+}
+
+.chat-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
 @media (max-width: 720px) {
   .top-nav-inner {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
+    justify-items: flex-start;
     padding: 12px 16px;
   }
 

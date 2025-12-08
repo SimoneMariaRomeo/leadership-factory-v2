@@ -30,15 +30,10 @@ export default function ProfileTour() {
   return (
     <div className="tour-card">
       <div>
-        <p className="tour-kicker">Quick tour</p>
-        <h3 className="hero-title" style={{ margin: "0 0 6px" }}>
-          Welcome to your profile
-        </h3>
-        <ul className="tour-list">
-          <li>See your current learning goal.</li>
-          <li>Follow your recommended journey.</li>
-          <li>Browse all your journeys and standard programs.</li>
-        </ul>
+        <p className="tour-kicker">First time here?</p>
+        <p className="hero-lead" style={{ margin: 0 }}>
+          Check your goal, open your journeys, and revisit your recent conversations.
+        </p>
       </div>
       <button type="button" className="primary-button" onClick={handleGotIt}>
         Got it

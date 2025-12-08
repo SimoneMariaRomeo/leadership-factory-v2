@@ -252,7 +252,7 @@ async function testProfileRequiresLogin() {
   const page = await MyProfilePage();
   const view = render(page);
   await screen.findByText("Please log in to see your profile");
-  screen.getByText("Sign in to view your learning goal, recommended journey, and progress.");
+  screen.getByText("Sign in to view your learning goal, journeys, and conversations.");
   screen.getByRole("button", { name: "Login to continue" });
   logPass("Guest view shows the auth prompt.");
   cleanup();
@@ -362,23 +362,18 @@ async function testProfileShowsGoalAndJourneys() {
   const recommendedLink = screen.getByRole("link", { name: "View journey" });
   assert(
     recommendedLink.getAttribute("href") === "/journeys/personal-2",
-    "Recommended journey link should target the latest journey slug."
+    "Recommended journey link should target the latest active journey slug."
   );
 
-  const latestTitles = screen.getAllByText("Latest personalized journey");
-  const firstTitles = screen.getAllByText("First personalized journey");
-  assert(latestTitles.length >= 1, "Latest journey title should appear in the list.");
-  assert(firstTitles.length >= 1, "First journey title should appear in the list.");
+  expectMissing("First personalized journey");
+  const titles = screen.getAllByText("Latest personalized journey");
+  assert(titles.length >= 1, "Latest active journey should be visible.");
   const journeyLinks = screen.getAllByRole("link", { name: /journey/i });
   assert(
-    journeyLinks.some((link) => link.getAttribute("href") === "/journeys/personal-1"),
-    "First journey link should point to its slug."
-  );
-  assert(
     journeyLinks.some((link) => link.getAttribute("href") === "/journeys/personal-2"),
-    "Second journey link should point to its slug."
+    "Active journey link should point to its slug."
   );
-  logPass("Profile shows current goal, recommended latest journey, and all personalized journeys.");
+  logPass("Profile shows goal, hides awaiting journeys, and links to the active one.");
   cleanup();
 }
 
@@ -399,10 +394,10 @@ async function testProfileEmptyStateNoJourneys() {
   const page = await MyProfilePage();
   const view = render(page);
 
-  await screen.findByText("Your recommended journey will appear here soon.");
+  await screen.findByText("No active personalized journey yet. It will appear here once ready.");
   screen.getByText("Wait for my plan");
-  screen.getByText("You don't have any journeys yet.");
-  logPass("Empty states show when no personalized journeys exist.");
+  screen.getByText("Goal Clarification");
+  logPass("Empty states show for personalized journeys while templates still list.");
   cleanup();
 }
 
@@ -426,10 +421,10 @@ async function testProfileTourFlag() {
   const view = render(page);
   const userActions = userEvent.setup({ document });
 
-  await screen.findByText("Welcome to your profile");
+  await screen.findByText("First time here?");
   await userActions.click(screen.getByRole("button", { name: "Got it" }));
   assert(localStorage.getItem("lf_my_profile_seen") === "true", "Flag should be stored after clicking Got it.");
-  assert(!screen.queryByText("Welcome to your profile"), "Tour card should hide after acknowledgement.");
+  assert(!screen.queryByText("First time here?"), "Tour card should hide after acknowledgement.");
   logPass("Tour card sets the flag and hides after first visit.");
   cleanup();
 }

@@ -3,15 +3,20 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import LoginPrompt from "../components/LoginPrompt";
 import ProfileTour from "./ProfileTour";
+import EditableGoalCard from "./EditableGoalCard";
 import { prisma } from "../../server/prismaClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../server/auth/session";
 
 export const dynamic = "force-dynamic";
 
-// This formats a readable date for the goal confirmation line.
-function formatDate(date: Date | null | undefined) {
-  if (!date) return null;
-  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+// This builds a tiny avatar with either the uploaded picture or the first letter.
+function UserAvatar({ name, email, picture }: { name: string | null; email: string | null; picture: string | null }) {
+  const initial = (name || email || "U").trim().charAt(0).toUpperCase();
+  return (
+    <div className="avatar">
+      {picture ? <img src={picture} alt="User avatar" /> : <span>{initial}</span>}
+    </div>
+  );
 }
 
 export default async function MyProfilePage() {
@@ -26,7 +31,7 @@ export default async function MyProfilePage() {
         <div className="content-inner">
           <LoginPrompt
             title="Please log in to see your profile"
-            message="Sign in to view your learning goal, recommended journey, and progress."
+            message="Sign in to view your learning goal, journeys, and conversations."
             buttonLabel="Login to continue"
             afterLoginPath="/my-profile"
           />
@@ -35,12 +40,12 @@ export default async function MyProfilePage() {
     );
   }
 
-  const [personalizedJourneys, standardJourneys] = await Promise.all([
+  const [personalizedJourneys, standardJourneys, recentChats] = await Promise.all([
     prisma.learningJourney.findMany({
       where: {
         isStandard: false,
         personalizedForUserId: user.id,
-        NOT: { status: "archived" },
+        status: "active",
       },
       orderBy: [{ createdAt: "desc" }, { updatedAt: "desc" }],
       select: {
@@ -50,6 +55,7 @@ export default async function MyProfilePage() {
         status: true,
         slug: true,
         userGoalSummary: true,
+        isStandard: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -57,14 +63,21 @@ export default async function MyProfilePage() {
     prisma.learningJourney.findMany({
       where: { isStandard: true, status: "active" },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, title: true, slug: true },
-      take: 3,
+      select: { id: true, title: true, slug: true, intro: true, status: true, isStandard: true },
+    }),
+    prisma.learningSessionChat.findMany({
+      where: { userId: user.id },
+      orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
+      take: 5,
+      select: { id: true, sessionTitle: true, startedAt: true },
     }),
   ]);
 
+  const activeJourneys = [...personalizedJourneys, ...standardJourneys];
   const recommendedJourney = personalizedJourneys[0] || null;
-  const hasGoal = Boolean(user.learningGoal);
-  const confirmedAt = formatDate(user.learningGoalConfirmedAt as Date | null | undefined);
+
+  const formatDate = (date: Date | null | undefined) =>
+    date ? new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null;
 
   return (
     <div className="content-shell">
@@ -72,65 +85,43 @@ export default async function MyProfilePage() {
       <div className="content-inner">
         <ProfileTour />
 
-        <section className="profile-hero">
-          <div className="profile-hero-text">
-            <p className="hero-kicker">Welcome back</p>
-            <h1 className="hero-title" style={{ marginBottom: "10px" }}>
-              {user.name || user.email || "Your profile"}
-            </h1>
-            {hasGoal ? (
-              <div className="goal-box" style={{ width: "100%", maxWidth: "900px", marginTop: "12px" }}>
-                <div className="goal-label">YOUR CURRENT LEARNING GOAL</div>
-                <div className="goal-text">{user.learningGoal}</div>
-                {confirmedAt ? <p className="tiny-note">Confirmed on {confirmedAt}</p> : null}
-              </div>
-            ) : (
-              <div className="goal-box" style={{ width: "100%", maxWidth: "900px", marginTop: "12px" }}>
-                <div className="goal-label">NO GOAL YET</div>
-                <div className="goal-text">You haven&apos;t committed a learning goal yet.</div>
-                <Link href="/welcome" className="primary-button" style={{ marginTop: "10px" }}>
-                  Start from the beginning
-                </Link>
-              </div>
-            )}
-          </div>
-          <div className="profile-hero-side">
-            <p className="hero-lead" style={{ marginTop: 0 }}>
-              Keep your goal in sight and let your journeys guide you. We will add more detail once your next steps are ready.
-            </p>
-            <div className="profile-mini-grid">
-              <div className="mini-stat">
-                <span className="mini-stat-label">Personalized journeys</span>
-                <span className="mini-stat-value">{personalizedJourneys.length}</span>
-              </div>
-              <div className="mini-stat">
-                <span className="mini-stat-label">Standard journeys</span>
-                <span className="mini-stat-value">{standardJourneys.length}</span>
-              </div>
+        <section className="profile-header">
+          <div className="profile-row">
+            <UserAvatar name={user.name} email={user.email} picture={(user as any).picture || null} />
+            <div>
+              <p className="hero-kicker">Welcome back</p>
+              <h1 className="hero-title" style={{ margin: 0 }}>
+                {user.name || user.email || "Your profile"}
+              </h1>
             </div>
           </div>
+          <EditableGoalCard initialGoal={user.learningGoal} confirmedAt={user.learningGoalConfirmedAt} />
         </section>
 
         <section className="profile-section">
           <div className="section-head">
             <div>
-              <p className="hero-kicker">Recommendation</p>
+              <p className="hero-kicker">Learning journeys</p>
               <h2 className="hero-title" style={{ marginBottom: "6px" }}>
-                Recommended journey
+                Simple, active list
               </h2>
             </div>
+            <Link href="/journeys" className="secondary-button">
+              Browse templates
+            </Link>
           </div>
+
           {recommendedJourney ? (
-            <div className="journey-card journey-card-wide">
+            <div className="journey-card minimal">
               <div className="journey-card-top">
-                <span className="journey-tag">Personalized</span>
+                <span className="journey-tag">Recommended</span>
                 <span className="status-badge">{recommendedJourney.status}</span>
               </div>
               <h3 className="journey-title">{recommendedJourney.title}</h3>
               <p className="journey-intro">
                 {recommendedJourney.intro ||
                   recommendedJourney.userGoalSummary ||
-                  "Your journey outline will fill in as soon as we publish the steps for you."}
+                  "Your tailored journey is active. Open it to continue."}
               </p>
               <Link
                 href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
@@ -141,67 +132,43 @@ export default async function MyProfilePage() {
             </div>
           ) : (
             <div className="journey-empty">
-              <h3 className="hero-title" style={{ marginBottom: "6px" }}>
-                Your recommended journey will appear here soon.
-              </h3>
-              <p className="hero-lead">
-                {hasGoal
-                  ? `We will build a journey around: ${user.learningGoal}`
-                  : "Tell us your goal and we will prepare a journey for you."}
+              <p className="hero-lead" style={{ marginBottom: 0 }}>
+                No active personalized journey yet. It will appear here once ready.
               </p>
-              {!hasGoal ? (
-                <Link href="/welcome" className="primary-button">
-                  Set your goal
-                </Link>
-              ) : null}
             </div>
           )}
-        </section>
 
-        <section className="profile-section">
-          <div className="section-head">
-            <div>
-              <p className="hero-kicker">Your journeys</p>
-              <h2 className="hero-title" style={{ marginBottom: "6px" }}>
-                Personalized journeys
-              </h2>
-            </div>
-          </div>
-          {personalizedJourneys.length === 0 ? (
+          {activeJourneys.length === 0 ? (
             <div className="journey-empty">
-              <h3 className="hero-title" style={{ marginBottom: "6px" }}>
-                You don&apos;t have any journeys yet.
-              </h3>
-              <p className="hero-lead">
-                {hasGoal
-                  ? "We will turn your goal into a journey soon. You will see it here."
-                  : "Start from the beginning so we can prepare your first journey."}
+              <p className="hero-lead" style={{ marginBottom: 0 }}>
+                No active journeys to show. Start from the beginning to create one.
               </p>
-              {!hasGoal ? (
-                <Link href="/welcome" className="primary-button">
-                  Start from the beginning
-                </Link>
-              ) : null}
+              <Link href="/welcome" className="primary-button" style={{ marginTop: "10px" }}>
+                Start from the beginning
+              </Link>
             </div>
           ) : (
             <div className="journey-grid">
-              {personalizedJourneys.map((journey) => (
-                <div key={journey.id} className="journey-card">
-                  <div className="journey-card-top">
-                    <span className="journey-tag">Personalized</span>
-                    <span className="status-badge">{journey.status}</span>
+              {activeJourneys.map((journey) => {
+                const isTemplate = journey.isStandard ?? (journey as any).isStandard === true;
+                return (
+                  <div key={journey.id} className="journey-card">
+                    <div className="journey-card-top">
+                      <span className="journey-tag">{isTemplate ? "Template" : "Personalized"}</span>
+                      <span className="status-badge">{journey.status}</span>
+                    </div>
+                    <h3 className="journey-title">{journey.title}</h3>
+                    <p className="journey-intro">
+                      {journey.intro ||
+                        (journey as any).userGoalSummary ||
+                        "Open to see more once details are added in the next step."}
+                    </p>
+                    <Link href={`/journeys/${journey.slug || journey.id}`} className="secondary-button journey-link">
+                      Open journey
+                    </Link>
                   </div>
-                  <h3 className="journey-title">{journey.title}</h3>
-                  <p className="journey-intro">
-                    {journey.userGoalSummary ||
-                      journey.intro ||
-                      "This journey will show its steps and sessions once they are ready."}
-                  </p>
-                  <Link href={`/journeys/${journey.slug || journey.id}`} className="secondary-button journey-link">
-                    Open journey
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -209,28 +176,30 @@ export default async function MyProfilePage() {
         <section className="profile-section">
           <div className="section-head">
             <div>
-              <p className="hero-kicker">Explore more</p>
+              <p className="hero-kicker">Recent conversations</p>
               <h2 className="hero-title" style={{ marginBottom: "6px" }}>
-                Standard journeys
+                Last chats
               </h2>
-              <p className="hero-lead">Browse the common templates while we tailor your path.</p>
             </div>
-            <Link href="/journeys" className="primary-button">
-              Browse journeys
-            </Link>
           </div>
-          <div className="standard-list">
-            {standardJourneys.length === 0 ? (
-              <p className="hero-lead">No standard journeys are available yet. An admin will add them soon.</p>
-            ) : (
-              standardJourneys.map((journey) => (
-                <Link key={journey.id} href={`/journeys/${journey.slug || journey.id}`} className="standard-item">
-                  <span className="journey-tag">Template</span>
-                  <span>{journey.title}</span>
-                </Link>
-              ))
-            )}
-          </div>
+          {recentChats.length === 0 ? (
+            <div className="journey-empty">
+              <p className="hero-lead" style={{ marginBottom: 0 }}>
+                No conversations yet. Start a session to see it here.
+              </p>
+            </div>
+          ) : (
+            <ul className="chat-list">
+              {recentChats.map((chat) => (
+                <li key={chat.id} className="chat-list-item">
+                  <div>
+                    <p className="chat-title">{chat.sessionTitle || "Conversation"}</p>
+                    <p className="tiny-note">{formatDate(chat.startedAt)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </div>

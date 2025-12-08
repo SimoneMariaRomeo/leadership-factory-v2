@@ -10,6 +10,7 @@ type NavUser = {
   id: string;
   email: string | null;
   name: string | null;
+  picture?: string | null;
 };
 
 type TopNavProps = {
@@ -83,18 +84,16 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
     <>
       <nav className="top-nav">
         <div className="top-nav-inner">
-          <div className="top-nav-left">
-            <Link href="/" className="top-nav-brand">
-              <span className="brand-mark" aria-hidden="true">
-                LF
-              </span>
-              <span>Leadership Factory</span>
-            </Link>
-            <div className="top-nav-links">
-              {navLink("/", "Home")}
-              {user ? navLink("/journeys", "Learning Journeys") : null}
-              {user ? navLink("/my-profile", "Profile") : null}
-            </div>
+          <Link href="/" className="top-nav-brand">
+            <span className="brand-mark" aria-hidden="true">
+              LF
+            </span>
+            <span>Leadership Factory</span>
+          </Link>
+          <div className="top-nav-links">
+            {navLink("/", "Home")}
+            {user ? navLink("/journeys", "Learning Journeys") : null}
+            {user ? navLink("/my-profile", "Profile") : null}
           </div>
           <div className="top-nav-right">
             {!user ? (
