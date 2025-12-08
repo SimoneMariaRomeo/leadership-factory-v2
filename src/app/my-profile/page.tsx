@@ -90,15 +90,10 @@ export default async function MyProfilePage() {
           </section>
 
           <section className="profile-section">
-            <div className="section-head">
-              <div>
-                <h2 className="hero-kicker section-title" style={{ marginBottom: "6px" }}>
-                  Your Personalized Learning Journey
-                </h2>
-              </div>
-            </div>
-
             <div className="section-card">
+              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
+                Your Personalized Learning Journey
+              </h2>
               {recommendedJourney ? (
                 <Link
                   href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
@@ -122,15 +117,10 @@ export default async function MyProfilePage() {
           </section>
 
           <section className="profile-section">
-            <div className="section-head">
-              <div>
-                <h2 className="hero-kicker section-title" style={{ marginBottom: "6px" }}>
-                  Learning Journeys
-                </h2>
-              </div>
-            </div>
-
             <div className="section-card">
+              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
+                Learning Journeys
+              </h2>
               {combinedJourneys.length > 0 ? (
                 <div className="journey-grid">
                   {combinedJourneys.map((journey) => (
@@ -154,14 +144,10 @@ export default async function MyProfilePage() {
           </section>
 
           <section className="profile-section">
-            <div className="section-head">
-              <div>
-                <h2 className="hero-kicker section-title" style={{ marginBottom: "6px" }}>
-                  Your Previous Conversations
-                </h2>
-              </div>
-            </div>
             <div className="section-card">
+              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
+                Your Previous Conversations
+              </h2>
               {recentChats.length === 0 ? (
                 <div className="journey-empty">
                   <p className="hero-lead" style={{ marginBottom: 0 }}>
