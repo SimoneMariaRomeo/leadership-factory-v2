@@ -18,6 +18,7 @@ type SafeUser = {
   learningGoal: string | null;
   learningGoalConfirmedAt: Date | null;
   picture: string | null;
+  profileTour: boolean;
 };
 
 // This tiny error marks when no user is present.
@@ -79,7 +80,15 @@ export async function getCurrentUser(req: Request): Promise<SafeUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, email: true, name: true, learningGoal: true, learningGoalConfirmedAt: true, picture: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      learningGoal: true,
+      learningGoalConfirmedAt: true,
+      picture: true,
+      profileTour: true,
+    },
   });
 
   if (!user) return null;

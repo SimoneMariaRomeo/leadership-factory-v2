@@ -76,7 +76,7 @@ export default async function MyProfilePage() {
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner">
         <div className="profile-outer-card">
-          <ProfileTour userId={user.id} />
+          <ProfileTour userId={user.id} show={user.profileTour ?? false} onComplete={() => {}} />
 
           <section className="profile-section">
             <div className="profile-row">

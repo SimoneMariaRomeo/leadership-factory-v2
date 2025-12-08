@@ -3,36 +3,30 @@
 // This card appears only on the first profile visit and hides after the user clicks Got it.
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "lf_my_profile_seen";
-
 type ProfileTourProps = {
   userId: string | null;
+  show: boolean;
+  onComplete: () => void;
 };
 
-function buildKey(userId: string) {
-  return `${STORAGE_KEY}_${userId}`;
-}
+export default function ProfileTour({ userId, show: initialShow, onComplete }: ProfileTourProps) {
+  const [show, setShow] = useState(initialShow);
 
-export default function ProfileTour({ userId }: ProfileTourProps) {
-  const [show, setShow] = useState(false);
-
-  // This checks localStorage on the client to decide if the tour should show.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!userId) return;
-    const seen = window.localStorage.getItem(buildKey(userId));
-    setShow(!seen);
-  }, [userId]);
+    setShow(initialShow);
+  }, [initialShow]);
 
-  // This hides the tour and records that it was acknowledged.
-  const handleGotIt = () => {
-    if (typeof window !== "undefined" && userId) {
-      window.localStorage.setItem(buildKey(userId), "true");
+  const handleGotIt = async () => {
+    try {
+      await fetch("/api/profile/tour", { method: "POST", credentials: "include" });
+    } catch (err) {
+      console.error("Marking tour complete failed:", err);
     }
     setShow(false);
+    onComplete();
   };
 
-  if (!show) {
+  if (!show || !userId) {
     return null;
   }
 
