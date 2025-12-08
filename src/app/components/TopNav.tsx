@@ -74,7 +74,11 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
   const navLink = (href: string, label: string) => {
     const active = pathname === href;
     return (
-      <Link href={href} className={`top-nav-link${active ? " top-nav-link-active" : ""}`}>
+      <Link
+        href={href}
+        className={`top-nav-link${active ? " top-nav-link-active" : ""}`}
+        id={href === "/journeys" ? "tour-nav-journeys" : undefined}
+      >
         {label}
       </Link>
     );

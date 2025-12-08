@@ -78,7 +78,7 @@ export default async function MyProfilePage() {
         <div className="profile-outer-card">
           <ProfileTour userId={user.id} show={user.profileTour ?? false} />
 
-          <section className="profile-section">
+          <section className="profile-section" id="tour-avatar">
             <div className="profile-row">
               <AvatarPicker name={user.name} email={user.email} picture={(user as any).picture || null} />
               <div>
@@ -88,11 +88,13 @@ export default async function MyProfilePage() {
                 </h1>
               </div>
             </div>
-            <EditableGoalCard initialGoal={user.learningGoal} confirmedAt={user.learningGoalConfirmedAt} />
+            <div id="tour-goal">
+              <EditableGoalCard initialGoal={user.learningGoal} confirmedAt={user.learningGoalConfirmedAt} />
+            </div>
           </section>
 
           <section className="profile-section">
-            <div className="section-card">
+            <div className="section-card" id="tour-personalized">
               <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
                 Your Personalized Learning Journey
               </h2>
@@ -146,7 +148,7 @@ export default async function MyProfilePage() {
           </section>
 
           <section className="profile-section">
-            <div className="section-card">
+            <div className="section-card" id="tour-conversations">
               <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
                 Your Previous Conversations
               </h2>
