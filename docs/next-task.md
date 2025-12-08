@@ -26,7 +26,7 @@ Your mission now: give the user a **real, meaningful home** after committing the
   - Has a “Recommended journey” box with the latest personalized journey (if any).
   - Lists **all personalized journeys** for that user.
   - Includes links to **standard journeys**.
-  - Includes a simple **first-time user tour** (client-side flag).
+  - Includes a simple **first-time user tour** stored on the user record.
 
 - Implement **/journeys** list page:
   - Lists **standard journeys only** (`isStandard = true AND status = "active"`).
@@ -40,6 +40,7 @@ Your mission now: give the user a **real, meaningful home** after committing the
   - Login/logout on the right side, reusing the auth state from Step 5.
 
 - Implement a **Logout** flow (in terms of UI and wiring to existing auth), using the same cookies / session mechanism created for Step 5.
+- Persist a profile-tour flag on the user (e.g. `User.profileTour`, default `true` at creation) and flip it to `false` when the tour is completed.
 
 ---
 
@@ -210,54 +211,23 @@ Call the logout endpoint.
 On success, redirect the user to / and refresh client-side auth state.
 
 3. /my-profile first-time tour
-Implement a lightweight client-side tour for /my-profile:
+Implement a lightweight tour for /my-profile that is stored on the user record:
 
-No DB migration in Step 6. Use localStorage to store a flag, e.g. lf_my_profile_seen = "true".
-
-Behaviour:
-
-On first visit to /my-profile (when running in the browser & user is logged in):
-
-If localStorage.getItem("lf_my_profile_seen") is missing:
-
-Show a dismissible tour card at the top of the page.
-
-Example content:
-
-Title: “Welcome to your profile”
-
-Bullet points:
-
-“See your current learning goal.”
-
-“Follow your recommended journey.”
-
-“Browse all your journeys and standard programs.”
-
-Primary button: “Got it”.
-
-When clicking “Got it”:
-
-Hide the card.
-
-Set localStorage.setItem("lf_my_profile_seen", "true").
-
-On subsequent visits:
-
-Do not show the tour card if the flag is set.
-
-Make sure this logic runs only on the client (guard against SSR).
+- Add a boolean flag on User (e.g. `profileTour`, default `true` on creation).
+- On first visit (logged-in), if `profileTour` is true: show a dismissible tour card at the top of the page.
+- Example content:
+  - Title: “Welcome to your profile”
+  - Bullets: “See your current learning goal.” / “Follow your recommended journey.” / “Browse all your journeys and standard programs.”
+  - Primary button: “Got it”.
+- When clicking “Got it”: hide the card and set `profileTour` to false in the database.
+- On subsequent visits: do not show the tour card if `profileTour` is false.
 
 4. Implementation constraints
-Do NOT touch the Prisma schema or migrations in this step.
-
-Do NOT modify /api/chat or the goal-commit logic created in Step 5.
-
-Do NOT change the need-analysis behaviour.
-
-Respect the visual guidelines (fonts, colours, gold gradients, glass cards) already specified in the design docs.
-
-Keep the CSS / component structure consistent with what you created in Steps 2–5.
+- Schema change is allowed for adding `User.profileTour` to persist the tour state; keep other schema changes out of scope.
+- Do NOT modify /api/chat or the goal-commit logic created in Step 5.
+- Do NOT change the need-analysis behaviour.
+- Respect the visual guidelines (fonts, colours, gold gradients, glass cards) already specified in the design docs.
+- Keep the CSS / component structure consistent with what you created in Steps 2–5.
 
 5. TESTS TO CREATE — tests/profile-and-journeys-tests.js
 Create a new test file:

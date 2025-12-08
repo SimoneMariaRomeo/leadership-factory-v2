@@ -21,6 +21,7 @@ Goal: Make /whats-next persist the goal and create a personalized journey (no ad
 Step 6 — Full working /my-profile + /journeys listing
 
 Goal: Give the user somewhere meaningful to land and see their journeys.
+- Tour flag: store on User (e.g. `profileTour`, default true, set to false after tour); this schema change is now allowed for Step 6.
 
 Step 7 — Journey overview + steps + mark_step_completed
 
