@@ -84,43 +84,10 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
     <>
       <nav className="top-nav">
         <div className="top-nav-inner">
-          <Link href="/" className="top-nav-brand">
-            <span className="brand-mark" aria-hidden="true">
-              LF
-            </span>
-            <span>Leadership Factory</span>
-          </Link>
           <div className="top-nav-links">
             {navLink("/", "Home")}
             {user ? navLink("/journeys", "Learning Journeys") : null}
             {user ? navLink("/my-profile", "Profile") : null}
-          </div>
-          <div className="top-nav-right">
-            {!user ? (
-              <button
-                type="button"
-                className="primary-button nav-button"
-                onClick={() => setShowAuthModal(true)}
-                disabled={checking}
-              >
-                Login
-              </button>
-            ) : (
-              <div className="nav-user">
-                <div className="nav-user-chip" title={userLabel}>
-                  <span className="nav-user-dot" aria-hidden="true" />
-                  <span className="nav-user-text">{userLabel}</span>
-                </div>
-                <button
-                  type="button"
-                  className="secondary-button nav-button"
-                  onClick={handleLogout}
-                  disabled={loggingOut}
-                >
-                  {loggingOut ? "Logging out..." : "Logout"}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </nav>

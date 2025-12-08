@@ -4,20 +4,11 @@ import { headers } from "next/headers";
 import LoginPrompt from "../components/LoginPrompt";
 import ProfileTour from "./ProfileTour";
 import EditableGoalCard from "./EditableGoalCard";
+import AvatarPicker from "./AvatarPicker";
 import { prisma } from "../../server/prismaClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../server/auth/session";
 
 export const dynamic = "force-dynamic";
-
-// This builds a tiny avatar with either the uploaded picture or the first letter.
-function UserAvatar({ name, email, picture }: { name: string | null; email: string | null; picture: string | null }) {
-  const initial = (name || email || "U").trim().charAt(0).toUpperCase();
-  return (
-    <div className="avatar">
-      {picture ? <img src={picture} alt="User avatar" /> : <span>{initial}</span>}
-    </div>
-  );
-}
 
 export default async function MyProfilePage() {
   const headerStore = headers();
@@ -73,8 +64,9 @@ export default async function MyProfilePage() {
     }),
   ]);
 
-  const activeJourneys = [...personalizedJourneys, ...standardJourneys];
   const recommendedJourney = personalizedJourneys[0] || null;
+  const additionalPersonalized = recommendedJourney ? personalizedJourneys.slice(1) : personalizedJourneys;
+  const combinedJourneys = [...additionalPersonalized, ...standardJourneys];
 
   const formatDate = (date: Date | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null;
@@ -85,9 +77,9 @@ export default async function MyProfilePage() {
       <div className="content-inner">
         <ProfileTour />
 
-        <section className="profile-header">
+        <section className="profile-top-card">
           <div className="profile-row">
-            <UserAvatar name={user.name} email={user.email} picture={(user as any).picture || null} />
+            <AvatarPicker name={user.name} email={user.email} picture={(user as any).picture || null} />
             <div>
               <p className="hero-kicker">Welcome back</p>
               <h1 className="hero-title" style={{ margin: 0 }}>
@@ -101,84 +93,52 @@ export default async function MyProfilePage() {
         <section className="profile-section">
           <div className="section-head">
             <div>
-              <p className="hero-kicker">Learning journeys</p>
               <h2 className="hero-title" style={{ marginBottom: "6px" }}>
-                Simple, active list
+                Your Personalized Learning Journey
               </h2>
             </div>
-            <Link href="/journeys" className="secondary-button">
-              Browse templates
-            </Link>
           </div>
 
           {recommendedJourney ? (
-            <div className="journey-card minimal">
-              <div className="journey-card-top">
-                <span className="journey-tag">Recommended</span>
-                <span className="status-badge">{recommendedJourney.status}</span>
-              </div>
+            <Link
+              href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
+              className="journey-card minimal journey-card-link-wrapper"
+            >
               <h3 className="journey-title">{recommendedJourney.title}</h3>
               <p className="journey-intro">
                 {recommendedJourney.intro ||
                   recommendedJourney.userGoalSummary ||
                   "Your tailored journey is active. Open it to continue."}
               </p>
-              <Link
-                href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
-                className="primary-button journey-link"
-              >
-                View journey
-              </Link>
-            </div>
-          ) : (
-            <div className="journey-empty">
-              <p className="hero-lead" style={{ marginBottom: 0 }}>
-                No active personalized journey yet. It will appear here once ready.
-              </p>
-            </div>
-          )}
+            </Link>
+          ) : null}
 
-          {activeJourneys.length === 0 ? (
-            <div className="journey-empty">
-              <p className="hero-lead" style={{ marginBottom: 0 }}>
-                No active journeys to show. Start from the beginning to create one.
-              </p>
-              <Link href="/welcome" className="primary-button" style={{ marginTop: "10px" }}>
-                Start from the beginning
-              </Link>
-            </div>
-          ) : (
+          {combinedJourneys.length > 0 ? (
             <div className="journey-grid">
-              {activeJourneys.map((journey) => {
-                const isTemplate = journey.isStandard ?? (journey as any).isStandard === true;
-                return (
-                  <div key={journey.id} className="journey-card">
-                    <div className="journey-card-top">
-                      <span className="journey-tag">{isTemplate ? "Template" : "Personalized"}</span>
-                      <span className="status-badge">{journey.status}</span>
-                    </div>
-                    <h3 className="journey-title">{journey.title}</h3>
-                    <p className="journey-intro">
-                      {journey.intro ||
-                        (journey as any).userGoalSummary ||
-                        "Open to see more once details are added in the next step."}
-                    </p>
-                    <Link href={`/journeys/${journey.slug || journey.id}`} className="secondary-button journey-link">
-                      Open journey
-                    </Link>
-                  </div>
-                );
-              })}
+              {combinedJourneys.map((journey) => (
+                <Link
+                  key={journey.id}
+                  href={`/journeys/${journey.slug || journey.id}`}
+                  className="journey-card journey-card-link-wrapper"
+                  aria-label={journey.title}
+                >
+                  <h3 className="journey-title">{journey.title}</h3>
+                  <p className="journey-intro">
+                    {journey.intro ||
+                      (journey as any).userGoalSummary ||
+                      "Open to see more once details are added in the next step."}
+                  </p>
+                </Link>
+              ))}
             </div>
-          )}
+          ) : null}
         </section>
 
         <section className="profile-section">
           <div className="section-head">
             <div>
-              <p className="hero-kicker">Recent conversations</p>
               <h2 className="hero-title" style={{ marginBottom: "6px" }}>
-                Last chats
+                Your Previous Conversations
               </h2>
             </div>
           </div>

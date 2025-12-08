@@ -271,8 +271,8 @@ async function testNavVisibility() {
   const guestNav = render(React.createElement(TopNav, { initialUser: null }));
   expectMissing("Learning Journeys");
   expectMissing("Profile");
-  screen.getByRole("button", { name: "Login" });
-  logPass("Guest nav hides profile/journeys and shows Login.");
+  expectMissing("Login");
+  logPass("Guest nav hides profile/journeys and keeps the bar minimal.");
   cleanup();
 
   const user = await createTestUser({ emailSuffix: "nav" });
@@ -281,8 +281,8 @@ async function testNavVisibility() {
   const authedNav = render(React.createElement(TopNav, { initialUser: mockAuthResponseUser }));
   screen.getByText("Learning Journeys");
   screen.getByText("Profile");
-  screen.getByRole("button", { name: "Logout" });
-  logPass("Authed nav shows profile, journeys, and Logout.");
+  expectMissing("Logout");
+  logPass("Authed nav shows profile and journeys with no extra chips.");
   cleanup();
 }
 
@@ -359,7 +359,7 @@ async function testProfileShowsGoalAndJourneys() {
 
   const goalTexts = await screen.findAllByText("Grow as a calm leader");
   assert(goalTexts.length >= 1, "Goal text should appear on the profile.");
-  const recommendedLink = screen.getByRole("link", { name: "View journey" });
+  const recommendedLink = screen.getAllByRole("link", { name: /Latest personalized journey/i })[0];
   assert(
     recommendedLink.getAttribute("href") === "/journeys/personal-2",
     "Recommended journey link should target the latest active journey slug."
@@ -368,7 +368,7 @@ async function testProfileShowsGoalAndJourneys() {
   expectMissing("First personalized journey");
   const titles = screen.getAllByText("Latest personalized journey");
   assert(titles.length >= 1, "Latest active journey should be visible.");
-  const journeyLinks = screen.getAllByRole("link", { name: /journey/i });
+  const journeyLinks = screen.getAllByRole("link", { name: "Latest personalized journey" });
   assert(
     journeyLinks.some((link) => link.getAttribute("href") === "/journeys/personal-2"),
     "Active journey link should point to its slug."
@@ -381,7 +381,7 @@ async function testProfileShowsGoalAndJourneys() {
 async function testProfileEmptyStateNoJourneys() {
   logTest(
     "Profile shows empty states when no journeys exist",
-    "Recommended card should be a placeholder and the journeys section should show the no-journeys message."
+    "No recommended card or journeys list should render when there are none."
   );
   await clearTestData();
   const user = await createTestUser({
@@ -394,10 +394,10 @@ async function testProfileEmptyStateNoJourneys() {
   const page = await MyProfilePage();
   const view = render(page);
 
-  await screen.findByText("No active personalized journey yet. It will appear here once ready.");
   screen.getByText("Wait for my plan");
-  screen.getByText("Goal Clarification");
-  logPass("Empty states show for personalized journeys while templates still list.");
+  expectMissing("Recommended");
+  expectMissing("Goal Clarification");
+  logPass("No recommended card or journey list renders when there are no journeys.");
   cleanup();
 }
 
@@ -451,7 +451,7 @@ async function testLogoutFlow() {
   clearAuth();
   mockPathname = "/";
   const nav = render(React.createElement(TopNav, { initialUser: null }));
-  screen.getByRole("button", { name: "Login" });
+  screen.getByText("Home");
   expectMissing("Learning Journeys");
   cleanup();
 

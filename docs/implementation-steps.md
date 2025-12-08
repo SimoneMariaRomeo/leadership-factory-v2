@@ -18,7 +18,7 @@ Step 5 — Auth + goal commit endpoint from /whats-next
 
 Goal: Make /whats-next persist the goal and create a personalized journey (no admin UI yet).
 
-Step 6 — Minimal /my-profile + /journeys listing
+Step 6 — Full working /my-profile + /journeys listing
 
 Goal: Give the user somewhere meaningful to land and see their journeys.
 

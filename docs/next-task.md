@@ -1,491 +1,449 @@
-Step 5: Auth + goal commit endpoint from /whats-next
+# NEXT TASK — Step 6: full working /my-profile & /journeys listing (final v1 profile)
+
+Branch: `feature/202512081003-step-6-profile-and-journey-list`
+
+Follow **AGENTS.md** and available /docs. Reuse the patterns, style, and choices already made in Steps 1–5.
+
+This step assumes:
+
+- Prisma schema and seed for journeys/sessions are in place (Step 1).
+- Public funnel + visual style are implemented in the real Next.js app (Step 2 rework).
+- `/api/chat` + need-analysis chat work with the new models (Step 3).
+- `create_learning_goal` is wired to `/learning-goal-confirmation` (Step 4).
+- Auth + goal-commit from `/whats-next` are implemented and create a personalized journey (Step 5).
+
+Your mission now: give the user a **real, meaningful home** after committing their goal: `/my-profile` + `/journeys` listing, with nav + logout and a small first-time profile tour.
+
+---
+
+## 1. Scope & non-goals
+
+**In scope for Step 6**
+
+- Implement **/my-profile** page:
+  - Auth-protected.
+  - Shows the user’s current goal and journeys.
+  - Has a “Recommended journey” box with the latest personalized journey (if any).
+  - Lists **all personalized journeys** for that user.
+  - Includes links to **standard journeys**.
+  - Includes a simple **first-time user tour** (client-side flag).
+
+- Implement **/journeys** list page:
+  - Lists **standard journeys only** (`isStandard = true AND status = "active"`).
+  - Uses the same gold / glass visual language as the funnel pages.
+  - Each journey card links to `/journeys/[slug]` (even if that page is still a placeholder for Step 7).
+
+- Implement or extend a **shared top nav**:
+  - `Home` → `/`
+  - `Learning Journeys` → `/journeys`
+  - `Profile` → `/my-profile`
+  - Login/logout on the right side, reusing the auth state from Step 5.
+
+- Implement a **Logout** flow (in terms of UI and wiring to existing auth), using the same cookies / session mechanism created for Step 5.
+
+---
+
+## 2. Behaviour & data rules
+
+### 2.1 Auth and access rules
+
+- `/my-profile`:
+  - **Requires auth**.
+  - For unauthenticated users:
+    - Use the same pattern you used for `/whats-next` to force login/signup (redirect or inline modal, whichever is already implemented).
+  - After successful login, redirect back to `/my-profile`.
+
+- `/journeys`:
+  - Route itself can remain technically “public”, but for Step 6:
+    - In the **top nav**, show `Learning Journeys` only when the user is **logged in**.
+    - If a **guest** hits `/journeys` directly:
+      - Show a simple centered card: “Please sign in to explore journeys” and a button that triggers login using the existing auth flow.
+    - If a **logged-in user** hits `/journeys`:
+      - Show the list of **standard journeys** (see below).
+
+### 2.2 /my-profile — what to show
 
-Goal: Make /whats-next persist the confirmed learning goal and create a personalized journey for the authenticated user (no admin UI yet).
+On `/my-profile` for a logged-in user:
 
-You must follow AGENTS.md, the product spec, the Prisma schema, the visual guidelines, and existing implementation notes. Do not re-invent architecture, do not add extra features, and do not break Steps 1–4.
+1. **Top section — Hero + current goal**
 
-0. Context & Assumptions
+   - A hero card using the same glass / gold gradient language as the funnel.
+   - Shows:
+     - A welcome line like: “Welcome back, [first name or email]”.
+     - If `User.learningGoal` is set:
+       - Title: “Your current learning goal”
+       - The goal text.
+       - Optionally the date from `learningGoalConfirmedAt`.
+     - If `User.learningGoal` is **not** set:
+       - Friendly empty state:
+         - “You haven’t committed a learning goal yet.”
+         - A button linking to `/welcome` to start the flow.
 
-Assume the following are already working and tested from previous steps:
+2. **Recommended journey card**
 
-Prisma schema and seed for:
+   - Logic:
+     - Query all **personalized journeys** for this user:
+       - `isStandard = false`
+       - `personalizedForUserId = currentUser.id`
+       - `status NOT IN ["archived"]`
+     - Pick the **latest** by `createdAt` (if tie, break by `updatedAt`).
+   - If one exists:
+     - Show a glass card titled “Recommended journey”.
+     - Display:
+       - Journey `title`
+       - `status` badge (`awaiting_review`, `active`, `completed`, etc.).
+       - Short snippet from `intro` (if present).
+     - Add a primary button:
+       - Label: “View journey”
+       - Link to `/journeys/[slug]`.  
+         For Step 6, `/journeys/[slug]` can be a **placeholder page** that just says “Journey details coming soon in the next step”.
+   - If none exists:
+     - Show a friendly placeholder card:
+       - “Your recommended journey will appear here as soon as we build it from your goal.”
+       - If the user has a `learningGoal`, you can mention:  
+         “We’ll soon build a journey around: [goal text]”.
 
-User, LearningJourney, LearningSessionOutline, LearningJourneyStep, LearningSessionChat, Message.
+3. **Personalized journeys list**
 
-Need-analysis:
+   - Below the recommended journey card, show a section:
+     - Title: “Your journeys”.
+   - Query personalized journeys again (same criteria as above).
+   - If there are journeys:
+     - Render a list or grid of cards, one per journey:
+       - `title`
+       - `status` badge
+       - Optionally `userGoalSummary` snippet.
+       - A small secondary link/button: “Open journey” → `/journeys/[slug]` (placeholder for now).
+   - If there are **no** journeys:
+     - Show an empty-state card:
+       - “You don’t have any journeys yet.”
+       - If the user **has** a goal:
+         - Text: “We’ll turn your goal into a journey soon. You’ll see it here.”
+       - If the user **has no goal**:
+         - Button: “Start from the beginning” → `/welcome`.
 
-Standard journey “Goal Clarification” with need-analysis outline and step.
+4. **Standard journeys access**
 
-/journeys/goal-clarification/steps/[need-analysis-step-id] runs chat via /api/chat.
+   - At the bottom or in a side section, add a small block:
+     - Title: “Explore standard journeys”.
+     - Either:
+       - Add a button: “Browse journeys” → `/journeys`.
+       - Or list a few top standard journeys (titles only) and a “View all” link to `/journeys`.
 
-Bot can emit { "command": "create_learning_goal", "learningGoal": "..." }, handled by useChat to:
+### 2.3 /journeys — list of standard journeys
 
-Store learningGoalPending client-side.
+On `/journeys`:
 
-Navigate to /learning-goal-confirmation.
+- Only show **standard journeys**:
 
-/learning-goal-confirmation:
+  ```ts
+  where: {
+    isStandard: true,
+    status: "active",
+  }
+For each standard journey:
 
-Reads the pending goal (from client state) and displays it.
+Show:
 
-Allows inline edit.
+title
 
-On Confirm → stores the edited goal into pending state and redirects to /whats-next.
+intro snippet.
 
-/whats-next:
+A small “Template” tag or similar (to distinguish from personalized journeys in future steps).
 
-Layout, copy, and goal box are implemented following the visual guidelines.
+Each card links to /journeys/[slug].
+For Step 6, /journeys/[slug] is still a placeholder like:
 
-The YES, I’M IN! button exists but currently has either a no-op or placeholder handler.
+Title: journey title
 
-.env values for:
+Text: “Full journey view (steps + sessions) will be implemented in the next step.”
 
-JWT_SECRET
+If there are no standard journeys seeded yet:
 
-NOTIFICATION_EMAIL_*
+Show a neutral empty-state card:
 
-DB URLs, DEFAULT_API, etc.
+“No standard journeys are available yet. An admin will add them soon.”
 
-This step is only about:
+2.4 Top navigation & logout
+Implement a shared nav used across the app (reuse or refactor any existing header into one consistent component).
 
-Implementing minimal email/password auth with JWT cookies (/api/auth/*) so we can know currentUser.
+Nav content for desktop:
 
-Implementing a goal-commit backend (via /api/whats-next) that:
+Left side:
 
-Requires an authenticated user.
+Logo / brand.
 
-Writes User.learningGoal and User.learningGoalConfirmedAt.
+Links:
 
-Creates a non-standard, personalized LearningJourney for that user.
+Home → /
 
-Sends user + admin emails.
+Learning Journeys → /journeys (only show when logged in)
 
-Wiring /whats-next so that YES, I’M IN! correctly:
+Profile → /my-profile (only show when logged in)
 
-Forces login/signup if needed.
+Right side:
 
-Calls the goal-commit endpoint.
+If not logged in:
 
-Redirects to /my-profile on success.
+Show a Login button that triggers the existing auth mechanism from Step 5.
 
-No admin UI. No journey steps generation. No AI call for journey content yet.
+If logged in:
 
-1. Implementation — Auth (/api/auth/*)
-1.1 Backend routes
+Show the user email or avatar (if available).
 
-Implement the following Next.js route handlers in src/app/api/auth (App Router style), matching the behaviour described in the product spec:
+Show a Logout button.
 
-POST /api/auth/signup
+Logout behaviour:
 
-Body: { email: string, password: string, name?: string }.
+Reuse the same auth system as Step 5 (do NOT invent a new one).
 
-Validate email format and minimum password length.
+Implement a small endpoint (if not already present), e.g. /api/auth/logout, that:
 
-If a user with that email already exists → return 400 with a clear error.
+Clears the auth cookie / token.
 
-Hash password using a standard algorithm (e.g. bcrypt) and store in User.passwordHash.
+Returns 200.
 
-Create User row; leave learningGoal and other optional fields as null.
+Hook the Logout button to:
 
-Generate a JWT with at least userId and set it as HttpOnly cookie (respecting JWT_SECRET).
+Call the logout endpoint.
 
-Response: 200 with a small JSON payload such as { user: { id, email, name } }.
+On success, redirect the user to / and refresh client-side auth state.
 
-POST /api/auth/login
+3. /my-profile first-time tour
+Implement a lightweight client-side tour for /my-profile:
 
-Body: { email: string, password: string }.
+No DB migration in Step 6. Use localStorage to store a flag, e.g. lf_my_profile_seen = "true".
 
-Look up user by email; compare password with stored hash.
+Behaviour:
 
-On failure → 401 with generic “invalid credentials” (don’t leak which field is wrong).
+On first visit to /my-profile (when running in the browser & user is logged in):
 
-On success → issue the same HttpOnly JWT cookie as in signup.
+If localStorage.getItem("lf_my_profile_seen") is missing:
 
-Response: 200 with { user: { id, email, name, learningGoal? } }.
+Show a dismissible tour card at the top of the page.
 
-POST /api/auth/logout
+Example content:
 
-Clear the JWT cookie (set expired).
+Title: “Welcome to your profile”
 
-Response: 200 { success: true }.
+Bullet points:
 
-GET /api/auth/me
+“See your current learning goal.”
 
-Read JWT cookie, verify using JWT_SECRET.
+“Follow your recommended journey.”
 
-If invalid or missing → 200 with { user: null }.
+“Browse all your journeys and standard programs.”
 
-If valid → load user from DB and return { user: { id, email, name, learningGoal? } }.
+Primary button: “Got it”.
 
-1.2 Auth utility
+When clicking “Got it”:
 
-Create a small shared helper (e.g. src/server/auth/session.ts):
+Hide the card.
 
-getCurrentUser(req):
+Set localStorage.setItem("lf_my_profile_seen", "true").
 
-Reads JWT from request cookies.
+On subsequent visits:
 
-Verifies token and fetches the user row (id, email, name, learningGoal).
+Do not show the tour card if the flag is set.
 
-Returns null when not authenticated.
+Make sure this logic runs only on the client (guard against SSR).
 
-requireUser(req):
+4. Implementation constraints
+Do NOT touch the Prisma schema or migrations in this step.
 
-Uses getCurrentUser.
+Do NOT modify /api/chat or the goal-commit logic created in Step 5.
 
-If no user → throws/returns a 401 response.
+Do NOT change the need-analysis behaviour.
 
-If user exists → returns the user.
+Respect the visual guidelines (fonts, colours, gold gradients, glass cards) already specified in the design docs.
 
-Use this helper in /api/whats-next (see below) and for any future endpoints that need auth.
+Keep the CSS / component structure consistent with what you created in Steps 2–5.
 
-1.3 Frontend auth usage (for this step)
+5. TESTS TO CREATE — tests/profile-and-journeys-tests.js
+Create a new test file:
 
-Do not build full nav-level login/logout yet.
+tests/profile-and-journeys-tests.js
 
-You only need enough auth hooks for /whats-next:
+Add a script in package.json (if not already present):
 
-A tiny useAuth helper or inline logic that can:
+json
+Copy code
+"test:profile-and-journeys": "node tests/profile-and-journeys-tests.js"
+The tests should focus on real behaviour (auth, DB state, routes, and rendered content), not pure unit tests.
 
-Call GET /api/auth/me (on mount or on demand) to know if the user is logged in.
+For each test, log a human-readable explanation before assertions (same style as test:schema-and-seed and test:public-funnel).
 
-Open a minimal auth modal when the user clicks YES, I’M IN! and they’re not authenticated.
+A. Auth gating and nav visibility
+/my-profile requires login
 
-Inside the modal:
+Start with no auth cookie.
 
-Toggle between Login and Sign up modes.
-
-Call the corresponding /api/auth/login or /api/auth/signup.
-
-On success, close the modal and mark the user as logged in.
-
-Keep UI minimal and consistent with existing styles (Playfair + Inter, glass cards, gold buttons). Reuse the gold button styling already in the project; do not invent a new style system.
-
-2. Implementation — Goal commit endpoint (/api/whats-next)
-2.1 Route handler
-
-Implement POST /api/whats-next as the single source of truth for:
-
-Persisting the confirmed goal for the current user.
-
-Creating a fresh personalized journey.
-
-Triggering emails.
-
-Returning redirect info to the frontend.
-
-Input:
-
-JSON body: { learningGoal: string }.
-
-Frontend must send the final goal text shown in /whats-next (which originated from need-analysis + possible edits).
-
-Auth:
-
-Use requireUser(req) to ensure the user is authenticated.
-
-If unauthenticated → return 401, do not write anything to DB, do not send emails.
-
-2.2 DB logic (Prisma)
-
-Using a single Prisma transaction:
-
-Update the user:
-
-user.learningGoal = learningGoal (from request).
-
-user.learningGoalConfirmedAt = new Date() (now).
-
-Create a personalized journey:
-
-Model: LearningJourney.
-
-Fields:
-
-title: simple placeholder for now, e.g. Personal journey for: ${learningGoal}.
-
-intro: null (AI-driven intro will be added in a later step).
-
-objectives: null or [] (will be populated later).
-
-isStandard = false.
-
-personalizedForUserId = user.id.
-
-userGoalSummary = learningGoal.
-
-status = "awaiting_review".
-
-slug = null for now (slugging and email links for journeys will be handled in a later step; don’t over-engineer).
-
-Do not create steps yet. This step only creates the journey “shell”.
-
-Make sure the transaction returns the created journey (at least id and personalizedForUserId) to the handler.
-
-2.3 Email sending
-
-Using the SMTP config from .env:
-
-User email:
-
-To: current user email.
-
-Subject: something like “Your new learning goal is confirmed”.
-
-Body (plain text or simple HTML):
-
-Congratulate the user.
-
-Include the goal text.
-
-Mention that their personalized journey is being prepared.
-
-Provide a link to https://www.leadership-factory.cn/my-profile (hardcode domain for now).
-
-Admin email:
-
-To: NOTIFICATION_EMAIL_TO.
-
-Subject: e.g. “New learning goal from ${user.email}”.
-
-Body:
-
-User email.
-
-Learning goal text.
-
-New journey id (and possibly status).
-
-A future-facing link such as https://www.leadership-factory.cn/admin/journeys/${journey.id} (even if admin UI is not implemented yet).
-
-Implement email sending in a small utility (e.g. src/server/notifications/email.ts) so tests can stub/mock it:
-
-The goal-commit handler should not contain raw SMTP wiring; it should call a function like sendGoalCommitEmails({ user, learningGoal, journey }).
-
-If sending fails, log the error and still return 200 if DB writes succeeded (for now). Do not roll back the whole transaction on email failure.
-
-2.4 Response shape
-
-Return 200 with JSON like:
-
-{
-  "success": true,
-  "journeyId": "<new-journey-id>"
-}
-
-
-No redirect from the API itself; frontend will handle navigation to /my-profile.
-
-3. Implementation — Wiring /whats-next
-
-Update /whats-next page to follow this exact behaviour:
-
-3.1 Goal display
-
-Read the pending goal from the same client state used in Step 4 (e.g. sessionStorage.learningGoalPending or an equivalent mechanism already implemented).
-
-If a goal is available:
-
-Show it inside the highlighted learning goal box (purple-tinted background).
-
-If no goal is available:
-
-Show a safe fallback message like:
-
-“No learning goal found. Please start again from the beginning.”
-
-Disable/hide the YES, I’M IN! button or link back to /learning-guide-intro.
-
-Do not call the backend in this case.
-
-3.2 YES, I’M IN! button logic
-
-When the user clicks YES, I’M IN!:
-
-If no pending goal → do nothing except maybe redirect back as per fallback (see 3.1).
-
-If goal present but user not authenticated:
-
-Open the auth modal.
-
-After successful login/signup:
-
-Close the modal.
-
-Automatically proceed to Step 3 (commit).
-
-If goal present and user authenticated:
-
-Call POST /api/whats-next with body { learningGoal }.
-
-While the request is in flight:
-
-Disable the button or show a small loading state.
-
-On 200:
-
-Clear the pending goal from client state (learningGoalPending).
-
-Redirect the user to /my-profile.
-
-On error (4xx/5xx):
-
-Show a simple error message on the page.
-
-Re-enable the button.
-
-Important: Do not call /api/whats-next before the user is logged in.
-
-4. Tests — tests/goal-commit-tests.js
-
-Create a new Node test script tests/goal-commit-tests.js and wire it in package.json:
-
-"scripts": {
-  ...
-  "test:goal-commit": "node tests/goal-commit-tests.js"
-}
-
-
-Follow the style of existing tests:
-
-No external test framework required (you can just console.log and throw on failure).
-
-Each test block logs a human-readable description of what is being validated.
-
-Reuse the existing Prisma setup/tests pattern (e.g. from tests/schema-and-seed-tests.js).
-
-You do not need to spin up a full HTTP server. Instead:
-
-Import the POST handler from src/app/api/whats-next/route and the auth helpers.
-
-Use Prisma directly to inspect DB state.
-
-For auth, you can:
-
-Either generate a JWT manually and mock a NextRequest with cookies.
-
-Or factor the goal commit logic into a pure function that takes { userId, learningGoal } and test that directly, leaving the route handler thin.
-
-4.1 Suggested test scenarios
-
-You must cover at least the following:
-
-Unauthenticated user cannot commit goal
-
-Arrange: no JWT / getCurrentUser returns null.
-
-Act: call POST /api/whats-next with a learningGoal.
+Request /my-profile.
 
 Assert:
 
-Response status is 401.
+Response is either:
 
-No User.learningGoal is changed in DB.
+A redirect to the login/auth flow, OR
 
-No new LearningJourney is created.
+An HTML page that contains the inline auth UI (use the same pattern as /whats-next).
 
-Goal commit persists user goal and timestamp
+Log clearly which behaviour is expected based on your existing auth implementation.
 
-Arrange:
+Nav items depend on auth
 
-Create a User via Prisma with learningGoal = null.
+As guest (no auth):
 
-Act:
+Fetch the home page.
 
-Simulate an authenticated request as that user, calling POST /api/whats-next with learningGoal = "Improve my executive communication skills".
+Assert nav does not show links to /journeys or /my-profile.
 
-Assert:
+Assert a Login button is visible.
 
-Response status 200 and success: true.
+As logged-in user:
 
-User row now has:
+Fetch the home page with a valid auth session.
 
-learningGoal === "Improve my executive communication skills".
+Assert nav does show links to /journeys and /my-profile.
 
-learningGoalConfirmedAt is set to a recent timestamp.
+Assert Logout is visible.
 
-Goal commit creates a personalized journey
+B. /journeys standard list vs personalized
+/journeys shows only standard journeys
 
-Arrange:
+Seed DB (or rely on existing seed) with:
 
-Same user as in test 2 (or reset).
+At least one standard journey (isStandard = true, status = "active").
 
-Act:
+At least one personalized journey for some user (isStandard = false, personalizedForUserId not null).
 
-Call the endpoint with a goal.
+As logged-in user:
 
-Assert:
-
-Exactly one new LearningJourney is created for that user with:
-
-isStandard === false.
-
-personalizedForUserId === user.id.
-
-userGoalSummary === learningGoal.
-
-status === "awaiting_review".
-
-No steps are created for that journey yet.
-
-Repeat commit creates additional journeys, keeps history
-
-Arrange:
-
-Existing user with one personalized journey already.
-
-Act:
-
-Call POST /api/whats-next again with a different goal.
+Request /journeys.
 
 Assert:
 
-User.learningGoal is overwritten with the new goal.
+The titles of standard journeys appear.
 
-learningGoalConfirmedAt is updated.
+Titles of personalized journeys do not appear.
 
-A second LearningJourney is created (total two).
+Assert that each journey card links to /journeys/[slug].
 
-The old journey still exists and retains its original userGoalSummary.
+Guest view of /journeys
 
-Emails are triggered with correct payload (mocked)
+As guest:
 
-Arrange:
+Request /journeys.
 
-Stub/mocking layer for the email utility so that it records calls instead of sending real emails.
+Assert you see a gating message (e.g. “Please sign in to explore journeys”) instead of the full journey list.
 
-Act:
+C. /my-profile content & journeys
+Profile shows current goal and recommended journey
 
-Successful goal commit for a user with email test@example.com.
+Use a test user who:
 
-Assert:
+Has learningGoal set.
 
-Email mock records:
+Has at least one personalized journey (created via the goal commit endpoint from Step 5).
 
-One email to the user address including the goal in the body.
+As that user:
 
-One email to the admin address (NOTIFICATION_EMAIL_TO) including:
-
-User email.
-
-Goal.
-
-Created journey id (or URL containing it).
-
-Endpoint ignores client-supplied userId
-
-Arrange:
-
-User A (authenticated) and some fake userId B.
-
-Act:
-
-Call POST /api/whats-next with body { learningGoal, userId: "B" }.
+Request /my-profile.
 
 Assert:
 
-The journey is created only for user A (personalizedForUserId === A.id).
+The current goal text is visible.
 
-No journey is created for any other user.
+A “Recommended journey” card is visible.
 
-This confirms backend derives user solely from auth, not from request body.
+The journey shown as recommended is the latest personalized journey for that user (by createdAt).
+
+The card includes its title and a status label.
+
+Profile shows all personalized journeys
+
+For the same user, create at least two personalized journeys with different statuses.
+
+Request /my-profile.
+
+Assert:
+
+A “Your journeys” section is visible.
+
+Both journeys appear in the list with their correct statuses.
+
+Each has some link/button pointing to /journeys/[slug].
+
+Empty-state behaviour when no journeys
+
+Use a user that:
+
+Either has no learningGoal, or has a goal but no personalized journeys yet.
+
+As that user:
+
+Request /my-profile.
+
+Assert:
+
+The recommended journey card shows the empty placeholder text (no journey details).
+
+The “Your journeys” section shows a friendly “no journeys yet” message.
+
+There is a clear CTA to either:
+
+Start the funnel (/welcome), or
+
+Wait for journeys (if a goal already exists).
+
+D. First-time /my-profile tour
+Profile tour appears only on first visit (client-side)
+
+This test can be a higher-level or pseudo-browser test if needed:
+
+Simulate a logged-in browser context with cleared localStorage.
+
+Load /my-profile.
+
+Assert:
+
+A tour card with welcome text is rendered.
+
+Simulate clicking “Got it”.
+
+Assert:
+
+localStorage now contains lf_my_profile_seen = "true".
+
+Reload /my-profile.
+
+The tour card is no longer rendered.
+
+If this is hard to do in pure Node tests, at minimum:
+
+Document the expected behaviour in test logs.
+
+Add a small check using your chosen browser/test framework later.
+
+E. Logout flow
+Logout clears session and updates nav
+
+Start as logged-in user.
+
+Request /my-profile (assert it loads correctly).
+
+Trigger Logout (e.g. send POST/GET to the logout endpoint you implement).
+
+After logout:
+
+Request /.
+
+Assert:
+
+Nav no longer shows /journeys and /my-profile links.
+
+Login button is visible again.
+
+Request /my-profile:
+
+Assert you are redirected / gated by auth again (same as in test A.1).

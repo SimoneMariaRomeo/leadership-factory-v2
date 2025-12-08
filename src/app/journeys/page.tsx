@@ -39,13 +39,10 @@ export default async function JourneysPage() {
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner">
         <div className="page-header">
-          <p className="hero-kicker">Learning Journeys</p>
           <h1 className="hero-title" style={{ marginBottom: "8px" }}>
-            Template journeys to explore
+            Learning Journeys
           </h1>
-          <p className="hero-lead">
-            These are the active standard programs. Pick one to see the outline; details will open in the next step of the project.
-          </p>
+          <p className="hero-lead">Choose a journey to explore its outline. Full details arrive in the next step.</p>
         </div>
 
         {standardJourneys.length === 0 ? (
@@ -60,19 +57,12 @@ export default async function JourneysPage() {
             {standardJourneys.map((journey) => {
               const linkHref = `/journeys/${journey.slug || journey.id}`;
               return (
-                <div key={journey.id} className="journey-card">
-                  <div className="journey-card-top">
-                    <span className="journey-tag">Template</span>
-                    <span className="status-badge">{journey.status}</span>
-                  </div>
+                <Link key={journey.id} href={linkHref} className="journey-card journey-card-link-wrapper" aria-label={journey.title}>
                   <h3 className="journey-title">{journey.title}</h3>
                   <p className="journey-intro">
                     {journey.intro || "This journey outline will be expanded with steps in the next step of the build."}
                   </p>
-                  <Link href={linkHref} className="secondary-button journey-link">
-                    Open journey
-                  </Link>
-                </div>
+                </Link>
               );
             })}
           </div>
