@@ -126,7 +126,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
             Skip
           </button>
           <button type="button" className="primary-button nav-button" onClick={handleNext}>
-            {stepIndex >= availableSteps.length - 1 ? "Finish" : "Next"}
+            Next
           </button>
         </div>
       </div>
@@ -151,14 +151,6 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
           >
             <p className="tour-title">{currentStep.title}</p>
             <p className="tour-text">{currentStep.description}</p>
-            <div className="tour-tooltip-actions">
-              <button type="button" className="secondary-button nav-button" onClick={handleSkip}>
-                Skip
-              </button>
-              <button type="button" className="primary-button nav-button" onClick={handleNext}>
-                {stepIndex >= availableSteps.length - 1 ? "Finish" : "Next"}
-              </button>
-            </div>
           </div>
         </div>
       ) : null}
