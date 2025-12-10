@@ -90,7 +90,7 @@ export default async function JourneyPage({ params }: JourneyPageProps) {
 
         <div className="journey-detail" style={{ gap: "14px" }}>
           <h3 className="journey-title journey-steps-title" style={{ fontSize: "20px" }}>
-            Learning Journeys
+            Available Sessions:
           </h3>
           {journey.steps.length === 0 ? (
             <p className="hero-lead" style={{ marginBottom: 0 }}>
