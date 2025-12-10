@@ -67,7 +67,7 @@ export default async function JourneyPage({ params }: JourneyPageProps) {
           {journey.intro ? <p className="hero-lead journey-intro-text">{journey.intro}</p> : null}
           {objectives.length > 0 ? (
             <>
-              <p className="journey-goal-heading">Learning Goals</p>
+              <p className="journey-goal-heading">Objectives</p>
               <ul className="journey-objectives">
                 {objectives.map((item, index) => (
                   <li key={item}>
@@ -89,8 +89,8 @@ export default async function JourneyPage({ params }: JourneyPageProps) {
         </div>
 
         <div className="journey-detail" style={{ gap: "14px" }}>
-          <h3 className="journey-title" style={{ fontSize: "20px" }}>
-            Steps
+          <h3 className="journey-title journey-steps-title" style={{ fontSize: "20px" }}>
+            Learning Journeys
           </h3>
           {journey.steps.length === 0 ? (
             <p className="hero-lead" style={{ marginBottom: 0 }}>
@@ -102,7 +102,7 @@ export default async function JourneyPage({ params }: JourneyPageProps) {
                 const tone = statusTone(step.status);
                 const stepCard = (
                   <div
-                    className="journey-card journey-card-wide"
+                    className="journey-card journey-card-wide journey-step-card"
                     style={{
                       opacity: step.status === "locked" ? 0.75 : 1,
                       cursor: step.status === "locked" ? "not-allowed" : "pointer",

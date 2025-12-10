@@ -1475,6 +1475,21 @@ a {
   line-height: 1.55;
 }
 
+.journey-steps-title {
+  color: #c79d2d;
+  font-family: "Playfair Display", serif;
+}
+
+.journey-step-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.journey-step-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(199, 157, 45, 0.6);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+}
+
 @media (max-width: 720px) {
   .top-nav-inner {
     grid-template-columns: 1fr;
