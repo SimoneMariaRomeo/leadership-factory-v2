@@ -15,11 +15,10 @@ export default async function JourneysPage() {
     <div className="content-shell">
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner">
-        <div className="page-header">
-          <h1 className="hero-title" style={{ marginBottom: "8px" }}>
-            Learning Journeys
-          </h1>
-          <p className="hero-lead">Pick a journey to read its outline and steps.</p>
+        <div className="journeys-hero">
+          <div className="journeys-veil" aria-hidden="true" />
+          <h1 className="journeys-hero-title">Learning Journeys</h1>
+          <p className="journeys-hero-lead">Pick a journey to explore its outline and unlock your next steps.</p>
         </div>
 
         {standardJourneys.length === 0 ? (
@@ -34,7 +33,12 @@ export default async function JourneysPage() {
             {standardJourneys.map((journey) => {
               const linkHref = `/journeys/${journey.slug || journey.id}`;
               return (
-                <Link key={journey.id} href={linkHref} className="journey-card journey-card-link-wrapper" aria-label={journey.title}>
+                <Link
+                  key={journey.id}
+                  href={linkHref}
+                  className="journey-card journey-card-link-wrapper journey-card-fancy"
+                  aria-label={journey.title}
+                >
                   <h3 className="journey-title">{journey.title}</h3>
                   <p className="journey-intro">
                     {journey.intro || "This journey outline will be expanded with steps in the next step of the build."}

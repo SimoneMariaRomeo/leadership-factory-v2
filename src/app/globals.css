@@ -1492,6 +1492,58 @@ a {
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
 }
 
+.journeys-hero {
+  text-align: center;
+  padding: 18px 0 8px;
+  position: relative;
+}
+
+.journeys-hero-title {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(32px, 5vw, 42px);
+  background: linear-gradient(135deg, #d4af37 0%, #f4e4bc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 6px;
+}
+
+.journeys-hero-lead {
+  margin: 0;
+  font-size: 17px;
+  color: #5a677a;
+}
+
+.journeys-veil {
+  position: absolute;
+  inset: -80px -120px auto -120px;
+  height: 220px;
+  background: radial-gradient(40% 60% at 50% 40%, rgba(212, 175, 55, 0.16), transparent 60%),
+    radial-gradient(50% 50% at 30% 80%, rgba(233, 227, 255, 0.18), transparent 60%);
+  filter: blur(16px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.journey-card-fancy {
+  position: relative;
+  overflow: hidden;
+}
+
+.journey-card-fancy::before {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(from 120deg, rgba(212, 175, 55, 0.18), rgba(233, 227, 255, 0.14), rgba(212, 175, 55, 0.18));
+  filter: blur(22px);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.journey-card-fancy:hover::before {
+  opacity: 0.5;
+}
+
 @media (max-width: 720px) {
   .top-nav-inner {
     grid-template-columns: 1fr;
