@@ -19,6 +19,7 @@ type SafeUser = {
   learningGoalConfirmedAt: Date | null;
   picture: string | null;
   profileTour: boolean;
+  role: string;
 };
 
 // This tiny error marks when no user is present.
@@ -88,6 +89,7 @@ export async function getCurrentUser(req: Request): Promise<SafeUser | null> {
       learningGoalConfirmedAt: true,
       picture: true,
       profileTour: true,
+      role: true,
     },
   });
 
@@ -99,6 +101,15 @@ export async function getCurrentUser(req: Request): Promise<SafeUser | null> {
 export async function requireUser(req: Request): Promise<SafeUser> {
   const user = await getCurrentUser(req);
   if (!user) {
+    throw new UnauthorizedError("Unauthorized");
+  }
+  return user;
+}
+
+// This stops people who are not admins.
+export async function requireAdmin(req: Request): Promise<SafeUser> {
+  const user = await requireUser(req);
+  if (user.role !== "admin") {
     throw new UnauthorizedError("Unauthorized");
   }
   return user;
