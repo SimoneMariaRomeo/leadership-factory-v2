@@ -1432,8 +1432,10 @@ a {
 }
 
 .journey-hero .hero-lead {
-  font-size: 17px;
-  color: #4d5a6f;
+  font-size: 18px;
+  font-weight: 500;
+  color: #5a677a;
+  font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 .journey-goal-heading {
