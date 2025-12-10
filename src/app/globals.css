@@ -1401,6 +1401,29 @@ a {
   gap: 8px;
 }
 
+/* These styles color the journey titles, intro, and bullet list so they echo the luxury palette. */
+.journey-hero-title {
+  background: linear-gradient(135deg, #d4af37 0%, #f4e4bc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.journey-intro-text {
+  color: var(--text-soft);
+}
+
+.journey-objectives {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.journey-objectives li {
+  list-style: disc;
+}
+
 @media (max-width: 720px) {
   .top-nav-inner {
     grid-template-columns: 1fr;
