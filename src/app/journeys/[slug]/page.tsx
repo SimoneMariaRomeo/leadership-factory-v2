@@ -60,17 +60,25 @@ export default async function JourneyPage({ params }: JourneyPageProps) {
     <div className="content-shell">
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner">
-        <div className="page-header">
-          <h1 className="hero-title journey-hero-title" style={{ marginBottom: "6px" }}>
+        <div className="journey-hero">
+          <h1 className="hero-title journey-hero-title" style={{ marginBottom: "8px" }}>
             {journey.title}
           </h1>
           {journey.intro ? <p className="hero-lead journey-intro-text">{journey.intro}</p> : null}
           {objectives.length > 0 ? (
-            <ul className="journey-objectives">
-              {objectives.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+            <>
+              <p className="journey-goal-heading">Learning Goals</p>
+              <ul className="journey-objectives">
+                {objectives.map((item, index) => (
+                  <li key={item}>
+                    <div className="journey-goal-card">
+                      <span className="journey-goal-index">{index + 1}</span>
+                      <p className="journey-goal-text">{item}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
           {!journey.isStandard && journey.userGoalSummary ? (
             <div className="journey-detail-box" style={{ marginTop: "12px" }}>
