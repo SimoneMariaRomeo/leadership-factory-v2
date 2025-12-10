@@ -1,547 +1,354 @@
-Step 7: full working /my-profile & /journeys listing (final v1 profile)
+feature/202512101719-step-8-9-admin-pages
 
-follow the AGENTS.md instructions and implement the step below. Check the overall features to ensure your implementation is aligned to the bigger picture/project scope. After that, implement the tests below.
+follow the AGENTS.md instructions and read the project docs (features.md, prisma-database-structure.md, implementation-steps.md, visual-guidelines.md, image-checklist.md, env-contents.md) before you touch any code.
 
-Read these project docs BEFORE coding anything:
-- docs/features.md
-- docs/prisma-database-structure.md
-- docs/visual-guidelines.md
-- docs/env-contents.md
-- docs/image-checklist.md
-- docs/implementation-steps.md
-- docs/key-pages-additional-notes.md
+You are working on Steps 8 and 9 only. Steps 1–7 are already implemented (schema, seeding, public funnel, chat, goal commit, journeys, and step sessions), so:
 
-Use Next.js 14 App Router (TypeScript + React) and the existing styling approach (Tailwind-like utility classes + gold/glass visual system). Do NOT implement new features as static HTML files under public/. All journeys and steps must be real app/ routes that can evolve and be tested properly.
+- DO NOT change the Prisma schema or relations.
+- DO NOT touch the public funnel pages (/ , /welcome, /learning-guide-intro, /learning-goal-confirmation, /whats-next).
+- DO NOT change /api/chat behaviour, need-analysis, create_learning_goal, or mark_step_completed semantics.
+- DO NOT change the /journeys, /journeys/[slug], /journeys/[slug]/steps/[stepId], /my-profile, or auth flows.
+- Only implement the admin pages and the tests described below.
 
-Step 7 builds on:
-- Step 3–4: /api/chat and need-analysis chat that emits create_learning_goal and redirects to /learning-goal-confirmation.
-- Step 5: auth + goal-commit endpoint that creates personalized journeys (awaiting_review).
-- Step 6: minimal /my-profile and /journeys listing (standard + personalized).
-
-Your job now is to make journeys and step sessions fully usable, including the mark_step_completed command.
-
+Use the existing Next.js app, layouts, and visual guidelines (Playfair + Inter, gold-glass style) so the admin pages feel consistent but clearly “backend”.
 
 ---
 
-## 1. STEP 7 – IMPLEMENTATION (JOURNEY OVERVIEW + STEPS + mark_step_completed)
+## Step 8 — admin-sessions UI (CRUD for LearningSessionOutline)
 
-### 1.1 Scope of Step 7
+**Goal:** `/admin/sessions` lets an admin manage `LearningSessionOutline` records: filter by journey, list outlines, create, edit, delete.
 
-Implement fully working journeys and step sessions:
+### 8.1 Routing & basic layout
 
-- User-facing routes:
-  - `/journeys` (public list of standard journeys – mostly done in Step 6, refine if needed).
-  - `/journeys/[slug]` – journey overview (standard or personalized).
-  - `/journeys/[slug]/steps/[stepId]` – step session chat (standard or personalized).
-- Behaviour:
-  - Correctly load journeys and their steps from the DB.
-  - Enforce basic access rules for personalized journeys.
-  - Allow users to open unlocked/completed steps and run a chat session for that step via /api/chat.
-  - Implement mark_step_completed end-to-end so completing a step:
-    - updates LearningJourneyStep in DB,
-    - unlocks the next step,
-    - and navigates the user back to the journey overview page.
+- Create a protected route (or page) at:  
+  `/admin/sessions`
+- Reuse any existing admin layout if present; otherwise:
+  - Left area: filters (journey selector + live toggle + search).
+  - Main area: list of outlines as rows or cards.
+- Require admin user:
+  - If your project already has an admin guard, use it.
+  - If not, add a minimal check reusing whatever you did for Step 7 admin-ish access. Do **not** invent a new auth system.
 
+### 8.2 Data source
 
-### 1.2 Data & rules you must respect
+Use the existing Prisma models as defined in prisma-database-structure.md:
 
-Use docs/features.md and docs/prisma-database-structure.md as source of truth for semantics. In particular:
+- `LearningJourney`
+- `LearningSessionOutline` with fields:
 
-- Journeys:
-  - `LearningJourney.isStandard = true` and `status = "active"` and `personalizedForUserId = null` → standard journey, public.
-  - `LearningJourney.isStandard = false` and `personalizedForUserId = user.id` → personalized journey, visible only to that user.
-  - Slug:
-    - Used in `/journeys/[slug]` and `/journeys/[slug]/steps/[stepId]`.
-    - Slugs already exist for at least:
-      - “Goal Clarification” → `"goal-clarification"`.
-    - Do NOT make slug editable from the UI in this step.
+  - `id: String @id`
+  - `journeyId: String`
+  - `slug: String`
+  - `order: Int`
+  - `live: Boolean`
+  - `title: String`
+  - `objective: String?`
+  - `content: String`
+  - `botTools: String`
+  - `firstUserMessage: String`
+  - `tags: Json?`
+  - `createdAt`, `updatedAt`
 
-- Steps:
-  - `LearningJourneyStep` belongs to one journey and one `LearningSessionOutline`.
-  - `status` is `"locked" | "unlocked" | "completed"` (enforced by code, not necessarily DB).
-  - `chatId` (on the step) links the step to its `LearningSessionChat` (one chat per step per journey per user).
-  - `unlockedAt` is set when the step becomes available.
-  - `completedAt` is set when the step is marked completed (once).
+**Important:**
 
-- Step unlocking model:
-  - First step in a journey is unlocked by default when the journey becomes active (you can assume data is seeded / created accordingly).
-  - A step can be opened if:
-    - `status = "unlocked"` or `"completed"`.
-  - When a step is marked completed:
-    - Its `status` becomes `"completed"` (if not already).
-    - Its `completedAt` is set (only the first time).
-    - The next step (if any) becomes unlocked:
-      - `status = "unlocked"` if it was `"locked"`.
-      - `unlockedAt` is set if it was null.
-  - Re-completing an already completed step must not regress or double-set timestamps.
+- `slug` **IS editable** here and must be unique per journey (respect the uniqueness constraint from schema / docs).
+- `content` is a **very large** textarea (for long prompt text).
+- `botTools` is also a **large** textarea (multi-line; slightly smaller is fine, but not a single-line field).
+- `objective` and `firstUserMessage` are normal text inputs or medium-size textareas.
 
-- Chat model:
-  - `LearningSessionChat` is the chat container.
-  - For need-analysis, you already create/use a chat linked to the need-analysis outline and user.
-  - For steps:
-    - You must create and reuse a single chat per (journey step, user) using the `LearningJourneyStep.chatId` relation (do NOT add a journeyStepId field to LearningSessionChat).
-    - Chat messages are stored in `Message` with optional `command` JSON field.
+### 8.3 Filters & listing behaviour
 
+On `/admin/sessions`:
 
-### 1.3 `/journeys` – public list of standard journeys (refine only if needed)
+- At the top, show filters:
+  - **Journey filter** (dropdown of `LearningJourney` records):
+    - When a journey is selected, show only outlines for that `journeyId`.
+    - When “All journeys” is selected, show all outlines.
+  - **Live filter**:
+    - Options: All / Live only / Not live.
+  - **Search**:
+    - Free text over `title` OR `slug`.
 
-If Step 6 already implemented `/journeys`, keep it and only adjust where necessary to match the rules:
+- List outlines in a table or cards:
+  - Columns (at minimum): `title`, `slug`, `live`, `journey title`, `updatedAt`, and a compact “Edit” / “Delete” control.
+  - Clicking a row or “Edit” opens the edit view (drawer, modal, or in-page form – your choice, but keep it simple and consistent).
 
-- Data:
-  - Query all `LearningJourney` where:
-    - `isStandard = true`
-    - `status = "active"`
-    - `personalizedForUserId IS NULL`
-  - Order by `order` or `createdAt` (you choose, but be consistent).
+### 8.4 Create / Edit outline
 
-- UI:
-  - Show a grid or list of glass-effect cards with:
-    - Journey title.
-    - Short intro.
-  - Each card links to `/journeys/[slug]`.
+- Support **create**, **edit**, and **delete** actions.
+- For create:
+  - Require `journeyId`, `title`, `slug`, `content`, `botTools`, `firstUserMessage`.
+  - Set a reasonable default for `order` (e.g. max(order) + 1 for that journey, or 1 if none exist).
+  - `live` can default to `false`.
 
-- Do NOT:
-  - Show personalized journeys on this page.
-  - Implement any admin controls here.
+- For edit:
+  - All the fields listed in features.md under admin-sessions must be editable:
+    - `title`
+    - `slug` (editable; unique-per-journey constraint)
+    - `live`
+    - `objective`
+    - `content` (very large textarea)
+    - `botTools` (large textarea)
+    - `firstUserMessage`
+    - `tags` (optional – JSON text input or a simple text field, up to you; no heavy UI needed)
+  - Do **not** allow editing `id`, `createdAt`, `updatedAt` manually.
 
+- Unsaved-edit UX:
+  - If there are unsaved edits for an outline, highlight its card/row background (e.g. light yellow) until saved.
+  - You can track “dirty” state in component state and use simple styling.
 
-### 1.4 `/journeys/[slug]` – journey overview
+### 8.5 Delete rules
 
-Implement a Next.js App Router route at `app/journeys/[slug]/page.tsx` (or equivalent) with the following behaviour:
+- Before deleting an outline:
+  - Check if this `LearningSessionOutline` is used by any `LearningJourneyStep`.
+  - If yes:
+    - Show a confirmation message clearly stating that deleting the outline will also delete all related steps.
+    - Only proceed if the admin confirms.
+    - On confirm:
+      - Delete the related `LearningJourneyStep` records.
+      - Then delete the `LearningSessionOutline`.
+  - If no steps are using it:
+    - A simpler confirmation is enough (“Are you sure?”).
 
-**1. Route resolution & access rules**
+### 8.6 Visual style
 
-- Fetch the journey by slug from the main DB.
-- If no journey exists → show a friendly 404-style “Journey not found” page within the existing layout.
+- Use the existing admin / app styling primitives:
+  - Same fonts (Playfair titles, Inter body).
+  - Gold accents for primary buttons and toggles.
+  - Cards can use the “glass-effect” style if already implemented or a lighter, cleaner admin variant of it.
+- Keep it functional: this is a backend tool, not a marketing page.
 
-- If `isStandard = true`:
-  - Page is accessible to anyone (even unauthenticated).
-  - No user-specific restrictions.
+---
 
-- If `isStandard = false` (personalized):
-  - Require an authenticated user.
-  - Only allow access if:
-    - `personalizedForUserId === currentUser.id`.
-  - If anonymous or different user:
-    - Redirect to `/` or `/my-profile` with a lightweight error message.
-    - Do NOT leak the existence of someone else’s journey.
+## Step 9 — admin-journey UI (Full control over journeys and steps)
 
-**2. Data to load**
+**Goal:** `/admin/journeys` lets an admin:
 
-For a valid journey:
+- Filter & browse `LearningJourney` records.
+- Edit core journey fields (title, slug, intro, objectives, isStandard, personalizedForUser, status, userGoalSummary).
+- Manage steps (`LearningJourneyStep`): add, assign outlines, see / edit ahaText, reorder, and inspect chat links.
 
-- Journey fields:
+### 9.1 Routing & layout
+
+- Create a protected route at:  
+  `/admin/journeys`
+- Main sections:
+  - Left/top: **journey filters** (see below).
+  - Middle: list of journeys.
+  - Right / detail panel or separate route: **journey detail with steps**.
+
+### 9.2 Filters
+
+At the top of `/admin/journeys`:
+
+- Filter by:
+  - `isStandard` (All / Standard only / Non-standard).
+  - `personalizedForUser.email` (searchable dropdown or input-autocomplete).
+  - `status` (All / draft / awaiting_review / active / completed / archived).
+
+Use the Prisma relations as defined; you don’t need new schema fields.
+
+### 9.3 Journey list & selection
+
+- Show a list/table of journeys with:
   - `title`
-  - `intro`
-  - `objectives` (JSON array)
-
-
-- Steps:
-  - Load `LearningJourneyStep[]`:
-    - Filter by `journeyId = journey.id`.
-    - Order by `order` ascending.
-  - For each step include:
-    - `status`
-    - Linked `LearningSessionOutline.title`
-
-**3. UI layout**
-
-Align with the visual guidelines -- give a minimal luxury feeling:
-
-- Background:
-  - Same luxury gradient + glass card style as the funnel pages.
-- Header:
-  - Journey title in Playfair Display.
-- Content:
-  - Journey intro in a body paragraph.
-  - Objectives as a bullet list if present.
-- Steps list:
-  - One row/card per step with:
-    - Step title (from `sessionOutline.title`).
-    - Optional status pill:
-      - Completed → subtle green pill - text: Completed.
-      - Unlocked → gold pill - text: Start.
-      - Locked → grey pill - text: Locked.
-
-
-**4. Interaction**
-
-- Clicking on a step row:
-
-  - If `status = "locked"`:
-    - Do NOT navigate.
-
-
-  - If `status = "unlocked"` or `"completed"`:
-    - Navigate to `/journeys/[slug]/steps/[stepId]`.
-
-- For personalized journeys:
-  - Ensure links preserve any needed query params (e.g. `/journeys/[slug]/steps/[stepId]` should be enough, as you resolve the user from session).
-
-
-### 1.5 `/journeys/[slug]/steps/[stepId]` – step session chat
-
-Implement a Next.js route at `app/journeys/[slug]/steps/[stepId]/page.tsx` (or equivalent) that hosts the chat for a specific step.
-
-**1. Route resolution & guards**
-
-- Load the journey by slug and step by id and ensure:
-  - `step.journeyId === journey.id`.
-- Apply the same access rules as in `/journeys/[slug]`:
-  - Standard journeys → open to all.
-  - Personalized journeys → require current user and `personalizedForUserId === currentUser.id`.
-
-- If any of these checks fail:
-  - Return a friendly error or redirect to the journey page.
-
-**2. Get or create the step chat**
-
-You must use the existing schema (no new columns):
-
-- If `step.chatId` is set:
-  - Load the corresponding `LearningSessionChat` (and its messages, as your chat UI expects).
-
-- If `step.chatId` is null:
-  - Create a new `LearningSessionChat` row with:
-    - `userId` = current user id (or null if you decide to allow anonymous runs on standard journeys).
-    - `sessionOutlineId` = `step.sessionOutlineId`.
-    - Any other required fields (timestamps, metadata).
-  - Update the step:
-    - `chatId = newChat.id`.
-    - If this is the first time the user opens this step and `status = "locked"`, you may:
-      - Either prevent entry (preferable) – but since you guard via status already, this situation ideally doesn’t happen.
-      - Or upgrade to `status = "unlocked"` and set `unlockedAt`.
-
-Keep the “one chat per step per user” invariant via `chatId` on the step.
-
-**3. Chat UI integration**
-
-- Reuse the same chat component / hook you implemented for need-analysis (Step 3–4), but configured for step sessions:
-  - Pass the `sessionOutlineId` and `step.id` (journeyStepId) into the initial call to `/api/chat`.
-- The step page should:
-  - Render the chat UI with the coach avatar, bubbles, etc., using the existing visual style.
-  - Show the step title and a short description at the top (from `LearningSessionOutline`).
-
-**4. /api/chat extension for step sessions**
-
-Extend the existing `/api/chat` implementation (do not create a new endpoint) so that it supports both modes:
-
-- Need-analysis (already done).
-- Journey step sessions (new for Step 7).
-
-For journey step sessions:
-
-- The client should include:
-  - `sessionOutlineId` (always).
-  - `journeyStepId` (for step sessions).
-  - Chat identifier (if you already use one); or the backend can infer the `LearningSessionChat` via `journeyStepId` → `chatId`.
-
-Backend behaviour (high-level):
-
-- Resolve the correct `LearningSessionChat` for the step:
-  - If `step.chatId` exists → use that.
-  - If not → create the chat and update the step as described above.
-- Build the prompt using:
-  - `User.botRole`
-  - `LearningSessionOutline.objective`
-  - `LearningSessionOutline.content`
-  - `LearningSessionOutline.botTools`
-  - `LearningJourney.userGoalSummary` (if applicable)
-- Stream / return messages as in need-analysis.
-- Persist `Message` rows as you already do.
-- If the assistant returns a JSON command, set `Message.command` for that assistant message.
-
-
-### 1.6 mark_step_completed command handling
-
-Implement the full flow for:
-
-```json
-{
-  "command": "mark_step_completed"
-}
-generated by the assistant at the end of a step session.
-
-1. Assistant side (botTools)
-
-For step session outlines (not need-analysis), ensure LearningSessionOutline.botTools includes instructions telling the assistant:
-
-When the user has clearly finished the step, send exactly:
-
-{"command": "mark_step_completed"} as a pure JSON message (no extra text).
-
-Only once per completion.
-
-Do NOT break or change the need-analysis botTools (which use create_learning_goal).
-
-2. Frontend – useChat handling
-
-In your chat client logic (hook/component):
-
-Detect when the last assistant message has command.command === "mark_step_completed" (or equivalent depending on how you store it).
-
-When that happens:
-
-Do NOT render the raw JSON in the chat bubbles.
-
-Call a dedicated endpoint (see below) to mark the step as completed in the DB.
-
-After a successful response:
-
-Navigate back to /journeys/[slug].
-
-Optionally show a minimal inline toast / banner “Step completed” on the journey page.
-
-3. Backend – mark-step-completed endpoint
-
-Implement a small API endpoint, e.g.:
-
-POST /api/journeys/steps/[stepId]/complete
-
-Or similar; pick a sane, REST-like path.
-
-Behaviour:
-
-Require an authenticated user if the journey is personalized (and enforce ownership).
-
-Validate that the step exists and belongs to a journey the user is allowed to access.
-
-Update the step:
-
-If status !== "completed":
-
-Set status = "completed".
-
-Set completedAt = now() if null.
-
-If already completed, keep completedAt unchanged.
-
-Unlock next step (if any):
-
-Load all steps for that journey ordered by order.
-
-Find the next step after the completed one.
-
-If next step’s status is "locked":
-
-Set status = "unlocked".
-
-Set unlockedAt = now() if null.
-
-Return a JSON payload with the information the frontend needs to redirect and/or refresh:
-
-nextUrl: "/journeys/[slug]".
-
-Optionally, a summary of step statuses (but not required for this step).
-
-Do NOT:
-
-Write complex business logic into the route handler; prefer to extract a small helper function (e.g. completeStepAndUnlockNext(stepId, userId)) into a separate module (e.g. src/lib/journeys.ts) that you can test directly.
-
-1.7 Edge cases / guardrails
-Handle at least these cases gracefully:
-
-User tries to open a personalized journey or step that belongs to another user:
-
-Respond with a redirect or minimal error message, no data leakage.
-
-User tries to call the mark-step-completed endpoint for a step they don’t own:
-
-Return 403 and do not update the DB.
-
-User opens a step where:
-
-status = "locked":
-
-They should not be able to run the chat; either redirect or show a “locked” message instead of the chat UI.
-
-status = "completed":
-
-They can re-open the chat, but mark_step_completed should be idempotent (no double unlocks or inconsistent state).
-
-2. STEP 7 – TESTS (JOURNEYS + STEPS + mark_step_completed)
-Create a new test file and script for Step 7.
-
-2.1 Test harness setup
-Add a new script in package.json:
-
-"test:journeys-and-steps": "node tests/journeys-and-steps-tests.js"
-
-Create tests/journeys-and-steps-tests.js that:
-
-Uses plain Node.js (no heavy test framework).
-
-Connects to the same Postgres DB as other tests, using the existing prisma config.
-
-Prints clear, human-readable logs:
-
-"[Test] ..."
-
-" - Expectation: ..."
-
-" ok: ..." / " FAIL: ..." with error details.
-
-Cleans up any test data it creates (or uses a dedicated test schema if that’s already established).
-
-Do NOT:
-
-Call real LLM APIs or send real emails in tests.
-
-Hit Next.js pages through a browser; focus on DB + server-side logic and small helper functions.
-
-2.2 Tests to implement
-You don’t need dozens of tests, but each of the following behaviours should be covered at least once. Feel free to factor out helpers to keep the file readable.
-
-A. Journey access rules
-Test: Standard journey is publicly visible
-
-Seed or create a standard journey:
-
-isStandard = true, status = "active", personalizedForUserId = null.
-
-Check that your “load journey by slug” helper (the same logic used by /journeys/[slug]) returns the journey when no user is provided.
-
-Log that standard journeys are visible without auth.
-
-Test: Personalized journey is only visible to the owner
-
-Create:
-
-User A, User B.
-
-Journey J with isStandard = false, personalizedForUserId = userA.id.
-
-Using your load helper:
-
-With user A → journey is returned.
-
-With user B → journey is rejected (null / error).
-
-With no user → journey is rejected.
-
-Log these behaviours clearly.
-
-B. Step list + statuses
-Test: Steps are returned ordered and decorated correctly
-
-For a given journey, create three steps with explicit order and varying statuses:
-
-Step1: order = 1, status = "completed", completedAt set.
-
-Step2: order = 2, status = "unlocked", unlockedAt set, completedAt = null.
-
-Step3: order = 3, status = "locked".
-
-Call a small helper used by /journeys/[slug] to fetch and map steps into the UI shape.
-
-Assert:
-
-Steps are in order 1, 2, 3.
-
-The mapped statuses match.
-
-Completed step includes a completedAt value; unlocked step has no completedAt.
-
-C. Step chat wiring
-Test: Opening a step creates (or reuses) a chat and links it via chatId
-
-Set up a journey + step with status = "unlocked" and chatId = null.
-
-Call a helper that encapsulates what the step page does for chat resolution (e.g. getOrCreateStepChat({ stepId, userId })).
-
-Assert:
-
-A LearningSessionChat record is created with:
-
-sessionOutlineId = step.sessionOutlineId.
-
-userId = user.id (if passed).
-
-The step now has chatId = chat.id.
-
-Call the helper again for the same step and user:
-
-Assert it reuses the same chat (no new DB row created).
-
-D. mark_step_completed behaviour
-Test: Completing a step updates its status and unlocks the next
-
-Prepare:
-
-Journey J with three steps S1, S2, S3 ordered 1, 2, 3:
-
-S1: status = "unlocked".
-
-S2: status = "locked".
-
-S3: status = "locked".
-
-Call the same helper used by /api/journeys/steps/[stepId]/complete, e.g. completeStepAndUnlockNext(stepId, userId) on S1.
-
-Assert in DB:
-
-S1:
-
-status = "completed".
-
-completedAt is set (around now).
-
-S2:
-
-status = "unlocked".
-
-unlockedAt is set.
-
-S3:
-
-Still status = "locked".
-
-Test: Completing an already completed step is idempotent
-
-Call the helper again on S1.
-
-Assert:
-
-completedAt for S1 did NOT change.
-
-S2 and S3 statuses remain the same.
-
-Log clearly that the operation is idempotent.
-
-E. Access control on completion
-Test: User cannot complete another user’s personalized step
-
-Create:
-
-User A, User B.
-
-Personalized journey J owned by A with one step S (unlocked).
-
-Call completeStepAndUnlockNext(S.id, userB.id) or hit the API with a mocked session for user B.
-
-Assert:
-
-The function/API returns an error/forbidden result.
-
-S’s status, completedAt, and next steps are unchanged.
-
-F. Integration glue (lightweight)
-You don’t need full E2E, but add at least one “integration-style” check that the JSON returned from your completion endpoint is sane.
-
-Test: Completion endpoint returns a nextUrl
-
-Simulate an HTTP-like call to the completion endpoint handler with:
-
-Valid user.
-
-Valid step.
-
-Assert:
-
-The response status is 200.
-
-The JSON payload contains:
-
-nextUrl (e.g. /journeys/goal-clarification or the relevant slug).
-
-Log that the frontend can safely redirect based on this.
+  - `slug`
+  - `isStandard`
+  - `personalizedForUser.email` (if any)
+  - `status`
+  - `updatedAt`
+- Clicking a journey opens its detail view (either inline panel or a dedicated page like `/admin/journeys/[id]` – choose whatever is simplest in this codebase).
+
+### 9.4 Journey detail: editable fields
+
+For the selected `LearningJourney`, the admin must be able to **view and edit**:
+
+- `title` (text input)
+- `slug` (text input, **BUT** non-editable when `status === "active"` – disable the field in that case)
+- `intro` (textarea)
+- `objectives` (textarea where each line is one objective; map to/from `Json` array)
+  - On save: split by newline → JSON array `["line 1", "line 2", ...]`.
+  - On load: join array with `\n`.
+- `isStandard` (checkbox / toggle)
+  - If `isStandard === true`:
+    - Enforce `personalizedForUserId` / `personalizedForUser` is `null` in the backend logic.
+- `personalizedForUser.email`
+  - Only editable when `isStandard === false`.
+  - Use a searchable user selector (or a simple email-backed input that looks up a user and sets `personalizedForUserId`).
+- `userGoalSummary` (textarea)
+  - Display-only semantics are fine for this step (do **not** implement new logic to auto-update it – just allow viewing and editing).
+- `status` (select: `"draft" | "awaiting_review" | "active" | "completed" | "archived"`)
+  - Respect the transitions described in features.md:
+    - Default for manually created: `draft`.
+    - AI-created journeys after need-analysis: `awaiting_review` (already handled by earlier steps; don’t re-implement).
+    - Allow transitions as per spec (draft ↔ awaiting_review ↔ active, active ↔ completed, active → draft).
+
+Also:
+
+- If the journey has a step using the **need-analysis** outline and that step has a `chatId`:
+  - Show a “Need-analysis chat” link that goes to `/chats/history/[chatId]`.
+
+### 9.5 Steps list & editing
+
+Below the journey fields, show the steps (`LearningJourneyStep[]`) for that journey, ordered by `order`.
+
+For each step, display:
+
+- `order` (index or number).
+- `sessionOutline.title` (and maybe slug).
+- `status` (`locked | unlocked | completed`).
+- `unlockedAt`, `completedAt` (read-only; small text).
+- `chatId` (if present) and a link to `/chats/history/[chatId]`.
+- `ahaText` (short textarea).
+
+Editable aspects:
+
+- **sessionOutline**:
+  - Provide a dropdown to change `sessionOutlineId` to another `LearningSessionOutline`.
+  - The dropdown can show outlines from:
+    - The same journey first.
+    - Or all outlines (with some indication of which journey they belong to).
+- **ahaText**:
+  - Editable textarea per step.
+- **Optional status override**:
+  - If you want to support admin override (as allowed in features.md), you can expose a status dropdown for `locked/unlocked/completed`. If that adds too much complexity, you can keep status read-only for now and rely on existing Step 7 behaviour.
+
+Adding steps:
+
+- Provide an “Add step” button that:
+  - Lets admin pick a `LearningSessionOutline` from a dropdown.
+  - Creates a new step with:
+    - `journeyId` = current journey.
+    - `sessionOutlineId` = selected outline.
+    - `order` = max order + 1.
+    - `status` = `"locked"` by default (or reasonable default aligned with your existing step logic).
+
+Reordering:
+
+- Implement **some** way to reorder steps:
+  - Ideal: drag & drop that updates `order` for all steps when dropped, saving to backend.
+  - Acceptable fallback if drag&drop is too heavy:
+    - Up/Down arrows per step that swap `order` with the adjacent step and persist.
+- After reorder, the UI must reflect the new order without full-page reload.
+
+### 9.6 Journey creation
+
+- Allow creating a new journey from the admin UI:
+  - Minimum fields: `title` (required), `isStandard` (default false), optional `slug`, `intro`.
+  - Default:
+    - `status = "draft"`.
+    - `isStandard = false`.
+    - `personalizedForUserId = null`.
+- You do **not** need to implement AI journey generation here – this page is for manual maintenance.
+
+### 9.7 Visibility rules (do not change behaviour)
+
+Journey visibility rules for the **front-end user experience** are already implemented in previous steps. From the admin UI:
+
+- Do **not** change how /journeys behaves.
+- Just ensure that:
+  - A journey appears as a **standard journey** when `isStandard = true`, `personalizedForUserId = null`, and `status = "active"`.
+  - Personalized journeys stay tied to their user; you are not exposing public access here, only admin editing.
+
+---
+
+## Tests for Steps 8 & 9
+
+Create **two** Node-based test files, following the existing style (like `tests/schema-and-seed-tests.js` and `tests/public-funnel-tests.js`):
+
+- `tests/admin-sessions-tests.js`
+- `tests/admin-journey-tests.js`
+
+Use the same approach as previous tests:
+
+- Plain Node (`node tests/admin-sessions-tests.js` etc.).
+- Console logs with clear, human-readable descriptions of what’s being tested.
+- Use Prisma directly where needed to assert DB state.
+- No new test frameworks or dependencies.
+
+### 10.1 tests/admin-sessions-tests.js
+
+Focus on application behaviour of `/admin/sessions`:
+
+1. **List & filter outlines**
+   - Log: “[Test] admin-sessions lists outlines by journey and live status”.
+   - Seed or assume there are at least two journeys and multiple outlines.
+   - Programmatically simulate:
+     - Fetching outlines for a specific journey via the backend handler (or direct Prisma + any API you expose).
+     - Applying a “live only” filter.
+   - Assert:
+     - All returned outlines have the expected `journeyId`.
+     - When “live only” is applied, all returned outlines have `live === true`.
+
+2. **Create outline with large content and botTools**
+   - Create a new outline with:
+     - Long `content` (multi-line, large string).
+     - Multi-line `botTools`.
+   - Assert:
+     - The outline is persisted with the same `content` and `botTools` values.
+     - `slug` is unique within the journey.
+
+3. **Edit outline fields (including slug)**
+   - Update `title`, `slug`, `live`, `objective`, `content`, `botTools`, `firstUserMessage`.
+   - Assert:
+     - All fields are updated correctly in DB.
+     - Editing `slug` respects the uniqueness constraint (e.g. trying to duplicate slug within the same journey should fail gracefully; you can log this as a negative test).
+
+4. **Delete outline with and without steps**
+   - Case A: Outline without steps:
+     - Delete it.
+     - Assert it is removed from DB and no steps were affected.
+   - Case B: Outline with associated `LearningJourneyStep` records:
+     - Delete it via the same logic as the UI.
+     - Assert:
+       - All related `LearningJourneyStep` records are also deleted.
+       - The outline is deleted.
+
+Each test should print a clear explanation of the expectation and whether it passed.
+
+### 10.2 tests/admin-journey-tests.js
+
+Focus on `/admin/journeys` behaviour:
+
+1. **Filter journeys**
+   - Log: “[Test] admin-journey filters journeys by isStandard, status, and user email”.
+   - Assert:
+     - `isStandard` filter returns only journeys with matching flag.
+     - `status` filter returns journeys with matching status.
+     - Filtering by `personalizedForUser.email` returns only journeys linked to that user.
+
+2. **Edit journey fields**
+   - Pick a journey in `draft` status.
+   - Update:
+     - `title`, `slug`, `intro`, `objectives` (multi-line -> JSON array), `isStandard`, `userGoalSummary`, `status`.
+   - Assert:
+     - The JSON `objectives` field matches the lines you set.
+     - `slug` cannot be changed once you set `status = "active"` and re-save (i.e. your code prevents or rejects it).
+
+3. **Assign / change personalized user**
+   - For a non-standard journey:
+     - Assign `personalizedForUser` by email.
+     - Assert DB has `personalizedForUserId` set correctly.
+   - Try to set `isStandard = true` while `personalizedForUserId` is not null:
+     - Assert the backend prevents this (e.g. error or validation).
+
+4. **Steps: add, edit, reorder**
+   - Add a new step via the admin logic:
+     - Choose an outline.
+     - Assert a `LearningJourneyStep` is created with correct `journeyId`, `sessionOutlineId`, and `order`.
+   - Update `ahaText` and (optionally) status for a step:
+     - Assert changes are persisted.
+   - Reorder two steps (via your reorder function):
+     - Assert their `order` values are swapped or updated as intended.
+     - Assert a subsequent query returns them in the new order.
+
+5. **Need-analysis chat link**
+   - Setup:
+     - A journey with a step whose outline slug is `need-analysis` (or however you detect it) and a non-null `chatId`.
+   - Assert:
+     - The admin detail view exposes a link that would go to `/chats/history/[chatId]` for that step.
+
+As with other tests, each block should log a human-friendly description of:
+
+- What behaviour is expected.
+- What was actually checked.
