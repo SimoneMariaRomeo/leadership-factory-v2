@@ -71,12 +71,19 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
 
   const userLabel = useMemo(() => user?.name || user?.email || "You", [user]);
 
-  const navLink = (href: string, label: string) => {
+  const navLink = (href: string, label: string, requiresAuth = false) => {
     const active = pathname === href;
+    const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (requiresAuth && !user) {
+        event.preventDefault();
+        setShowAuthModal(true);
+      }
+    };
     return (
       <Link
         href={href}
         className={`top-nav-link${active ? " top-nav-link-active" : ""}`}
+        onClick={handleClick}
         id={href === "/journeys" ? "tour-nav-journeys" : undefined}
       >
         {label}
@@ -90,8 +97,8 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
         <div className="top-nav-inner">
           <div className="top-nav-links">
             {navLink("/", "Home")}
-            {user ? navLink("/journeys", "Learning Journeys") : null}
-            {user ? navLink("/my-profile", "Profile") : null}
+            {navLink("/journeys", "Learning Journeys", true)}
+            {navLink("/my-profile", "Profile", true)}
           </div>
         </div>
       </nav>
