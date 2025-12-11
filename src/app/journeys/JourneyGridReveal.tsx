@@ -41,6 +41,8 @@ export default function JourneyGridReveal({ journeys }: JourneyGridRevealProps) 
   useEffect(() => {
     const kickOff = () => {
       if (startedRef.current) return;
+      // If everything is already shown, do nothing so cards stay visible.
+      if (visibleCount >= ordered.length) return;
       startedRef.current = true;
       setVisibleCount(1);
       timerRef.current = setInterval(() => {
