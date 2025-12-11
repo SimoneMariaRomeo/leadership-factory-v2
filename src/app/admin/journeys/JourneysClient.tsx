@@ -82,6 +82,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const [loadingList, setLoadingList] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [savingJourney, setSavingJourney] = useState(false);
+  const [deletingJourney, setDeletingJourney] = useState(false);
   const [stepSaving, setStepSaving] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
   const [addStepOutlineId, setAddStepOutlineId] = useState<string>("");
@@ -187,6 +188,37 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setMessage(error?.message || "Could not save journey.");
     } finally {
       setSavingJourney(false);
+    }
+  };
+
+  // This deletes the current journey and all of its outlines/steps.
+  const handleDeleteJourney = async () => {
+    if (!journeyDetail) return;
+    const confirmMessage =
+      "This will delete this journey, its steps, and its outlines. Steps using those outlines elsewhere will also be removed. Continue?";
+    if (!window.confirm(confirmMessage)) return;
+
+    setDeletingJourney(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/journeys/${journeyDetail.id}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Could not delete journey.");
+
+      setJourneys((prev) => prev.filter((item) => item.id !== journeyDetail.id));
+      const remaining = journeys.filter((j) => j.id !== journeyDetail.id);
+      if (remaining.length > 0) {
+        await loadJourneyDetail(remaining[0].id);
+      } else {
+        setJourneyDetail(null);
+        setSelectedJourneyId(null);
+      }
+      setMessage("Journey deleted.");
+    } catch (error: any) {
+      console.error("Deleting journey failed:", error);
+      setMessage(error?.message || "Could not delete journey.");
+    } finally {
+      setDeletingJourney(false);
     }
   };
 
@@ -479,16 +511,26 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       </div>
 
       <div className="admin-form-card">
-        <div className="admin-card-head">
-          <div>
-            <h3 className="admin-title">Journey detail</h3>
-            {needAnalysisChatId ? (
-              <Link href={`/chats/history/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
-                Need-analysis chat
-              </Link>
-            ) : null}
-          </div>
-        </div>
+            <div className="admin-card-head">
+              <div>
+                <h3 className="admin-title">Journey detail</h3>
+                {needAnalysisChatId ? (
+                  <Link href={`/chats/history/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
+                    Need-analysis chat
+                  </Link>
+                ) : null}
+              </div>
+              {journeyDetail ? (
+                <button
+                  type="button"
+                  className="secondary-button danger"
+                  onClick={handleDeleteJourney}
+                  disabled={deletingJourney}
+                >
+                  {deletingJourney ? "Deleting..." : "Delete journey"}
+                </button>
+              ) : null}
+            </div>
 
         {loadingDetail && <p className="tiny-note">Loading journey...</p>}
         {!journeyDetail ? (

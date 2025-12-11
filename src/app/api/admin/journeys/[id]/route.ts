@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, UnauthorizedError } from "../../../../../server/auth/session";
 import { AdminValidationError } from "../../../../../server/admin/sessions";
-import { getJourneyDetail, updateJourney } from "../../../../../server/admin/journeys";
+import { deleteJourney, getJourneyDetail, updateJourney } from "../../../../../server/admin/journeys";
 
 type RouteParams = { params: { id: string } };
 
@@ -31,6 +31,16 @@ export async function PUT(req: Request, { params }: RouteParams) {
       status: body.status,
     });
     return NextResponse.json({ journey });
+  } catch (error) {
+    return respondError(error);
+  }
+}
+
+export async function DELETE(req: Request, { params }: RouteParams) {
+  try {
+    await requireAdmin(req);
+    const result = await deleteJourney(params.id);
+    return NextResponse.json({ deleted: true, ...result });
   } catch (error) {
     return respondError(error);
   }

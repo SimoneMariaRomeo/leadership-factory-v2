@@ -290,6 +290,27 @@ export async function reorderJourneySteps(journeyId: string, orderedStepIds: str
   return reordered;
 }
 
+// This deletes a journey plus its steps and outlines so no records are left hanging.
+export async function deleteJourney(journeyId: string) {
+  const journey = await prisma.learningJourney.findUnique({ where: { id: journeyId } });
+  if (!journey) {
+    throw new AdminValidationError("Journey not found.");
+  }
+
+  const outlines = await prisma.learningSessionOutline.findMany({ where: { journeyId } });
+  const outlineIds = outlines.map((outline) => outline.id);
+
+  // Delete any steps that point to these outlines (including from other journeys) to avoid FK conflicts.
+  await prisma.$transaction([
+    prisma.learningJourneyStep.deleteMany({ where: { sessionOutlineId: { in: outlineIds } } }),
+    prisma.learningSessionOutline.deleteMany({ where: { journeyId } }),
+    prisma.learningJourneyStep.deleteMany({ where: { journeyId } }),
+    prisma.learningJourney.delete({ where: { id: journeyId } }),
+  ]);
+
+  return { deletedOutlines: outlines.length };
+}
+
 // This splits the textarea into a JSON array.
 function splitObjectives(text?: string | null) {
   if (!text) return [];
