@@ -123,7 +123,7 @@ async function main() {
   const readyLink = intro.getByRole("link", { name: "I'M READY" });
   assert(
     readyLink.getAttribute("href") === "/journeys/goal-clarification/steps/need-analysis",
-    "I'M READY should point to the need-analysis step."
+    "I'M READY should point to the need-analysis step (slug-based)."
   );
   logPass("Learning-guide-intro text and CTA look right.");
   cleanup();

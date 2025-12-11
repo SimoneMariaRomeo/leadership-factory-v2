@@ -1,5 +1,4 @@
 // This page loads a journey step, checks access, and shows the chat for that step.
-import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import NeedAnalysisChat from "./NeedAnalysisChat";
@@ -18,7 +17,44 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   const headerStore = headers();
   const cookieHeader = headerStore.get("cookie");
   const currentUser = await getCurrentUser(requestFromCookieHeader(cookieHeader));
-  const access = await loadStepWithAccess(params.stepId, currentUser?.id || null);
+  const journey = await prisma.learningJourney.findFirst({
+    where: { OR: [{ slug: params.slug }, { id: params.slug }] },
+    select: { id: true, slug: true, isStandard: true, personalizedForUserId: true },
+  });
+
+  if (!journey) {
+    redirect("/journeys");
+  }
+
+  // First try by ID, then fall back to slug within this journey.
+  let foundStep = await prisma.learningJourneyStep.findUnique({
+    where: { id: params.stepId },
+    include: { journey: true, sessionOutline: true, chat: true },
+  });
+
+  if (!foundStep || foundStep.journeyId !== journey.id) {
+    foundStep = await prisma.learningJourneyStep.findFirst({
+      where: {
+        journeyId: journey.id,
+        sessionOutline: { slug: params.stepId },
+      },
+      include: { journey: true, sessionOutline: true, chat: true },
+    });
+  }
+
+  if (!foundStep) {
+    return (
+      <main className="page-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="glass-card">
+          <h1 className="hero-title">This step does not exist.</h1>
+          <p className="hero-lead">Please return to your journey list and pick a valid step.</p>
+        </div>
+      </main>
+    );
+  }
+
+  const access = await loadStepWithAccess(foundStep.id, currentUser?.id || null);
 
   if (access.status === "forbidden") {
     redirect(currentUser ? "/my-profile" : "/");
@@ -49,9 +85,6 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
         <div className="glass-card">
           <h1 className="hero-title">This step is locked.</h1>
           <p className="hero-lead">Finish the previous step to unlock this one.</p>
-          <Link href={`/journeys/${journeySlug}`} className="primary-button" style={{ marginTop: "12px" }}>
-            Back to journey
-          </Link>
         </div>
       </main>
     );
@@ -72,28 +105,6 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
     <main className="page-shell">
       <div className="bg-orbs" aria-hidden="true" />
       <div className="content-inner" style={{ gap: "16px" }}>
-        <div className="journey-detail" style={{ gap: "8px" }}>
-          <p className="hero-kicker">{step.journey.title}</p>
-          <div className="journey-card-top">
-            <h1 className="hero-title" style={{ marginBottom: 0, fontSize: "28px" }}>
-              {step.sessionOutline.title}
-            </h1>
-            <span className="status-badge" style={{ textTransform: "none", letterSpacing: 0 }}>
-              {step.status === "completed" ? "Completed" : "In progress"}
-            </span>
-          </div>
-          {step.sessionOutline.objective ? (
-            <p className="hero-lead">{step.sessionOutline.objective}</p>
-          ) : (
-            <p className="hero-lead">Work through the prompts with the coach to complete this step.</p>
-          )}
-          <div className="journey-detail-actions">
-            <Link href={`/journeys/${journeySlug}`} className="secondary-button">
-              Back to journey
-            </Link>
-          </div>
-        </div>
-
         <NeedAnalysisChat
           sessionOutlineId={step.sessionOutline.id}
           journeyStepId={step.id}

@@ -130,7 +130,12 @@ export default async function JourneyPage({ params }: JourneyPageProps) {
                 return step.status === "locked" ? (
                   <div key={step.id}>{stepCard}</div>
                 ) : (
-                  <Link key={step.id} href={`/journeys/${journeySlug}/steps/${step.id}`} className="journey-card-link-wrapper" aria-label={step.sessionOutline.title}>
+                  <Link
+                    key={step.id}
+                    href={`/journeys/${journeySlug}/steps/${step.sessionOutline.slug}`}
+                    className="journey-card-link-wrapper"
+                    aria-label={step.sessionOutline.title}
+                  >
                     {stepCard}
                   </Link>
                 );
