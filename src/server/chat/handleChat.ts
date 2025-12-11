@@ -87,7 +87,6 @@ export async function handleChat({
   const callModel = callChatModelOverride || callChatModel;
   const outline = await prisma.learningSessionOutline.findUnique({
     where: { id: sessionOutlineId },
-    include: { journey: true },
   });
 
   if (!outline) {
@@ -148,7 +147,7 @@ export async function handleChat({
         });
   }
 
-  const journeyForPrompt = journeyFromStep?.journey || outline.journey;
+  const journeyForPrompt = journeyFromStep?.journey || null;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
   const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset.";
 

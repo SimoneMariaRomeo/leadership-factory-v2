@@ -66,16 +66,13 @@ model LearningJourney {
   updatedAt             DateTime  @updatedAt
 
   // Relations
-  outlines              LearningSessionOutline[]
   steps                 LearningJourneyStep[]
 }
 
 model LearningSessionOutline {
   id               String   @id @default(cuid())
-  journeyId        String
-  journey          LearningJourney @relation(fields: [journeyId], references: [id])
 
-  slug             String 
+  slug             String   @unique
   order            Int
   live             Boolean  @default(false)
   title            String
@@ -89,7 +86,6 @@ model LearningSessionOutline {
   updatedAt        DateTime @updatedAt
 
   steps            LearningJourneyStep[]
-  @@unique([journeyId, slug])
 }
 
 model LearningJourneyStep {

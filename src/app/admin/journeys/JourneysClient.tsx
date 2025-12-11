@@ -21,7 +21,7 @@ type StepRecord = {
   id: string;
   journeyId: string;
   sessionOutlineId: string;
-  sessionOutline: { id: string; title: string; slug: string; journey?: { id: string; title: string } };
+  sessionOutline: { id: string; title: string; slug: string };
   order: number;
   status: string;
   chatId: string | null;
@@ -39,7 +39,6 @@ type OutlineOption = {
   id: string;
   title: string;
   slug: string;
-  journey: { id: string; title: string };
 };
 
 type Filters = {
@@ -98,7 +97,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   useEffect(() => {
     setJourneyForm(buildJourneyForm(journeyDetail));
     if (journeyDetail) {
-      setAddStepOutlineId(findFirstOutlineIdForJourney(outlines, journeyDetail.id) || outlines[0]?.id || "");
+      setAddStepOutlineId(outlines[0]?.id || "");
     }
   }, [journeyDetail, outlines]);
 
@@ -678,9 +677,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                           value={step.sessionOutlineId}
                           onChange={(event) => changeStepField(step.id, "sessionOutlineId", event.target.value)}
                         >
-                          {sortedOutlineOptions(outlines, journeyDetail.id).map((option) => (
+                          {sortedOutlineOptions(outlines).map((option) => (
                             <option key={option.id} value={option.id}>
-                              {option.title} — {option.journey.title}
+                              {option.title} — {option.slug}
                             </option>
                           ))}
                         </select>
@@ -740,21 +739,21 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
               <h4 className="admin-title">Add step</h4>
             </div>
             <div className="admin-form-grid">
-              <label className="admin-label">
-                Session outline
-                <select
-                  className="admin-input"
-                  value={addStepOutlineId}
-                  onChange={(event) => setAddStepOutlineId(event.target.value)}
-                >
-                  <option value="">Pick outline</option>
-                  {sortedOutlineOptions(outlines, journeyDetail.id).map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.title} — {option.journey.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                      <label className="admin-label">
+                        Session outline
+                        <select
+                          className="admin-input"
+                          value={addStepOutlineId}
+                          onChange={(event) => setAddStepOutlineId(event.target.value)}
+                        >
+                          <option value="">Pick outline</option>
+                          {sortedOutlineOptions(outlines).map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.title} — {option.slug}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
             </div>
             <div className="admin-actions">
               <button type="button" className="primary-button" onClick={handleAddStep} disabled={stepSaving === "new"}>
@@ -784,17 +783,7 @@ function buildJourneyForm(detail: JourneyDetail | null): JourneyForm {
   };
 }
 
-// This orders outlines so the same journey appears first.
-function sortedOutlineOptions(options: OutlineOption[], journeyId: string) {
-  return options.slice().sort((a, b) => {
-    if (a.journey.id === journeyId && b.journey.id !== journeyId) return -1;
-    if (a.journey.id !== journeyId && b.journey.id === journeyId) return 1;
-    return a.title.localeCompare(b.title);
-  });
-}
-
-// This picks the first outline id for a journey when pre-filling add-step.
-function findFirstOutlineIdForJourney(options: OutlineOption[], journeyId: string) {
-  const match = options.find((option) => option.journey.id === journeyId);
-  return match?.id;
+// This orders outlines alphabetically.
+function sortedOutlineOptions(options: OutlineOption[]) {
+  return options.slice().sort((a, b) => a.title.localeCompare(b.title));
 }

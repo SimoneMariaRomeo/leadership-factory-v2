@@ -6,13 +6,12 @@ import { prisma } from "../prismaClient";
 export class AdminValidationError extends Error {}
 
 export type SessionFilters = {
-  journeyId?: string | null;
   live?: "all" | "live" | "not_live";
   search?: string | null;
+  journeyId?: string | null;
 };
 
 export type SessionInput = {
-  journeyId: string;
   title: string;
   slug: string;
   content: string;
@@ -27,10 +26,6 @@ export type SessionInput = {
 export async function listSessionOutlines(filters: SessionFilters) {
   const where: Prisma.LearningSessionOutlineWhereInput = {};
 
-  if (filters.journeyId) {
-    where.journeyId = filters.journeyId;
-  }
-
   if (filters.live === "live") {
     where.live = true;
   } else if (filters.live === "not_live") {
@@ -44,9 +39,21 @@ export async function listSessionOutlines(filters: SessionFilters) {
     ];
   }
 
+  if (filters.journeyId) {
+    const steps = await prisma.learningJourneyStep.findMany({
+      where: { journeyId: filters.journeyId },
+      select: { sessionOutlineId: true },
+    });
+    const ids = Array.from(new Set(steps.map((step) => step.sessionOutlineId)));
+    if (ids.length === 0) {
+      return [];
+    }
+    where.id = { in: ids };
+  }
+
   return prisma.learningSessionOutline.findMany({
     where,
-    include: { journey: { select: { id: true, title: true, slug: true, isStandard: true } }, _count: { select: { steps: true } } },
+    include: { _count: { select: { steps: true } } },
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   });
 }
@@ -55,7 +62,7 @@ export async function listSessionOutlines(filters: SessionFilters) {
 export async function getSessionOutline(id: string) {
   const outline = await prisma.learningSessionOutline.findUnique({
     where: { id },
-    include: { journey: { select: { id: true, title: true, slug: true, isStandard: true } }, _count: { select: { steps: true } } },
+    include: { _count: { select: { steps: true } } },
   });
 
   if (!outline) {
@@ -67,7 +74,7 @@ export async function getSessionOutline(id: string) {
 
 // This creates a new outline with a simple order default.
 export async function createSessionOutline(input: SessionInput) {
-  const required = ["journeyId", "title", "slug", "content", "botTools", "firstUserMessage"] as const;
+  const required = ["title", "slug", "content", "botTools", "firstUserMessage"] as const;
   for (const key of required) {
     if (!input[key] || `${input[key]}`.trim() === "") {
       throw new AdminValidationError(`${key} is required.`);
@@ -75,7 +82,6 @@ export async function createSessionOutline(input: SessionInput) {
   }
 
   const maxOrder = await prisma.learningSessionOutline.aggregate({
-    where: { journeyId: input.journeyId },
     _max: { order: true },
   });
   const nextOrder = (maxOrder._max.order || 0) + 1;
@@ -83,7 +89,6 @@ export async function createSessionOutline(input: SessionInput) {
   try {
     return await prisma.learningSessionOutline.create({
       data: {
-        journeyId: input.journeyId,
         title: input.title.trim(),
         slug: input.slug.trim(),
         order: nextOrder,
@@ -94,7 +99,7 @@ export async function createSessionOutline(input: SessionInput) {
         firstUserMessage: input.firstUserMessage,
         tags: input.tags ?? null,
       },
-      include: { journey: { select: { id: true, title: true, slug: true, isStandard: true } }, _count: { select: { steps: true } } },
+      include: { _count: { select: { steps: true } } },
     });
   } catch (error: any) {
     if (error?.code === "P2002") {
@@ -140,7 +145,7 @@ export async function updateSessionOutline(id: string, data: SessionUpdateInput)
     return await prisma.learningSessionOutline.update({
       where: { id },
       data: updateData,
-      include: { journey: { select: { id: true, title: true, slug: true, isStandard: true } }, _count: { select: { steps: true } } },
+      include: { _count: { select: { steps: true } } },
     });
   } catch (error: any) {
     if (error?.code === "P2002") {

@@ -87,9 +87,7 @@ async function main() {
   });
 
   const needAnalysisOutline = await prisma.learningSessionOutline.upsert({
-    where: {
-      journeyId_slug: { journeyId: goalJourney.id, slug: NEED_OUTLINE_SLUG },
-    },
+    where: { slug: NEED_OUTLINE_SLUG },
     update: {
       title: "Need Analysis",
       objective: "Help the user clarify and articulate a concrete learning goal.",
@@ -102,7 +100,6 @@ async function main() {
     },
     create: {
       id: NEED_OUTLINE_ID,
-      journeyId: goalJourney.id,
       slug: NEED_OUTLINE_SLUG,
       order: 1,
       live: true,

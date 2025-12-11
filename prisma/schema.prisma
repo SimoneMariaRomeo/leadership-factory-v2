@@ -74,31 +74,25 @@ model LearningJourney {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  outlines LearningSessionOutline[]
-  steps    LearningJourneyStep[] @relation("StepJourney")
+  steps LearningJourneyStep[] @relation("StepJourney")
 }
 
 model LearningSessionOutline {
-  id               String          @id @default(cuid())
-  journeyId        String
-  journey          LearningJourney @relation(fields: [journeyId], references: [id])
-  slug             String
+  id               String   @id @default(cuid())
+  slug             String   @unique
   order            Int
-  live             Boolean         @default(false)
+  live             Boolean  @default(false)
   title            String
   objective        String?
   content          String
   botTools         String
   firstUserMessage String
   tags             Json?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  steps                LearningJourneyStep[] @relation("OutlineStep")
+  steps                LearningJourneyStep[]
   learningSessionChats LearningSessionChat[]
-
-  @@unique([journeyId, slug])
-  @@unique([journeyId, id])
 }
 
 model LearningJourneyStep {
@@ -106,7 +100,7 @@ model LearningJourneyStep {
   journeyId        String
   journey          LearningJourney        @relation("StepJourney", fields: [journeyId], references: [id])
   sessionOutlineId String
-  sessionOutline   LearningSessionOutline @relation("OutlineStep", fields: [journeyId, sessionOutlineId], references: [journeyId, id])
+  sessionOutline   LearningSessionOutline @relation(fields: [sessionOutlineId], references: [id])
   order            Int
   status           String
   chatId           String?                @unique

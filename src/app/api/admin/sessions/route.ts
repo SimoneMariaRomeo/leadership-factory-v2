@@ -12,9 +12,9 @@ export async function GET(req: Request) {
     const search = url.searchParams.get("search");
 
     const outlines = await listSessionOutlines({
-      journeyId: journeyId || undefined,
       live: live === "live" ? "live" : live === "not_live" ? "not_live" : "all",
       search: search || null,
+      journeyId: journeyId || null,
     });
 
     return NextResponse.json({ outlines });
@@ -28,7 +28,6 @@ export async function POST(req: Request) {
     await requireAdmin(req);
     const body = await req.json();
     const outline = await createSessionOutline({
-      journeyId: body.journeyId,
       title: body.title,
       slug: body.slug,
       content: body.content,

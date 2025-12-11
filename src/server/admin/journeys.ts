@@ -68,10 +68,10 @@ export async function getJourneyDetail(id: string) {
 }
 
 // This fetches all outlines so steps can point to them.
-export async function listAllOutlinesWithJourney() {
+export async function listAllOutlines() {
   return prisma.learningSessionOutline.findMany({
-    include: { journey: { select: { id: true, title: true } } },
-    orderBy: [{ journeyId: "asc" }, { order: "asc" }],
+    include: { _count: { select: { steps: true } } },
+    orderBy: [{ title: "asc" }],
   });
 }
 
@@ -297,18 +297,12 @@ export async function deleteJourney(journeyId: string) {
     throw new AdminValidationError("Journey not found.");
   }
 
-  const outlines = await prisma.learningSessionOutline.findMany({ where: { journeyId } });
-  const outlineIds = outlines.map((outline) => outline.id);
-
-  // Delete any steps that point to these outlines (including from other journeys) to avoid FK conflicts.
   await prisma.$transaction([
-    prisma.learningJourneyStep.deleteMany({ where: { sessionOutlineId: { in: outlineIds } } }),
-    prisma.learningSessionOutline.deleteMany({ where: { journeyId } }),
     prisma.learningJourneyStep.deleteMany({ where: { journeyId } }),
     prisma.learningJourney.delete({ where: { id: journeyId } }),
   ]);
 
-  return { deletedOutlines: outlines.length };
+  return { deletedOutlines: 0 };
 }
 
 // This splits the textarea into a JSON array.

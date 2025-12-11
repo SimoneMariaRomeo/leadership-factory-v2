@@ -12,8 +12,6 @@ type JourneyOption = {
 
 type OutlineRecord = {
   id: string;
-  journeyId: string;
-  journey: JourneyOption;
   title: string;
   slug: string;
   live: boolean;
@@ -39,7 +37,6 @@ type Filters = {
 };
 
 type OutlineForm = {
-  journeyId: string;
   title: string;
   slug: string;
   live: boolean;
@@ -54,7 +51,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
   const [outlines, setOutlines] = useState<OutlineRecord[]>(initialOutlines);
   const [filters, setFilters] = useState<Filters>({ journeyId: "", live: "all", search: "" });
   const [selectedId, setSelectedId] = useState<string | null>(initialOutlines[0]?.id || null);
-  const [form, setForm] = useState<OutlineForm>(() => buildForm(initialOutlines[0], journeys[0]?.id));
+  const [form, setForm] = useState<OutlineForm>(() => buildForm(initialOutlines[0]));
   const [creatingNew, setCreatingNew] = useState(initialOutlines.length === 0);
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
   const [loadingList, setLoadingList] = useState(false);
@@ -65,13 +62,13 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
 
   useEffect(() => {
     if (selectedId && selectedOutline) {
-      setForm(buildForm(selectedOutline, selectedOutline.journeyId));
+      setForm(buildForm(selectedOutline));
       setCreatingNew(false);
     } else if (!selectedId) {
-      setForm(buildForm(null, filters.journeyId || journeys[0]?.id));
+      setForm(buildForm(null));
       setCreatingNew(true);
     }
-  }, [selectedId, selectedOutline, filters.journeyId, journeys]);
+  }, [selectedId, selectedOutline]);
 
   // This reloads outlines when filters change.
   useEffect(() => {
@@ -117,7 +114,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
     setSaving(true);
     setMessage(null);
     const payload: any = {
-      journeyId: form.journeyId,
       title: form.title.trim(),
       slug: form.slug.trim(),
       live: form.live,
@@ -208,7 +204,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
   const startCreate = () => {
     setSelectedId(null);
     setCreatingNew(true);
-    setForm(buildForm(null, filters.journeyId || journeys[0]?.id));
+    setForm(buildForm(null));
     setMessage(null);
   };
 
@@ -227,22 +223,22 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
             New outline
           </button>
         </div>
-        <label className="admin-label">
-          Journey
-          <select
-            className="admin-input"
-            value={filters.journeyId}
-            onChange={(event) => setFilters((prev) => ({ ...prev, journeyId: event.target.value }))}
-            disabled={loadingList}
-          >
-            <option value="">All journeys</option>
-            {journeys.map((journey) => (
-              <option key={journey.id} value={journey.id}>
-                {journey.title}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="admin-label">
+            Journey
+            <select
+              className="admin-input"
+              value={filters.journeyId}
+              onChange={(event) => setFilters((prev) => ({ ...prev, journeyId: event.target.value }))}
+              disabled={loadingList}
+            >
+              <option value="">All journeys</option>
+              {journeys.map((journey) => (
+                <option key={journey.id} value={journey.id}>
+                  {journey.title}
+                </option>
+              ))}
+            </select>
+          </label>
         <label className="admin-label">
           Live flag
           <select
@@ -282,7 +278,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
                 <th>Title</th>
                 <th>Slug</th>
                 <th>Live</th>
-                <th>Journey</th>
                 <th>Updated</th>
                 <th />
               </tr>
@@ -304,7 +299,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
                     <td>
                       <span className={`pill ${outline.live ? "pill-live" : "pill-dim"}`}>{outline.live ? "Live" : "Hidden"}</span>
                     </td>
-                    <td>{outline.journey?.title || "Unknown"}</td>
                     <td>{formatDate(outline.updatedAt)}</td>
                     <td>
                       <button
@@ -350,25 +344,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
         </div>
 
         <div className="admin-form-grid">
-          <label className="admin-label">
-            Journey
-            <select
-              className="admin-input"
-              value={form.journeyId}
-              onChange={(event) => {
-                setForm((prev) => ({ ...prev, journeyId: event.target.value }));
-                markDirty(selectedId);
-              }}
-            >
-              <option value="">Pick a journey</option>
-              {journeys.map((journey) => (
-                <option key={journey.id} value={journey.id}>
-                  {journey.title}
-                </option>
-              ))}
-            </select>
-          </label>
-
           <label className="admin-label">
             Title
             <input
@@ -489,9 +464,8 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
 }
 
 // This builds the form state from an outline or blank slate.
-function buildForm(outline: OutlineRecord | null | undefined, fallbackJourneyId?: string | null): OutlineForm {
+function buildForm(outline: OutlineRecord | null | undefined): OutlineForm {
   return {
-    journeyId: outline?.journeyId || fallbackJourneyId || "",
     title: outline?.title || "",
     slug: outline?.slug || "",
     live: outline?.live || false,

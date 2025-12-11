@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import JourneysClient from "./JourneysClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
-import { listAllOutlinesWithJourney, listJourneys, getJourneyDetail } from "../../../server/admin/journeys";
+import { listAllOutlines, listJourneys, getJourneyDetail } from "../../../server/admin/journeys";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function AdminJourneysPage() {
   }
 
   const journeys = await listJourneys({ isStandard: "all", status: null, userEmail: null });
-  const outlines = await listAllOutlinesWithJourney();
+  const outlines = await listAllOutlines();
   const firstJourney = journeys[0] ? await getJourneyDetail(journeys[0].id) : null;
 
   return (

@@ -120,15 +120,11 @@ LearningJourney:
 
 Optional slug (used for routing to standard journeys and personalized journeys; slug should become non-editable once journey is active).
 
-Has many LearningSessionOutline (templates).
-
 Has many LearningJourneyStep (ordered steps).
 
 LearningSessionOutline:
 
-Belongs to one LearningJourney (typically a standard/template journey).
-
-Reusable: the same outline can be referenced by multiple LearningJourneyStep records across journeys.
+Global pool; does not belong to a single journey. Slug is unique globally. Steps point to an outline to reuse it across journeys.
 
 LearningJourneyStep:
 
@@ -236,17 +232,13 @@ Example content:
 4. admin-sessions (Session Outlines Management)
 4.1 Scope
 
-admin-sessions is the backend UI to manage LearningSessionOutline records.
+admin-sessions is the backend UI to manage global LearningSessionOutline records.
 
 4.2 Behaviour
 
-Admin first selects a base journey (likely a standard journey) from a dropdown/filter.
-
-The page shows all LearningSessionOutlines that belong to that journey.
-
 Admin can:
 
-Create a new outline.
+Create a new outline (global).
 
 Edit an existing outline.
 
@@ -256,7 +248,7 @@ Fields editable in admin-sessions:
 
 title: String
 
-slug: String (unique per journey; not necessarily globally unique)
+slug: String (unique globally)
 
 live: Boolean
 
@@ -276,7 +268,7 @@ If there are unsaved edits, the outline row/card background turns light yellow.
 
 Search/filter options:
 
-Filter by journey.
+Filter by journey (show outlines that are linked to steps in that journey).
 
 Filter by live status.
 
