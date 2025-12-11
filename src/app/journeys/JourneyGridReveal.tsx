@@ -17,9 +17,13 @@ type JourneyGridRevealProps = {
 
 export default function JourneyGridReveal({ journeys }: JourneyGridRevealProps) {
   const ordered = useMemo(() => journeys, [journeys]);
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(() => ordered.length);
   const startedRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(ordered.length);
+  }, [ordered.length]);
 
   useEffect(() => {
     if (visibleCount >= ordered.length) {
