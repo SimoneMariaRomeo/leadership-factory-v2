@@ -109,3 +109,4 @@ model LearningJourneyStep {
 
   chats              LearningSessionChat[]
 }
+
