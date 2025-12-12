@@ -108,7 +108,7 @@ export default async function MyProfilePage() {
               {recommendedJourney ? (
                 <Link
                   href={`/journeys/${recommendedJourney.slug || recommendedJourney.id}`}
-                  className="journey-card minimal journey-card-link-wrapper"
+                  className="journey-card minimal journey-card-link-wrapper personalized-highlight"
                 >
                   <h3 className="journey-title">{recommendedJourney.title}</h3>
                   <p className="journey-intro">

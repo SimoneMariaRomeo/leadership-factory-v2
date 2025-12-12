@@ -463,14 +463,14 @@ a {
   margin: 18px 0 20px;
   padding: 18px;
   border-radius: 18px;
-  background: var(--lavender);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: #ffffff;
+  border: 1px solid rgba(212, 175, 55, 0.25);
   color: var(--text-strong);
 }
 
 .goal-box.flat {
-  background: var(--lavender);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: #ffffff;
+  border: 1px solid rgba(212, 175, 55, 0.25);
   margin: 0;
   padding: 18px;
   border-radius: 18px;
@@ -867,6 +867,10 @@ a {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
 }
 
+.journey-card.personalized-highlight {
+  background: var(--lavender);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
 .journey-card-wide {
   padding: 26px;
 }
@@ -1567,15 +1571,26 @@ a {
   margin-bottom: 16px;
 }
 
+.admin-quick-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-quick-links .secondary-button {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 .admin-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 1.05fr;
+  grid-template-columns: 280px 1fr;
   gap: 16px;
   align-items: start;
 }
 
 .journeys-grid {
-  grid-template-columns: 280px 1fr 1.2fr;
+  grid-template-columns: 300px 1fr;
 }
 
 .admin-filters-card,
@@ -1595,6 +1610,12 @@ a {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.journeys-right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .admin-title {

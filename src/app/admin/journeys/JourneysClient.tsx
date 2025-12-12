@@ -475,7 +475,8 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
         </button>
       </div>
 
-      <div className="admin-list-card">
+      <div className="journeys-right-stack">
+        <div className="admin-list-card">
         <div className="admin-card-head">
           <h3 className="admin-title">Journeys</h3>
           <p className="tiny-note">{journeys.length} items</p>
@@ -536,7 +537,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
         </div>
       </div>
 
-      <div className="admin-form-card">
+        <div className="admin-form-card">
             <div className="admin-card-head">
               <div>
                 <h3 className="admin-title">Journey detail</h3>
@@ -790,6 +791,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
         )}
 
         {message ? <span className="tiny-note" style={{ color: message === "Saved." ? "var(--text-soft)" : "#842029" }}>{message}</span> : null}
+      </div>
       </div>
     </div>
   );

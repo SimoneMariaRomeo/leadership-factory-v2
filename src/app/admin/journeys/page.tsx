@@ -1,5 +1,6 @@
 // This page shows the admin tool for journeys and steps.
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import JourneysClient from "./JourneysClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
@@ -29,6 +30,16 @@ export default async function AdminJourneysPage() {
               Journeys &amp; Steps
             </h1>
             <p className="hero-lead">Filter journeys, edit details, manage steps, and reorder them.</p>
+          </div>
+          <div className="admin-quick-links">
+            <Link className="secondary-button" href="/admin/sessions">
+              Sessions
+            </Link>
+            <form action="/api/auth/logout" method="post" style={{ margin: 0 }}>
+              <button type="submit" className="secondary-button danger">
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
         <JourneysClient initialJourneys={journeys} initialDetail={firstJourney} outlines={outlines} />

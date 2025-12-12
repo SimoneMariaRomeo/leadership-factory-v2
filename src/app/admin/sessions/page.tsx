@@ -1,5 +1,6 @@
 // This page shows the admin tool for session outlines.
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import SessionsClient from "./SessionsClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
@@ -34,6 +35,16 @@ export default async function AdminSessionsPage() {
               Session Outlines
             </h1>
             <p className="hero-lead">Filter, add, edit, and delete session outlines for every journey.</p>
+          </div>
+          <div className="admin-quick-links">
+            <Link className="secondary-button" href="/admin/journeys">
+              Journeys
+            </Link>
+            <form action="/api/auth/logout" method="post" style={{ margin: 0 }}>
+              <button type="submit" className="secondary-button danger">
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
         <SessionsClient journeys={journeys} initialOutlines={outlines} />
