@@ -592,29 +592,17 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
               </label>
               <label className="admin-label">
                 Status
-              <select
-                className="admin-input"
-                value={journeyForm.status}
-                onChange={(event) => setJourneyForm((prev) => ({ ...prev, status: event.target.value }))}
-              >
-                <option value="draft">Draft</option>
-                <option value="awaiting_review">Awaiting review</option>
-                <option value="active">Active</option>
-                  <option value="completed">Completed</option>
+                <select
+                  className="admin-input"
+                  style={statusStyles[journeyForm.status] || undefined}
+                  value={journeyForm.status}
+                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, status: event.target.value }))}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="awaiting_review">Awaiting review</option>
+                  <option value="active">Active</option>
+                    <option value="completed">Completed</option>
               </select>
-              <span
-                className="tiny-note"
-                style={{
-                  display: "inline-block",
-                  marginTop: "6px",
-                  padding: "4px 8px",
-                  borderRadius: "10px",
-                  fontWeight: 600,
-                  ...(statusStyles[journeyForm.status] || {}),
-                }}
-              >
-                {statusLabels[journeyForm.status] || journeyForm.status}
-              </span>
               </label>
               <label className="admin-label checkbox">
                 <input
