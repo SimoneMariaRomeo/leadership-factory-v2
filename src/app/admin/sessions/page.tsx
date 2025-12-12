@@ -21,7 +21,7 @@ export default async function AdminSessionsPage() {
       select: { id: true, title: true, slug: true, isStandard: true },
       orderBy: [{ title: "asc" }],
     }),
-    listSessionOutlines({ live: "all" }),
+    listSessionOutlines({}),
   ]);
 
   return (

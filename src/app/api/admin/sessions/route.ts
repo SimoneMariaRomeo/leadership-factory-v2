@@ -8,11 +8,9 @@ export async function GET(req: Request) {
     await requireAdmin(req);
     const url = new URL(req.url);
     const journeyId = url.searchParams.get("journeyId");
-    const live = url.searchParams.get("live");
     const search = url.searchParams.get("search");
 
     const outlines = await listSessionOutlines({
-      live: live === "live" ? "live" : live === "not_live" ? "not_live" : "all",
       search: search || null,
       journeyId: journeyId || null,
     });
@@ -33,7 +31,6 @@ export async function POST(req: Request) {
       content: body.content,
       botTools: body.botTools,
       firstUserMessage: body.firstUserMessage,
-      live: Boolean(body.live),
       objective: body.objective ?? null,
       tags: body.tags ?? null,
     });

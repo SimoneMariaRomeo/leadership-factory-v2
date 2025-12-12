@@ -748,7 +748,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                         {step.chatId ? (
                           <>
                             | Chat:{" "}
-                            <Link href={`/chats/history/${step.chatId}`} className="link-button" target="_blank">
+                            <Link href={`/chats/${step.chatId}`} className="link-button" target="_blank">
                               {step.chatId}
                             </Link>
                           </>

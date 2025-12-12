@@ -27,7 +27,6 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const outline = await updateSessionOutline(params.id, {
       title: body.title,
       slug: body.slug,
-      live: body.live,
       objective: body.objective,
       content: body.content,
       botTools: body.botTools,
