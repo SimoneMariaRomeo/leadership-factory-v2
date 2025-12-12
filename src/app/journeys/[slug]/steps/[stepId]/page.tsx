@@ -29,7 +29,7 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   // First try by ID, then fall back to slug within this journey.
   let foundStep = await prisma.learningJourneyStep.findUnique({
     where: { id: params.stepId },
-    include: { journey: true, sessionOutline: true, chat: true },
+    include: { journey: true, sessionOutline: true, chats: true },
   });
 
   if (!foundStep || foundStep.journeyId !== journey.id) {
@@ -38,7 +38,7 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
         journeyId: journey.id,
         sessionOutline: { slug: params.stepId },
       },
-      include: { journey: true, sessionOutline: true, chat: true },
+      include: { journey: true, sessionOutline: true, chats: true },
     });
   }
 

@@ -26,6 +26,8 @@ model LearningSessionChat {
 
   sessionOutlineId          String?
   sessionOutline            LearningSessionOutline? @relation(fields: [sessionOutlineId], references: [id])
+  stepId                    String?
+  step                      LearningJourneyStep?  @relation(fields: [stepId], references: [id])
 
   sessionTitle              String?
   startedAt                 DateTime
@@ -74,7 +76,6 @@ model LearningSessionOutline {
 
   slug             String   @unique
   order            Int
-  live             Boolean  @default(false)
   title            String
   objective        String?
   content          String
@@ -99,13 +100,12 @@ model LearningJourneyStep {
   order              Int
   status             String   // "locked" | "unlocked" | "completed"
 
-  chatId             String?
-  chat               LearningSessionChat? @relation(fields: [chatId], references: [id])
-
   ahaText            String?
   unlockedAt         DateTime?
   completedAt        DateTime?
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  chats              LearningSessionChat[]
 }

@@ -334,9 +334,9 @@ userGoalSummary: String?
 
 Snapshot of the goal at creation; updated whenever user changes goal (per your decision). When User.learningGoal changes, update userGoalSummary on the most recent non-archived personalized journey; older journeys keep their original snapshot.
 
-If the journey has a step using the need-analysis outline, show a ‘Need-analysis chat’ link using that step’s chatId (if present)
+If the journey has a step using the need-analysis outline, show a Need-analysis chat link using the most recent chat for that step (if present).
 
-Link opens the transcript view (e.g. /chats/history/[chatId]).
+Link opens the transcript view (e.g. /chats/[chatId]).
 
 status: "draft" | "awaiting_review" | "active" | "completed" | "archived"
 

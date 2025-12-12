@@ -14,7 +14,7 @@ type JourneyWithSteps = Prisma.LearningJourneyGetPayload<{
 type JourneyRecord = Prisma.LearningJourneyGetPayload<{}>;
 
 export type StepWithJourney = Prisma.LearningJourneyStepGetPayload<{
-  include: { journey: true; sessionOutline: true; chat: true };
+  include: { journey: true; sessionOutline: true; chats: true };
 }>;
 
 type ChatRecord = Prisma.LearningSessionChatGetPayload<{}>;
@@ -74,7 +74,7 @@ export async function loadJourneyWithStepsBySlug(slug: string, userId: string | 
 export async function loadStepWithAccess(stepId: string, userId: string | null): Promise<StepAccessResult> {
   const step = await prisma.learningJourneyStep.findUnique({
     where: { id: stepId },
-    include: { journey: true, sessionOutline: true, chat: true },
+    include: { journey: true, sessionOutline: true, chats: true },
   });
 
   if (!step) {
@@ -99,58 +99,63 @@ export async function getOrCreateStepChat(stepId: string, userId: string | null)
   }
 
   const now = new Date();
-  const baseMetadata = step.chat?.metadata && typeof step.chat.metadata === "object" && !Array.isArray(step.chat.metadata)
-    ? (step.chat.metadata as Record<string, any>)
-    : {};
-  const mergedMetadata = { ...baseMetadata, journeyStepId: step.id };
+  const chat = await prisma.learningSessionChat.findFirst({
+    where: { stepId: step.id, userId: userId || null },
+    orderBy: [{ startedAt: "desc" }, { lastMessageAt: "desc" }],
+  });
 
-  let chat = step.chatId
-    ? await prisma.learningSessionChat.findUnique({ where: { id: step.chatId } })
-    : null;
+  const metadataBase =
+    chat?.metadata && typeof chat.metadata === "object" && !Array.isArray(chat.metadata)
+      ? (chat.metadata as Record<string, any>)
+      : {};
+  const mergedMetadata = { ...metadataBase, journeyStepId: step.id };
 
-  if (!chat) {
-    chat = await prisma.learningSessionChat.create({
-      data: {
-        user: userId ? { connect: { id: userId } } : undefined,
-        sessionOutline: { connect: { id: step.sessionOutlineId } },
-        sessionTitle: step.sessionOutline.title,
-        startedAt: now,
-        lastMessageAt: now,
-        metadata: mergedMetadata,
-      },
-    });
+  const ensuredChat = chat
+    ? await prisma.learningSessionChat.update({
+        where: { id: chat.id },
+        data: {
+          user: userId ? { connect: { id: userId } } : undefined,
+          sessionOutline: { connect: { id: step.sessionOutlineId } },
+          sessionTitle: step.sessionOutline.title,
+          step: { connect: { id: step.id } },
+          lastMessageAt: now,
+          metadata: mergedMetadata,
+        },
+      })
+    : await prisma.learningSessionChat.create({
+        data: {
+          user: userId ? { connect: { id: userId } } : undefined,
+          sessionOutline: { connect: { id: step.sessionOutlineId } },
+          sessionTitle: step.sessionOutline.title,
+          step: { connect: { id: step.id } },
+          startedAt: now,
+          lastMessageAt: now,
+          metadata: mergedMetadata,
+        },
+      });
 
+  if (step.status === "locked") {
     await prisma.learningJourneyStep.update({
       where: { id: step.id },
-      data: {
-        chatId: chat.id,
-        unlockedAt: step.unlockedAt ?? now,
-        status: step.status === "locked" ? "unlocked" : step.status,
-      },
+      data: { status: "unlocked", unlockedAt: step.unlockedAt ?? now },
     });
-  } else {
-    chat = await prisma.learningSessionChat.update({
-      where: { id: chat.id },
-      data: {
-        user: userId ? { connect: { id: userId } } : undefined,
-        sessionOutline: { connect: { id: step.sessionOutlineId } },
-        sessionTitle: step.sessionOutline.title,
-        lastMessageAt: now,
-        metadata: mergedMetadata,
-      },
+  } else if (!step.unlockedAt) {
+    await prisma.learningJourneyStep.update({
+      where: { id: step.id },
+      data: { unlockedAt: now },
     });
   }
 
   const refreshedStep = await prisma.learningJourneyStep.findUnique({
     where: { id: step.id },
-    include: { journey: true, sessionOutline: true, chat: true },
+    include: { journey: true, sessionOutline: true, chats: true },
   });
 
   if (!refreshedStep) {
     return { status: "not_found" };
   }
 
-  return { status: "ok", step: refreshedStep, chat };
+  return { status: "ok", step: refreshedStep, chat: ensuredChat };
 }
 
 // This marks the step done and unlocks the next step in order when rules allow it.
@@ -170,7 +175,7 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
   const { completedStep, unlockedStep } = await prisma.$transaction(async (tx) => {
     const currentStep = await tx.learningJourneyStep.findUnique({
       where: { id: stepId },
-      include: { journey: true, sessionOutline: true, chat: true },
+      include: { journey: true, sessionOutline: true, chats: true },
     });
     if (!currentStep) {
       throw new Error("Step not found inside transaction.");
@@ -185,7 +190,7 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
     const updatedStep = await tx.learningJourneyStep.update({
       where: { id: stepId },
       data: { status: "completed", completedAt },
-      include: { journey: true, sessionOutline: true, chat: true },
+      include: { journey: true, sessionOutline: true, chats: true },
     });
 
     const nextStep = steps.find((candidate) => candidate.order > currentStep.order);
@@ -195,12 +200,12 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
       unlocked = await tx.learningJourneyStep.update({
         where: { id: nextStep.id },
         data: { status: "unlocked", unlockedAt: nextStep.unlockedAt ?? now },
-        include: { journey: true, sessionOutline: true, chat: true },
+        include: { journey: true, sessionOutline: true, chats: true },
       });
     } else if (nextStep) {
       unlocked = await tx.learningJourneyStep.findUnique({
         where: { id: nextStep.id },
-        include: { journey: true, sessionOutline: true, chat: true },
+        include: { journey: true, sessionOutline: true, chats: true },
       });
     }
 

@@ -25,8 +25,7 @@ type StepRecord = {
   sessionOutline: { id: string; title: string; slug: string };
   order: number;
   status: string;
-  chatId: string | null;
-  chat?: { id: string | null } | null;
+  chats: { id: string; startedAt: string | Date | null }[];
   ahaText: string | null;
   unlockedAt: string | Date | null;
   completedAt: string | Date | null;
@@ -109,10 +108,14 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const [message, setMessage] = useState<string | null>(null);
 
   const needAnalysisChatId = useMemo(() => {
-    const needStep = journeyDetail?.steps.find(
-      (step) => step.sessionOutline?.slug === "need-analysis" && step.chatId
-    );
-    return needStep?.chatId || null;
+    const needStep = journeyDetail?.steps.find((step) => step.sessionOutline?.slug === "need-analysis");
+    if (!needStep || !needStep.chats?.length) return null;
+    const sorted = [...needStep.chats].sort((a, b) => {
+      const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+    return sorted[0]?.id || null;
   }, [journeyDetail]);
 
   useEffect(() => {
@@ -548,7 +551,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
               <div>
                 <h3 className="admin-title">Journey detail</h3>
                 {needAnalysisChatId ? (
-                  <Link href={`/chats/history/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
+                  <Link href={`/chats/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
                     Need-analysis chat
                   </Link>
                 ) : null}
@@ -745,12 +748,20 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
 
                       <p className="tiny-note">
                         Unlocked: {formatDate(step.unlockedAt)} | Completed: {formatDate(step.completedAt)}{" "}
-                        {step.chatId ? (
+                        {step.chats && step.chats.length > 0 ? (
                           <>
-                            | Chat:{" "}
-                            <Link href={`/chats/${step.chatId}`} className="link-button" target="_blank">
-                              {step.chatId}
-                            </Link>
+                            | Chats:{" "}
+                            {step.chats.map((chat, chatIndex) => (
+                              <Link
+                                key={chat.id}
+                                href={`/chats/${chat.id}`}
+                                className="link-button"
+                                target="_blank"
+                                style={{ marginRight: 6 }}
+                              >
+                                {chatIndex + 1}
+                              </Link>
+                            ))}
                           </>
                         ) : null}
                       </p>

@@ -1,4 +1,4 @@
-feature/202512101719-step-8-9-admin-pages
+step-8-9-admin-pages
 
 follow the AGENTS.md instructions and read the project docs (features.md, prisma-database-structure.md, implementation-steps.md, visual-guidelines.md, image-checklist.md, env-contents.md) before you touch any code.
 

@@ -54,7 +54,7 @@ export async function getJourneyDetail(id: string) {
     include: {
       personalizedForUser: { select: { id: true, email: true, name: true } },
       steps: {
-        include: { sessionOutline: true, chat: true },
+        include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } } },
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
       },
     },
@@ -106,7 +106,7 @@ export async function createJourney(input: JourneyInput) {
       include: {
         personalizedForUser: { select: { id: true, email: true, name: true } },
         steps: {
-          include: { sessionOutline: true, chat: true },
+          include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } } },
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         },
       },
@@ -175,7 +175,7 @@ export async function updateJourney(id: string, input: JourneyInput) {
       include: {
         personalizedForUser: { select: { id: true, email: true, name: true } },
         steps: {
-          include: { sessionOutline: true, chat: true },
+          include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } } },
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         },
       },
@@ -213,7 +213,7 @@ export async function addJourneyStep(journeyId: string, sessionOutlineId: string
       order: nextOrder,
       status: "locked",
     },
-    include: { sessionOutline: true, chat: true, journey: true },
+    include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } }, journey: true },
   });
 }
 
@@ -249,7 +249,7 @@ export async function updateJourneyStep(stepId: string, data: StepUpdateInput) {
   return prisma.learningJourneyStep.update({
     where: { id: stepId },
     data: updateData,
-    include: { sessionOutline: true, chat: true, journey: true },
+    include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } }, journey: true },
   });
 }
 
@@ -282,7 +282,7 @@ export async function reorderJourneySteps(journeyId: string, orderedStepIds: str
 
     return tx.learningJourneyStep.findMany({
       where: { journeyId },
-      include: { sessionOutline: true, chat: true, journey: true },
+      include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } }, journey: true },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     });
   });
