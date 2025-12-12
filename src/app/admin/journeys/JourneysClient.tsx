@@ -2,6 +2,7 @@
 
 // This component runs the admin journeys UI in the browser.
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
 type JourneySummary = {
@@ -69,6 +70,20 @@ type JourneysClientProps = {
   initialJourneys: JourneySummary[];
   initialDetail: JourneyDetail | null;
   outlines: OutlineOption[];
+};
+
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  awaiting_review: "Awaiting review",
+  active: "Active",
+  completed: "Completed",
+};
+
+const statusStyles: Record<string, CSSProperties> = {
+  draft: { backgroundColor: "#f3f4f6", color: "#111827" },
+  awaiting_review: { backgroundColor: "#fef9c3", color: "#854d0e" },
+  active: { backgroundColor: "#d1fae5", color: "#064e3b" },
+  completed: { backgroundColor: "#991b1b", color: "#fef2f2" },
 };
 
 export default function JourneysClient({ initialJourneys, initialDetail, outlines }: JourneysClientProps) {
@@ -401,8 +416,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
             <option value="draft">Draft</option>
             <option value="awaiting_review">Awaiting review</option>
             <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="archived">Archived</option>
+              <option value="completed">Completed</option>
           </select>
         </label>
         <label className="admin-label">
@@ -493,7 +507,20 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                     </span>
                   </td>
                   <td>{journey.personalizedForUser?.email || "-"}</td>
-                  <td>{journey.status}</td>
+                  <td>
+                    <span
+                      className="tiny-note"
+                      style={{
+                        display: "inline-block",
+                        padding: "4px 8px",
+                        borderRadius: "10px",
+                        fontWeight: 600,
+                        ...(statusStyles[journey.status] || {}),
+                      }}
+                    >
+                      {statusLabels[journey.status] || journey.status}
+                    </span>
+                  </td>
                   <td>{formatDate(journey.updatedAt)}</td>
                 </tr>
               ))}
@@ -566,9 +593,8 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   <option value="draft">Draft</option>
                   <option value="awaiting_review">Awaiting review</option>
                   <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="archived">Archived</option>
-                </select>
+                    <option value="completed">Completed</option>
+                  </select>
               </label>
               <label className="admin-label checkbox">
                 <input

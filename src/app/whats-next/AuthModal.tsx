@@ -58,6 +58,13 @@ export default function AuthModal({ open, onClose, onAuthenticated }: AuthModalP
         return;
       }
 
+      // Make sure the browser has the fresh session cookie before continuing.
+      try {
+        await fetch("/api/auth/me", { credentials: "include" });
+      } catch {
+        // Ignore a failed warmup; the main login already succeeded.
+      }
+
       setLoading(false);
       onAuthenticated();
     } catch (err) {

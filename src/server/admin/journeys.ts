@@ -318,11 +318,10 @@ function splitObjectives(text?: string | null) {
 function canMoveStatus(current: string, next: string) {
   if (current === next) return true;
   const allowed: Record<string, string[]> = {
-    draft: ["awaiting_review", "active", "archived"],
-    awaiting_review: ["draft", "active", "archived"],
-    active: ["draft", "completed", "archived"],
-    completed: ["active", "archived"],
-    archived: ["draft"],
+    draft: ["awaiting_review", "active"],
+    awaiting_review: ["draft", "active"],
+    active: ["draft", "completed"],
+    completed: ["active"],
   };
 
   const moves = allowed[current] || [];
