@@ -266,7 +266,8 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
         {loadingList ? <p className="tiny-note">Loading outlines...</p> : null}
       </div>
 
-      <div className="admin-list-card">
+      <div className="admin-stack">
+        <div className="admin-list-card">
         <div className="admin-card-head">
           <h3 className="admin-title">Outlines</h3>
           <p className="tiny-note">{outlines.length} items</p>
@@ -328,7 +329,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
         </div>
       </div>
 
-      <div className="admin-form-card">
+        <div className="admin-form-card">
         <div className="admin-card-head">
           <div>
             <h3 className="admin-title">{creatingNew ? "Create outline" : "Edit outline"}</h3>
@@ -343,7 +344,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
           ) : null}
         </div>
 
-        <div className="admin-form-grid">
+        <div className="admin-form-grid single-column-grid">
           <label className="admin-label">
             Title
             <input
@@ -457,6 +458,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
             {saving ? "Saving..." : "Save"}
           </button>
           {message ? <span className="tiny-note" style={{ color: message === "Saved." ? "var(--text-soft)" : "#842029" }}>{message}</span> : null}
+        </div>
         </div>
       </div>
     </div>

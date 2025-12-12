@@ -1593,6 +1593,12 @@ a {
   grid-template-columns: 300px 1fr;
 }
 
+.admin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .admin-filters-card,
 .admin-list-card,
 .admin-form-card,
@@ -1718,6 +1724,10 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
+}
+
+.single-column-grid {
+  grid-template-columns: 1fr;
 }
 
 .admin-actions {

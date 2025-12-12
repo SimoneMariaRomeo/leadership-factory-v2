@@ -564,7 +564,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
           <p className="tiny-note">Select a journey to edit.</p>
         ) : (
           <>
-            <div className="admin-form-grid">
+            <div className="admin-form-grid single-column-grid">
               <label className="admin-label">
                 Title
                 <input
