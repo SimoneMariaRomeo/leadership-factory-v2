@@ -81,7 +81,6 @@ model LearningSessionOutline {
   id               String   @id @default(cuid())
   slug             String   @unique
   order            Int
-  live             Boolean  @default(false)
   title            String
   objective        String?
   content          String

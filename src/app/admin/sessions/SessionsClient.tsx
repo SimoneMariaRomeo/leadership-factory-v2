@@ -14,7 +14,6 @@ type OutlineRecord = {
   id: string;
   title: string;
   slug: string;
-  live: boolean;
   order: number;
   objective: string | null;
   content: string;
@@ -32,14 +31,12 @@ type SessionsClientProps = {
 
 type Filters = {
   journeyId: string;
-  live: "all" | "live" | "not_live";
   search: string;
 };
 
 type OutlineForm = {
   title: string;
   slug: string;
-  live: boolean;
   objective: string;
   content: string;
   botTools: string;
@@ -49,7 +46,7 @@ type OutlineForm = {
 
 export default function SessionsClient({ journeys, initialOutlines }: SessionsClientProps) {
   const [outlines, setOutlines] = useState<OutlineRecord[]>(initialOutlines);
-  const [filters, setFilters] = useState<Filters>({ journeyId: "", live: "all", search: "" });
+  const [filters, setFilters] = useState<Filters>({ journeyId: "", search: "" });
   const [selectedId, setSelectedId] = useState<string | null>(initialOutlines[0]?.id || null);
   const [form, setForm] = useState<OutlineForm>(() => buildForm(initialOutlines[0]));
   const [creatingNew, setCreatingNew] = useState(initialOutlines.length === 0);
@@ -77,7 +74,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
       setLoadingList(true);
       const query = new URLSearchParams();
       if (filters.journeyId) query.set("journeyId", filters.journeyId);
-      if (filters.live !== "all") query.set("live", filters.live);
       if (filters.search) query.set("search", filters.search);
 
       try {
@@ -116,7 +112,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
     const payload: any = {
       title: form.title.trim(),
       slug: form.slug.trim(),
-      live: form.live,
       objective: form.objective.trim(),
       content: form.content,
       botTools: form.botTools,
@@ -240,19 +235,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
             </select>
           </label>
         <label className="admin-label">
-          Live flag
-          <select
-            className="admin-input"
-            value={filters.live}
-            onChange={(event) => setFilters((prev) => ({ ...prev, live: event.target.value as Filters["live"] }))}
-            disabled={loadingList}
-          >
-            <option value="all">All</option>
-            <option value="live">Live only</option>
-            <option value="not_live">Not live</option>
-          </select>
-        </label>
-        <label className="admin-label">
           Search title or slug
           <input
             type="text"
@@ -278,7 +260,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
               <tr>
                 <th>Title</th>
                 <th>Slug</th>
-                <th>Live</th>
                 <th>Updated</th>
                 <th />
               </tr>
@@ -297,9 +278,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
                   >
                     <td>{outline.title}</td>
                     <td>{outline.slug}</td>
-                    <td>
-                      <span className={`pill ${outline.live ? "pill-live" : "pill-dim"}`}>{outline.live ? "Live" : "Hidden"}</span>
-                    </td>
                     <td>{formatDate(outline.updatedAt)}</td>
                     <td>
                       <button
@@ -369,22 +347,6 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
                 markDirty(selectedId);
               }}
             />
-          </label>
-
-          <label className="admin-label">
-            Live
-            <select
-              className="admin-input"
-              value={form.live ? "true" : "false"}
-              onChange={(event) => {
-                const live = event.target.value === "true";
-                setForm((prev) => ({ ...prev, live }));
-                markDirty(selectedId);
-              }}
-            >
-              <option value="false">Not live</option>
-              <option value="true">Live</option>
-            </select>
           </label>
 
           <label className="admin-label">
@@ -470,7 +432,6 @@ function buildForm(outline: OutlineRecord | null | undefined): OutlineForm {
   return {
     title: outline?.title || "",
     slug: outline?.slug || "",
-    live: outline?.live || false,
     objective: outline?.objective || "",
     content: outline?.content || "",
     botTools: outline?.botTools || "",

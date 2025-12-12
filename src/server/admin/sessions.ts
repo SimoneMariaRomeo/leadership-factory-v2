@@ -6,7 +6,6 @@ import { prisma } from "../prismaClient";
 export class AdminValidationError extends Error {}
 
 export type SessionFilters = {
-  live?: "all" | "live" | "not_live";
   search?: string | null;
   journeyId?: string | null;
 };
@@ -17,7 +16,6 @@ export type SessionInput = {
   content: string;
   botTools: string;
   firstUserMessage: string;
-  live?: boolean;
   objective?: string | null;
   tags?: any;
 };
@@ -25,12 +23,6 @@ export type SessionInput = {
 // This lists outlines with simple filters for the admin grid.
 export async function listSessionOutlines(filters: SessionFilters) {
   const where: Prisma.LearningSessionOutlineWhereInput = {};
-
-  if (filters.live === "live") {
-    where.live = true;
-  } else if (filters.live === "not_live") {
-    where.live = false;
-  }
 
   if (filters.search) {
     where.OR = [
@@ -92,7 +84,6 @@ export async function createSessionOutline(input: SessionInput) {
         title: input.title.trim(),
         slug: input.slug.trim(),
         order: nextOrder,
-        live: input.live ?? false,
         objective: input.objective?.trim() || null,
         content: input.content,
         botTools: input.botTools,
@@ -112,7 +103,6 @@ export async function createSessionOutline(input: SessionInput) {
 type SessionUpdateInput = {
   title?: string;
   slug?: string;
-  live?: boolean;
   objective?: string | null;
   content?: string;
   botTools?: string;
@@ -134,7 +124,6 @@ export async function updateSessionOutline(id: string, data: SessionUpdateInput)
   const updateData: Prisma.LearningSessionOutlineUpdateInput = {};
   if (data.title !== undefined) updateData.title = data.title.trim();
   if (data.slug !== undefined) updateData.slug = data.slug.trim();
-  if (data.live !== undefined) updateData.live = data.live;
   if (data.objective !== undefined) updateData.objective = data.objective?.trim() || null;
   if (data.content !== undefined) updateData.content = data.content;
   if (data.botTools !== undefined) updateData.botTools = data.botTools;
