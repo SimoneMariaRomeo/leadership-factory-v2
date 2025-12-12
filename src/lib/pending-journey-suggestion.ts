@@ -5,6 +5,7 @@ export type JourneySuggestion = {
   title: string;
   intro: string;
   avoidTitles: string[];
+  avoidJourneys?: { title: string; intro: string | null }[];
 };
 
 // This fetches sessionStorage only when the browser is available.
@@ -41,7 +42,18 @@ export function readJourneySuggestion(): JourneySuggestion | null {
       ? parsed.avoidTitles.map((item) => (typeof item === "string" ? item : "")).filter(Boolean)
       : [];
     if (!title || !intro) return null;
-    return { title, intro, avoidTitles: avoid };
+    const avoidJourneys = Array.isArray(parsed.avoidJourneys)
+      ? (parsed.avoidJourneys
+          .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            const t = typeof (item as any).title === "string" ? (item as any).title.trim() : "";
+            const i = typeof (item as any).intro === "string" ? (item as any).intro.trim() : "";
+            if (!t) return null;
+            return { title: t, intro: i || null };
+          })
+          .filter((v): v is { title: string; intro: string | null } => Boolean(v))) || []
+      : [];
+    return { title, intro, avoidTitles: avoid, avoidJourneys };
   } catch {
     return null;
   }

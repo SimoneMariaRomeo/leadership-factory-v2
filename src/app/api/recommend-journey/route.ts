@@ -7,7 +7,7 @@ import { callChatModel, type LlmMessage } from "../../../server/llm/client";
 
 type RecommendJourneyRequest = {
   learningGoal?: unknown;
-  avoidTitles?: unknown;
+  avoidJourneys?: unknown;
 };
 
 // This small helper reads the prompt text from disk.
@@ -50,11 +50,17 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RecommendJourneyRequest;
     const learningGoal = typeof body.learningGoal === "string" ? body.learningGoal.trim() : "";
-    const avoidTitles =
-      Array.isArray(body.avoidTitles) && body.avoidTitles.length
-        ? body.avoidTitles
-            .map((item) => (typeof item === "string" ? item.trim() : ""))
-            .filter((item) => item.length > 0)
+    const avoidJourneys =
+      Array.isArray(body.avoidJourneys) && body.avoidJourneys.length
+        ? body.avoidJourneys
+            .map((item) => {
+              if (!item || typeof item !== "object") return null;
+              const title = typeof item.title === "string" ? item.title.trim() : "";
+              const intro = typeof item.intro === "string" ? item.intro.trim() : "";
+              if (!title) return null;
+              return { title, intro: intro || null };
+            })
+            .filter(Boolean) as { title: string; intro: string | null }[]
         : [];
 
     if (!learningGoal) {
@@ -70,7 +76,7 @@ export async function POST(req: Request) {
     }
 
     const examples = await loadJourneyExamples();
-    const userPayload = { learningGoal, examples, avoidTitles };
+    const userPayload = { learningGoal, examples, avoidJourneys };
     const messages: LlmMessage[] = [
       { role: "system", content: promptText.trim() },
       { role: "user", content: JSON.stringify(userPayload) },

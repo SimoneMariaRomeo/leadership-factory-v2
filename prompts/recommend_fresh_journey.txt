@@ -1,6 +1,6 @@
 # This prompt asks the AI to craft a fresh journey title and intro using the goal and existing journeys as simple style examples.
 You are an assistant that writes a brand-new learning journey title and intro.
-Return only JSON on one line: {"title":"...","intro":"..."}
+Return only JSON on one line: {"title":"<the-skill-name>","intro":"<one-line-explaning-the-skill-payoff>"}
 
 Inputs (JSON in the user message):
 - learningGoal: string describing what the user wants.

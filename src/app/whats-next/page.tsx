@@ -51,9 +51,11 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const [suggestion, setSuggestion] = useState<JourneySuggestion | null>(null);
   const [avoidTitles, setAvoidTitles] = useState<string[]>([]);
+  const [avoidJourneys, setAvoidJourneys] = useState<{ title: string; intro: string | null }[]>([]);
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const [suggestionError, setSuggestionError] = useState("");
   const avoidTitlesRef = useRef<string[]>([]);
+  const avoidJourneysRef = useRef<{ title: string; intro: string | null }[]>([]);
   const titleDone = titleIndex >= "You did it!".length;
 
   // This asks the backend for a fresh journey suggestion and avoids repeating titles.
@@ -69,12 +71,24 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
           .filter((item) => item.length > 0)
       );
       const avoidList = Array.from(avoidSet);
+      const avoidJourneyMap = new Map<string, string | null>(
+        avoidJourneysRef.current.map((j) => [j.title, j.intro || null])
+      );
+      avoidList.forEach((title) => {
+        if (!avoidJourneyMap.has(title)) {
+          avoidJourneyMap.set(title, null);
+        }
+      });
+      const avoidJourneysPayload = Array.from(avoidJourneyMap.entries()).map(([title, intro]) => ({
+        title,
+        intro: intro || null,
+      }));
 
       try {
         const response = await fetch("/api/recommend-journey", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ learningGoal: goal, avoidTitles: avoidList }),
+          body: JSON.stringify({ learningGoal: goal, avoidJourneys: avoidJourneysPayload }),
         });
 
         if (!response.ok) {
@@ -92,9 +106,20 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
           title: data.title.trim(),
           intro: data.intro.trim(),
           avoidTitles: nextAvoid,
+          avoidJourneys: [
+            ...avoidJourneysPayload.filter((j) => j.title !== data.title.trim()),
+            { title: data.title.trim(), intro: data.intro.trim() || null },
+          ],
         };
         setSuggestion(nextSuggestion);
         setAvoidTitles(nextAvoid);
+        setAvoidJourneys(
+          Array.from(
+            new Map(
+              (nextSuggestion.avoidJourneys || []).map((j) => [j.title, j.intro || null])
+            ).entries()
+          ).map(([title, intro]) => ({ title, intro }))
+        );
         saveJourneySuggestion(nextSuggestion);
       } catch (err) {
         console.error("Recommend journey failed:", err);
@@ -109,6 +134,10 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   useEffect(() => {
     avoidTitlesRef.current = avoidTitles;
   }, [avoidTitles]);
+
+  useEffect(() => {
+    avoidJourneysRef.current = avoidJourneys;
+  }, [avoidJourneys]);
 
   // This loads the goal from session storage or the query string.
   useEffect(() => {
@@ -142,6 +171,17 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
       const avoid = storedSuggestion.avoidTitles.length ? storedSuggestion.avoidTitles : [storedSuggestion.title];
       setSuggestion(storedSuggestion);
       setAvoidTitles(Array.from(new Set(avoid)));
+      if (storedSuggestion.avoidJourneys?.length) {
+        setAvoidJourneys(
+          Array.from(
+            new Map(
+              storedSuggestion.avoidJourneys.map((j) => [j.title, j.intro || null])
+            ).entries()
+          ).map(([title, intro]) => ({ title, intro }))
+        );
+      } else {
+        setAvoidJourneys([{ title: storedSuggestion.title, intro: storedSuggestion.intro }]);
+      }
       return;
     }
 
