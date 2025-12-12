@@ -9,6 +9,14 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const learningGoal = typeof body.learningGoal === "string" ? body.learningGoal.trim() : "";
+    const recommendedTitle =
+      typeof body.recommendedTitle === "string" && body.recommendedTitle.trim().length > 0
+        ? body.recommendedTitle.trim()
+        : null;
+    const recommendedIntro =
+      typeof body.recommendedIntro === "string" && body.recommendedIntro.trim().length > 0
+        ? body.recommendedIntro.trim()
+        : null;
 
     if (!learningGoal) {
       return NextResponse.json({ error: "Learning goal is required." }, { status: 400 });
@@ -45,8 +53,8 @@ export async function POST(req: Request) {
 
       const journey = await tx.learningJourney.create({
         data: {
-          title: `Personal journey for: ${learningGoal}`,
-          intro: null,
+          title: recommendedTitle || `Personal journey for: ${learningGoal}`,
+          intro: recommendedIntro,
           objectives: [],
           isStandard: false,
           personalizedForUserId: user.id,

@@ -150,7 +150,11 @@ async function testUnauthenticatedCannotCommit() {
   const request = new Request("http://localhost/api/whats-next", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ learningGoal: "Test goal" }),
+    body: JSON.stringify({
+      learningGoal: "Test goal",
+      recommendedTitle: "Test suggested title",
+      recommendedIntro: "Test suggested intro",
+    }),
   });
   const response = await POST(request);
   assert(response.status === 401, "Status should be 401 for missing auth.");
@@ -172,7 +176,16 @@ async function testGoalCommitPersistsGoalAndTimestamp() {
   const user = await createTestUser();
   const startedAt = Date.now();
 
-  const response = await POST(buildAuthedRequest({ learningGoal: "Improve my executive communication skills" }, user.id));
+  const response = await POST(
+    buildAuthedRequest(
+      {
+        learningGoal: "Improve my executive communication skills",
+        recommendedTitle: "Executive Communication Boost",
+        recommendedIntro: "Intro for executive communication.",
+      },
+      user.id
+    )
+  );
   const data = await response.json();
   assert(response.status === 200 && data?.success === true, "Response should be 200 with success true.");
 
@@ -198,7 +211,16 @@ async function testGoalCommitCreatesPersonalizedJourney() {
   await clearTestData();
   const user = await createTestUser();
 
-  const response = await POST(buildAuthedRequest({ learningGoal: "Grow as a clearer presenter" }, user.id));
+  const response = await POST(
+    buildAuthedRequest(
+      {
+        learningGoal: "Grow as a clearer presenter",
+        recommendedTitle: "Presenter Growth Journey",
+        recommendedIntro: "A short intro to help the presenter grow.",
+      },
+      user.id
+    )
+  );
   const data = await response.json();
   assert(response.status === 200 && data?.journeyId, "Response should include the new journey id.");
 
@@ -208,6 +230,8 @@ async function testGoalCommitCreatesPersonalizedJourney() {
   assert(journeys.length === 1, "Exactly one personalized journey should exist.");
   const journey = journeys[0];
   assert(journey.userGoalSummary === "Grow as a clearer presenter", "userGoalSummary should mirror the goal.");
+  assert(journey.title === "Presenter Growth Journey", "Journey title should match the recommended title.");
+  assert(journey.intro === "A short intro to help the presenter grow.", "Journey intro should match the recommended intro.");
   assert(journey.status === "awaiting_review", "Journey status should be awaiting_review.");
   assert(journey.personalizedForUserId === user.id, "Journey should belong to the authenticated user.");
   const steps = await prisma.learningJourneyStep.findMany({ where: { journeyId: journey.id } });
@@ -224,12 +248,30 @@ async function testRepeatCommitCreatesAdditionalJourneys() {
   await clearTestData();
   const user = await createTestUser();
 
-  const firstResponse = await POST(buildAuthedRequest({ learningGoal: "First goal text" }, user.id));
+  const firstResponse = await POST(
+    buildAuthedRequest(
+      {
+        learningGoal: "First goal text",
+        recommendedTitle: "First journey title",
+        recommendedIntro: "First journey intro",
+      },
+      user.id
+    )
+  );
   assert(firstResponse.status === 200, "First commit should return 200.");
   const afterFirstUser = await prisma.user.findUnique({ where: { id: user.id } });
   const firstConfirmedAt = afterFirstUser?.learningGoalConfirmedAt?.getTime() || 0;
 
-  const secondResponse = await POST(buildAuthedRequest({ learningGoal: "Second goal text" }, user.id));
+  const secondResponse = await POST(
+    buildAuthedRequest(
+      {
+        learningGoal: "Second goal text",
+        recommendedTitle: "Second journey title",
+        recommendedIntro: "Second journey intro",
+      },
+      user.id
+    )
+  );
   assert(secondResponse.status === 200, "Second commit should return 200.");
   const afterSecondUser = await prisma.user.findUnique({ where: { id: user.id } });
   assert(afterSecondUser?.learningGoal === "Second goal text", "User goal should update to the latest text.");
@@ -245,6 +287,8 @@ async function testRepeatCommitCreatesAdditionalJourneys() {
   assert(journeys.length === 2, "Two personalized journeys should exist after two commits.");
   assert(journeys[0].userGoalSummary === "First goal text", "First journey should keep the first goal.");
   assert(journeys[1].userGoalSummary === "Second goal text", "Second journey should store the new goal.");
+  assert(journeys[0].title === "First journey title", "First journey title should match the first recommendation.");
+  assert(journeys[1].title === "Second journey title", "Second journey title should match the second recommendation.");
   logPass("Multiple commits created multiple journeys while keeping history.");
 }
 
@@ -258,7 +302,16 @@ async function testEmailsAreTriggeredWithCorrectPayload() {
   sentEmails = [];
   const user = await createTestUser("test@example.com");
 
-  const response = await POST(buildAuthedRequest({ learningGoal: "Email test goal" }, user.id));
+  const response = await POST(
+    buildAuthedRequest(
+      {
+        learningGoal: "Email test goal",
+        recommendedTitle: "Email journey title",
+        recommendedIntro: "Email journey intro",
+      },
+      user.id
+    )
+  );
   const data = await response.json();
   assert(response.status === 200 && data?.success, "Commit should return success for email test.");
 
@@ -284,7 +337,15 @@ async function testEndpointIgnoresClientSuppliedUserId() {
   const userB = await createTestUser("user-b@example.com");
 
   const response = await POST(
-    buildAuthedRequest({ learningGoal: "Only for user A", userId: userB.id }, userA.id)
+    buildAuthedRequest(
+      {
+        learningGoal: "Only for user A",
+        userId: userB.id,
+        recommendedTitle: "User A journey",
+        recommendedIntro: "User A intro",
+      },
+      userA.id
+    )
   );
   assert(response.status === 200, "Commit should still return 200 when authed.");
   const journeysForA = await prisma.learningJourney.findMany({

@@ -1,11 +1,17 @@
 "use client";
 
 // This page shows what happens next, checks auth, and commits the goal.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
 import GoldButton from "../components/GoldButton";
 import { clearPendingGoal, getPendingGoal } from "../../lib/pending-goal-store";
+import {
+  clearJourneySuggestion,
+  readJourneySuggestion,
+  saveJourneySuggestion,
+  type JourneySuggestion,
+} from "../../lib/pending-journey-suggestion";
 
 const FALLBACK_GOAL = "No learning goal found. Please start again from the beginning.";
 
@@ -20,9 +26,10 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   const [hasStoredGoal, setHasStoredGoal] = useState(false);
   const paragraphs = useMemo(
     () => [
-      "Congratulations on writing down your learning goal. You just unlocked the very first step toward the best version of yourself.",
-      "Our team will now review your goal and prepare a tailor-made learning journey that fits what you shared.",
-      "We will reach out very soon. In the meantime, please make sure you are signed in so we can send the details to your inbox.",
+      "Here is a personalized learning journey title and intro based on what you shared.",
+      "Our team will now create the detailed sessions and steps for this journey.",
+      "If you want a different angle, ask for another recommendation, then confirm to lock it in.",
+      "Please make sure you are signed in so we can send the details to your inbox.",
     ],
     []
   );
@@ -42,7 +49,66 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [suggestion, setSuggestion] = useState<JourneySuggestion | null>(null);
+  const [avoidTitles, setAvoidTitles] = useState<string[]>([]);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
+  const avoidTitlesRef = useRef<string[]>([]);
   const titleDone = titleIndex >= "You did it!".length;
+
+  // This asks the backend for a fresh journey suggestion and avoids repeating titles.
+  const requestSuggestion = useCallback(
+    async (extraAvoid: string[] = []) => {
+      if (!hasStoredGoal || !goal) return;
+      setSuggestionError("");
+      setLoadingSuggestion(true);
+
+      const avoidSet = new Set<string>(
+        [...avoidTitlesRef.current, ...extraAvoid]
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter((item) => item.length > 0)
+      );
+      const avoidList = Array.from(avoidSet);
+
+      try {
+        const response = await fetch("/api/recommend-journey", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ learningGoal: goal, avoidTitles: avoidList }),
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Failed to recommend a journey.");
+        }
+
+        const data = await response.json();
+        if (typeof data?.title !== "string" || typeof data?.intro !== "string") {
+          throw new Error("Invalid recommendation payload.");
+        }
+
+        const nextAvoid = Array.from(new Set([...avoidList, data.title.trim()].filter(Boolean)));
+        const nextSuggestion: JourneySuggestion = {
+          title: data.title.trim(),
+          intro: data.intro.trim(),
+          avoidTitles: nextAvoid,
+        };
+        setSuggestion(nextSuggestion);
+        setAvoidTitles(nextAvoid);
+        saveJourneySuggestion(nextSuggestion);
+      } catch (err) {
+        console.error("Recommend journey failed:", err);
+        setSuggestionError("Could not load a journey right now. Please try again.");
+      } finally {
+        setLoadingSuggestion(false);
+      }
+    },
+    [goal, hasStoredGoal]
+  );
+
+  useEffect(() => {
+    avoidTitlesRef.current = avoidTitles;
+  }, [avoidTitles]);
 
   // This loads the goal from session storage or the query string.
   useEffect(() => {
@@ -61,6 +127,26 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
       setHasStoredGoal(false);
     }
   }, [searchParams]);
+
+  // This loads any stored journey suggestion or fetches a fresh one.
+  useEffect(() => {
+    if (!hasStoredGoal || !goal) {
+      setSuggestion(null);
+      setAvoidTitles([]);
+      clearJourneySuggestion();
+      return;
+    }
+
+    const storedSuggestion = readJourneySuggestion();
+    if (storedSuggestion) {
+      const avoid = storedSuggestion.avoidTitles.length ? storedSuggestion.avoidTitles : [storedSuggestion.title];
+      setSuggestion(storedSuggestion);
+      setAvoidTitles(Array.from(new Set(avoid)));
+      return;
+    }
+
+    requestSuggestion();
+  }, [goal, hasStoredGoal, requestSuggestion]);
 
   // This fetches whether a user is already logged in.
   useEffect(() => {
@@ -132,6 +218,10 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   // This calls the backend to save the goal and create the journey.
   const commitGoal = useCallback(async () => {
     if (!goal || !hasStoredGoal) return;
+    if (!suggestion) {
+      setErrorMessage("Please wait for your journey suggestion first.");
+      return;
+    }
     setErrorMessage("");
     setIsSubmitting(true);
     try {
@@ -139,7 +229,11 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ learningGoal: goal }),
+        body: JSON.stringify({
+          learningGoal: goal,
+          recommendedTitle: suggestion.title,
+          recommendedIntro: suggestion.intro,
+        }),
       });
 
       if (response.status === 401) {
@@ -155,13 +249,22 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
       }
 
       clearPendingGoal();
+      clearJourneySuggestion();
+      setSuggestion(null);
+      setAvoidTitles([]);
       router.push("/my-profile");
     } catch (err) {
       console.error("Goal commit failed:", err);
       setErrorMessage("Something went wrong. Please try again.");
       setIsSubmitting(false);
     }
-  }, [goal, hasStoredGoal, router]);
+  }, [goal, hasStoredGoal, router, suggestion]);
+
+  // This triggers a fresh recommendation when the user asks for a different journey.
+  const handleRecommendAnother = useCallback(() => {
+    if (!hasStoredGoal || !goal || loadingSuggestion) return;
+    requestSuggestion(suggestion?.title ? [suggestion.title] : []);
+  }, [goal, hasStoredGoal, loadingSuggestion, requestSuggestion, suggestion?.title]);
 
   // This decides what to do when the CTA is clicked.
   const handleCtaClick = () => {
@@ -180,8 +283,6 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
     commitGoal();
   };
 
-  const goalText = hasStoredGoal && goal ? goal : FALLBACK_GOAL;
-
   return (
     <div className="luxury-gradient">
       <main className="intro-card">
@@ -193,42 +294,85 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
             <h1 className="intro-title">{typedTitle}</h1>
             <p className="intro-paragraph">{typedParagraphs[0]}</p>
             <div className="goal-box" style={{ width: "100%", maxWidth: "680px" }}>
-              <div className="goal-label">YOUR LEARNING GOAL</div>
-              <div>{goalText}</div>
+              <div className="goal-label">YOUR RECOMMENDED JOURNEY</div>
+              {hasStoredGoal ? (
+                <>
+                  <div style={{ fontWeight: 700, marginBottom: "8px" }}>
+                    {suggestion?.title ||
+                      (loadingSuggestion ? "Preparing your journey..." : "We are drafting your journey now.")}
+                  </div>
+                  <div style={{ whiteSpace: "pre-line" }}>
+                    {suggestion?.intro ||
+                      (loadingSuggestion
+                        ? "Hang tight while we tailor the intro."
+                        : "If nothing appears, tap Recommend another journey.")}
+                  </div>
+                </>
+              ) : (
+                <div>{FALLBACK_GOAL}</div>
+              )}
             </div>
             <p className="intro-paragraph">{typedParagraphs[1]}</p>
             <p className="intro-paragraph">{typedParagraphs[2]}</p>
+            <p className="intro-paragraph">{typedParagraphs[3]}</p>
+            {suggestionError && (
+              <div
+                role="alert"
+                style={{
+                  marginTop: "10px",
+                  color: "#842029",
+                  background: "rgba(209, 67, 67, 0.12)",
+                  border: "1px solid rgba(209, 67, 67, 0.35)",
+                  padding: "10px 12px",
+                  borderRadius: "12px",
+                }}
+              >
+                {suggestionError}
+              </div>
+            )}
           </div>
         </div>
         {hasStoredGoal ? (
-          <button
-            className="primary-button bg-luxury-gold transition-colors hover:bg-luxury-gold-light hover:shadow-[0_16px_28px_rgba(212,175,55,0.35)] transition-all"
-            type="button"
-            onClick={handleCtaClick}
-            data-loading={isSubmitting ? "true" : "false"}
-            aria-busy={isSubmitting}
-            disabled={isSubmitting || !hasStoredGoal || checkingAuth}
-          >
-            <span
-              className="btn-spinner"
-              aria-hidden="true"
-              style={{
-                display: isSubmitting ? "inline-flex" : "none",
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: "translate(-50%, -50%)",
-                margin: 0,
-              }}
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-start" }}>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleRecommendAnother}
+              disabled={loadingSuggestion || isSubmitting || checkingAuth}
+              style={{ minWidth: "210px" }}
             >
-              <span />
-              <span />
-              <span />
-            </span>
-            <span className="btn-label" style={isSubmitting ? { visibility: "hidden" } : undefined}>
-              YES, I'M IN!
-            </span>
-          </button>
+              {loadingSuggestion ? "Working..." : "Recommend another journey"}
+            </button>
+            <button
+              className="primary-button bg-luxury-gold transition-colors hover:bg-luxury-gold-light hover:shadow-[0_16px_28px_rgba(212,175,55,0.35)] transition-all"
+              type="button"
+              onClick={handleCtaClick}
+              data-loading={isSubmitting ? "true" : "false"}
+              aria-busy={isSubmitting}
+              disabled={isSubmitting || !hasStoredGoal || checkingAuth || loadingSuggestion}
+              style={{ minWidth: "170px" }}
+            >
+              <span
+                className="btn-spinner"
+                aria-hidden="true"
+                style={{
+                  display: isSubmitting ? "inline-flex" : "none",
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  margin: 0,
+                }}
+              >
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className="btn-label" style={isSubmitting ? { visibility: "hidden" } : undefined}>
+                YES, I'M IN!
+              </span>
+            </button>
+          </div>
         ) : (
           <GoldButton href="/learning-guide-intro" asSecondary>
             Start again

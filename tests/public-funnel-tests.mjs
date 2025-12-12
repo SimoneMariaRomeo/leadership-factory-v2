@@ -52,6 +52,13 @@ global.fetch = async (url) => {
   if (typeof url === "string" && url.includes("/api/auth/me")) {
     return { ok: true, status: 200, json: async () => ({ user: null }) };
   }
+  if (typeof url === "string" && url.includes("/api/recommend-journey")) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ title: "Test Journey Title", intro: "Test intro text crafted for the goal." }),
+    };
+  }
   if (typeof url === "string" && url.includes("/api/whats-next")) {
     return { ok: true, status: 200, json: async () => ({ success: true, journeyId: "test-journey-id" }) };
   }
@@ -150,12 +157,13 @@ async function main() {
   setPendingGoal("Edited Goal Text");
   const whatsNext = render(React.createElement(WhatsNextPage, { searchParams: {} }));
   await whatsNext.findByText("You did it!");
-  whatsNext.getByText(
-    "Congratulations on writing down your learning goal. You just unlocked the very first step toward the best version of yourself."
-  );
-  whatsNext.getByText("Our team will now review your goal and prepare a tailor-made learning journey that fits what you shared.");
-  whatsNext.getByText("We will reach out very soon. In the meantime, please make sure you are signed in so we can send the details to your inbox.");
-  whatsNext.getByText("Edited Goal Text");
+  whatsNext.getByText("Here is a personalized learning journey title and intro based on what you shared.");
+  whatsNext.getByText("Our team will now create the detailed sessions and steps for this journey.");
+  whatsNext.getByText("If you want a different angle, ask for another recommendation, then confirm to lock it in.");
+  whatsNext.getByText("Please make sure you are signed in so we can send the details to your inbox.");
+  await whatsNext.findByText("Test Journey Title");
+  whatsNext.getByText("Test intro text crafted for the goal.");
+  whatsNext.getByRole("button", { name: "Recommend another journey" });
   const yesButton = whatsNext.getByRole("button", { name: "YES, I'M IN!" });
   await user.click(yesButton);
   whatsNext.getByText("Welcome back");
