@@ -31,7 +31,7 @@ type StepRecord = {
   completedAt: string | Date | null;
 };
 
-type JourneyDetail = JourneySummary & {
+export type JourneyDetail = JourneySummary & {
   steps: StepRecord[];
 };
 

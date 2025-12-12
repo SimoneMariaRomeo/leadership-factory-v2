@@ -2,7 +2,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import JourneysClient from "./JourneysClient";
+import JourneysClient, { JourneyDetail } from "./JourneysClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
 import { listAllOutlines, listJourneys, getJourneyDetail } from "../../../server/admin/journeys";
 
@@ -17,7 +17,9 @@ export default async function AdminJourneysPage() {
 
   const journeys = await listJourneys({ isStandard: "all", status: null, userEmail: null });
   const outlines = await listAllOutlines();
-  const firstJourney = journeys[0] ? await getJourneyDetail(journeys[0].id) : null;
+  const firstJourney: JourneyDetail | null = journeys[0]
+    ? ((await getJourneyDetail(journeys[0].id)) as unknown as JourneyDetail)
+    : null;
 
   return (
     <div className="content-shell admin-shell">
