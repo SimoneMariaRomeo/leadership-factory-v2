@@ -86,6 +86,12 @@ const statusStyles: Record<string, CSSProperties> = {
   completed: { backgroundColor: "#991b1b", color: "#fef2f2" },
 };
 
+const stepStatusStyles: Record<string, CSSProperties> = {
+  locked: { backgroundColor: "#fee2e2", color: "#7f1d1d" },
+  unlocked: { backgroundColor: "#dcfce7", color: "#064e3b" },
+  completed: {},
+};
+
 export default function JourneysClient({ initialJourneys, initialDetail, outlines }: JourneysClientProps) {
   const [journeys, setJourneys] = useState<JourneySummary[]>(initialJourneys);
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(initialDetail?.id || initialJourneys[0]?.id || null);
@@ -586,16 +592,29 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
               </label>
               <label className="admin-label">
                 Status
-                <select
-                  className="admin-input"
-                  value={journeyForm.status}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, status: event.target.value }))}
-                >
-                  <option value="draft">Draft</option>
-                  <option value="awaiting_review">Awaiting review</option>
-                  <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                  </select>
+              <select
+                className="admin-input"
+                value={journeyForm.status}
+                onChange={(event) => setJourneyForm((prev) => ({ ...prev, status: event.target.value }))}
+              >
+                <option value="draft">Draft</option>
+                <option value="awaiting_review">Awaiting review</option>
+                <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+              </select>
+              <span
+                className="tiny-note"
+                style={{
+                  display: "inline-block",
+                  marginTop: "6px",
+                  padding: "4px 8px",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                  ...(statusStyles[journeyForm.status] || {}),
+                }}
+              >
+                {statusLabels[journeyForm.status] || journeyForm.status}
+              </span>
               </label>
               <label className="admin-label checkbox">
                 <input
@@ -727,6 +746,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                         <select
                           className="admin-input"
                           value={step.status}
+                          style={{ ...(stepStatusStyles[step.status] || {}) }}
                           onChange={(event) => changeStepField(step.id, "status", event.target.value)}
                         >
                           <option value="locked">Locked</option>
