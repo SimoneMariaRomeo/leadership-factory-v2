@@ -100,7 +100,7 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
 
         <p>If you’re open to it, I’d love to hear how this step felt and what you’d want next. You can simply reply to this email, or book a time that suits you here:</p>
 
-        <p><a href="https://calendar.app.google/oQ53qMRtWBuiJW839">https://calendar.app.google/oQ53qMRtWBuiJW839</a></p>
+        <p><a href="https://calendar.app.google/oQ53qMRtWBuiJW839">Open my Google Calendar</a></p>
 
         <p>Talk soon,<br/>
         Simone<br/>
@@ -143,7 +143,7 @@ export async function sendJourneyActivatedEmail({ user, journey }: JourneyActiva
   
       <p>It’s ready now and it starts here:</p>
   
-      <p><a href="${journeyLink}">${journeyLink}</a></p>
+      <p><a href="${journeyLink}">Open your journey</a></p>
   
       <p>Do the smallest “brave” action you can take today — the one you’d usually postpone.</p>
   
