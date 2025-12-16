@@ -2,6 +2,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import NeedAnalysisChat from "./NeedAnalysisChat";
+import LoginPrompt from "../../../../components/LoginPrompt";
 import { prisma } from "../../../../../server/prismaClient";
 import { loadStepWithAccess, getOrCreateStepChat, journeySlugOrId } from "../../../../../lib/journeys";
 import { getCurrentUser, requestFromCookieHeader } from "../../../../../server/auth/session";
@@ -57,7 +58,22 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   const access = await loadStepWithAccess(foundStep.id, currentUser?.id || null);
 
   if (access.status === "forbidden") {
-    redirect(currentUser ? "/my-profile" : "/");
+    if (!currentUser) {
+      return (
+        <div className="content-shell">
+          <div className="bg-orbs" aria-hidden="true" />
+          <div className="content-inner">
+            <LoginPrompt
+              title="Please log in to view this step"
+              message="Sign in so we can open this session for you."
+              buttonLabel="Login to continue"
+              afterLoginPath={`/journeys/${params.slug}/steps/${params.stepId}`}
+            />
+          </div>
+        </div>
+      );
+    }
+    redirect("/my-profile");
   }
 
   if (access.status === "not_found") {

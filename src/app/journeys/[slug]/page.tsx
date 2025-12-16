@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import LoginPrompt from "../../components/LoginPrompt";
 import { loadJourneyWithStepsBySlug, journeySlugOrId } from "../../../lib/journeys";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 type JourneyPageProps = {
   params: { slug: string };
+  searchParams?: Record<string, string | string[] | undefined>;
 };
 
 type StatusTone = { label: string; bg: string; color: string };
@@ -24,13 +26,41 @@ function statusTone(status: string): StatusTone {
   return { label: "Locked", bg: "rgba(148,163,184,0.2)", color: "#475569" };
 }
 
-export default async function JourneyPage({ params }: JourneyPageProps) {
+// This rebuilds the same URL (including query params) so login can return the user to the right place.
+function buildAfterLoginPath(slug: string, searchParams?: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  if (searchParams) {
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (typeof value === "string") query.set(key, value);
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, item));
+    }
+  }
+  const queryString = query.toString();
+  return queryString ? `/journeys/${slug}?${queryString}` : `/journeys/${slug}`;
+}
+
+export default async function JourneyPage({ params, searchParams }: JourneyPageProps) {
   const cookieHeader = headers().get("cookie");
   const currentUser = await getCurrentUser(requestFromCookieHeader(cookieHeader));
   const journeyResult = await loadJourneyWithStepsBySlug(params.slug, currentUser?.id || null);
 
   if (journeyResult.status === "forbidden") {
-    redirect(currentUser ? "/my-profile" : "/");
+    if (!currentUser) {
+      return (
+        <div className="content-shell">
+          <div className="bg-orbs" aria-hidden="true" />
+          <div className="content-inner">
+            <LoginPrompt
+              title="Please log in to view this journey"
+              message="Sign in so we can show your journey."
+              buttonLabel="Login to continue"
+              afterLoginPath={buildAfterLoginPath(params.slug, searchParams)}
+            />
+          </div>
+        </div>
+      );
+    }
+    redirect("/my-profile");
   }
 
   if (journeyResult.status === "not_found") {

@@ -21,6 +21,13 @@ type MailOptions = {
 let transportPromise: Promise<nodemailer.Transporter> | null = null;
 let testSender: ((options: MailOptions) => Promise<void>) | null = null;
 
+// This reads the website URL so email links point to the right place.
+function getProductionUrl() {
+  const configured = (process.env.PRODUCTION_URL || "").trim();
+  const base = configured || "http://localhost:3000";
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+}
+
 // This lets tests provide a fake sender.
 export function setTestEmailSender(sender: ((options: MailOptions) => Promise<void>) | null) {
   testSender = sender;
@@ -69,8 +76,9 @@ async function sendMail(options: MailOptions) {
 export async function sendGoalCommitEmails({ user, learningGoal, journey }: GoalCommitEmailInput) {
   const userEmail = user.email;
   const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
-  const profileLink = "https://www.leadership-factory.cn/my-profile";
-  const adminLink = `https://www.leadership-factory.cn/admin/journeys/${journey.id}`;
+  const baseUrl = getProductionUrl();
+  const profileLink = `${baseUrl}/my-profile`;
+  const adminLink = `${baseUrl}/admin/journeys/${journey.id}`;
 
   if (userEmail) {
     await sendMail({
@@ -108,8 +116,9 @@ export async function sendJourneyActivatedEmail({ user, journey }: JourneyActiva
   const userEmail = user.email;
   if (!userEmail) return;
 
+  const baseUrl = getProductionUrl();
   const journeySlugOrId = journey.slug || journey.id;
-  const journeyLink = `https://www.leadership-factory.cn/journeys/${journeySlugOrId}?userId=${encodeURIComponent(user.id)}`;
+  const journeyLink = `${baseUrl}/journeys/${journeySlugOrId}?userId=${encodeURIComponent(user.id)}`;
 
   await sendMail({
     to: userEmail,
