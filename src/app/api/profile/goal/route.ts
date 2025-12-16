@@ -22,15 +22,15 @@ export async function POST(req: Request) {
         select: { id: true, email: true, name: true, learningGoal: true, learningGoalConfirmedAt: true },
       });
 
-      const latestActiveJourney = await tx.learningJourney.findFirst({
-        where: { personalizedForUserId: user.id, isStandard: false, status: "active" },
+      const latestPersonalizedJourney = await tx.learningJourney.findFirst({
+        where: { personalizedForUserId: user.id, isStandard: false, status: { not: "archived" } },
         orderBy: [{ createdAt: "desc" }, { updatedAt: "desc" }],
         select: { id: true },
       });
 
-      if (latestActiveJourney) {
+      if (latestPersonalizedJourney) {
         await tx.learningJourney.update({
-          where: { id: latestActiveJourney.id },
+          where: { id: latestPersonalizedJourney.id },
           data: { userGoalSummary: learningGoal },
         });
       }

@@ -2,6 +2,7 @@
 import type { Prisma } from "../../../generated/prisma";
 import { prisma } from "../prismaClient";
 import { AdminValidationError } from "./sessions";
+import { sendJourneyActivatedEmail } from "../notifications/email";
 
 export type JourneyFilters = {
   isStandard?: "all" | "standard" | "nonstandard";
@@ -131,6 +132,9 @@ export async function updateJourney(id: string, input: JourneyInput) {
     throw new AdminValidationError("That status change is not allowed.");
   }
 
+  // This tracks the moment we switch into active so we only email once per activation.
+  const isActivating = existing.status !== "active" && nextStatus === "active";
+
   const targetIsStandard = input.isStandard ?? existing.isStandard;
   const slugChange = input.slug !== undefined ? input.slug?.trim() || null : existing.slug;
   if (existing.status === "active" && slugChange !== existing.slug) {
@@ -169,7 +173,7 @@ export async function updateJourney(id: string, input: JourneyInput) {
   }
 
   try {
-    return await prisma.learningJourney.update({
+    const journey = await prisma.learningJourney.update({
       where: { id },
       data,
       include: {
@@ -180,12 +184,73 @@ export async function updateJourney(id: string, input: JourneyInput) {
         },
       },
     });
+
+    if (isActivating && !journey.isStandard && journey.personalizedForUserId && journey.personalizedForUser) {
+      try {
+        await sendJourneyActivatedEmail({
+          user: journey.personalizedForUser,
+          journey: { id: journey.id, slug: journey.slug },
+        });
+      } catch (emailError) {
+        console.error("Sending journey activated email failed:", emailError);
+      }
+    }
+
+    return journey;
   } catch (error: any) {
     if (error?.code === "P2002") {
       throw new AdminValidationError("Slug must be unique.");
     }
     throw error;
   }
+}
+
+// This clones a journey (including its steps) into a fresh draft that can be edited safely.
+export async function duplicateJourney(journeyId: string) {
+  const source = await prisma.learningJourney.findUnique({
+    where: { id: journeyId },
+    include: {
+      steps: { orderBy: [{ order: "asc" }, { createdAt: "asc" }], select: { sessionOutlineId: true, order: true, ahaText: true } },
+    },
+  });
+
+  if (!source) {
+    throw new AdminValidationError("Journey not found.");
+  }
+
+  const baseSlug = source.slug || slugify(source.title) || "journey";
+  const nextSlug = await buildUniqueCopySlug(baseSlug);
+  const nextTitle = source.title.endsWith("(Copy)") ? source.title : `${source.title} (Copy)`;
+
+  const journey = await prisma.learningJourney.create({
+    data: {
+      title: nextTitle,
+      slug: nextSlug,
+      intro: source.intro,
+      objectives: source.objectives ?? undefined,
+      isStandard: false,
+      personalizedForUserId: null,
+      userGoalSummary: null,
+      status: "draft",
+      steps: {
+        create: source.steps.map((step) => ({
+          sessionOutlineId: step.sessionOutlineId,
+          order: step.order,
+          status: "locked",
+          ahaText: step.ahaText,
+        })),
+      },
+    },
+    include: {
+      personalizedForUser: { select: { id: true, email: true, name: true } },
+      steps: {
+        include: { sessionOutline: true, chats: { select: { id: true, startedAt: true } } },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      },
+    },
+  });
+
+  return journey;
 }
 
 // This adds a new step at the end of the journey.
@@ -312,6 +377,31 @@ function splitObjectives(text?: string | null) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+// This turns a title into a URL-safe slug.
+function slugify(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
+}
+
+// This finds an unused "-copy" slug by adding a counter when needed.
+async function buildUniqueCopySlug(baseSlug: string) {
+  const safeBase = slugify(baseSlug) || "journey";
+  const root = safeBase.endsWith("-copy") ? safeBase : `${safeBase}-copy`;
+  let candidate = root;
+  let counter = 2;
+
+  while (await prisma.learningJourney.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+    candidate = `${root}-${counter}`;
+    counter += 1;
+  }
+
+  return candidate;
 }
 
 // This checks if a status change is allowed.

@@ -102,6 +102,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [savingJourney, setSavingJourney] = useState(false);
   const [deletingJourney, setDeletingJourney] = useState(false);
+  const [duplicatingJourney, setDuplicatingJourney] = useState(false);
   const [stepSaving, setStepSaving] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
   const [addStepOutlineId, setAddStepOutlineId] = useState<string>("");
@@ -242,6 +243,30 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setMessage(error?.message || "Could not delete journey.");
     } finally {
       setDeletingJourney(false);
+    }
+  };
+
+  // This makes a fresh draft copy of the current journey so admins can tweak it safely.
+  const handleDuplicateJourney = async () => {
+    if (!journeyDetail) return;
+
+    setDuplicatingJourney(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/journeys/${journeyDetail.id}/duplicate`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Could not duplicate journey.");
+
+      setJourneys((prev) => [data.journey, ...prev.filter((item) => item.id !== data.journey.id)]);
+      setSelectedJourneyId(data.journey.id);
+      setJourneyDetail(data.journey);
+      setJourneyForm(buildJourneyForm(data.journey));
+      setMessage("Journey duplicated.");
+    } catch (error: any) {
+      console.error("Duplicating journey failed:", error);
+      setMessage(error?.message || "Could not duplicate journey.");
+    } finally {
+      setDuplicatingJourney(false);
     }
   };
 
@@ -551,20 +576,30 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
               <div>
                 <h3 className="admin-title">Journey detail</h3>
                 {needAnalysisChatId ? (
-                  <Link href={`/chats/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
+                  <Link href={`/chats/history/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
                     Need-analysis chat
                   </Link>
                 ) : null}
               </div>
               {journeyDetail ? (
-                <button
-                  type="button"
-                  className="secondary-button danger"
-                  onClick={handleDeleteJourney}
-                  disabled={deletingJourney}
-                >
-                  {deletingJourney ? "Deleting..." : "Delete journey"}
-                </button>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={handleDuplicateJourney}
+                    disabled={duplicatingJourney}
+                  >
+                    {duplicatingJourney ? "Duplicating..." : "Duplicate"}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button danger"
+                    onClick={handleDeleteJourney}
+                    disabled={deletingJourney}
+                  >
+                    {deletingJourney ? "Deleting..." : "Delete journey"}
+                  </button>
+                </div>
               ) : null}
             </div>
 
@@ -754,7 +789,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                             {step.chats.map((chat, chatIndex) => (
                               <Link
                                 key={chat.id}
-                                href={`/chats/${chat.id}`}
+                                href={`/chats/history/${chat.id}`}
                                 className="link-button"
                                 target="_blank"
                                 style={{ marginRight: 6 }}

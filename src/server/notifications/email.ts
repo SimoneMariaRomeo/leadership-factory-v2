@@ -7,6 +7,11 @@ type GoalCommitEmailInput = {
   journey: { id: string; personalizedForUserId?: string | null };
 };
 
+type JourneyActivatedEmailInput = {
+  user: { id: string; email: string | null; name: string | null };
+  journey: { id: string; slug: string | null };
+};
+
 type MailOptions = {
   to: string;
   subject: string;
@@ -96,4 +101,25 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
       `.trim(),
     });
   }
+}
+
+// This tells a user when their personalized journey is ready to start.
+export async function sendJourneyActivatedEmail({ user, journey }: JourneyActivatedEmailInput) {
+  const userEmail = user.email;
+  if (!userEmail) return;
+
+  const journeySlugOrId = journey.slug || journey.id;
+  const journeyLink = `https://www.leadership-factory.cn/journeys/${journeySlugOrId}?userId=${encodeURIComponent(user.id)}`;
+
+  await sendMail({
+    to: userEmail,
+    subject: "Your learning journey is activated",
+    html: `
+      <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+      <p>Your personalized journey is now active and ready for you.</p>
+      <p><a href="${journeyLink}">${journeyLink}</a></p>
+      <p>Thank you,</p>
+      <p>Leadership Factory</p>
+    `.trim(),
+  });
 }
