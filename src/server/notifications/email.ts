@@ -83,15 +83,28 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
   if (userEmail) {
     await sendMail({
       to: userEmail,
-      subject: "Your new learning goal is confirmed",
+      subject: "You’ve committed. Now let’s build around you",
       html: `
         <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-        <p>Your learning goal is now confirmed:</p>
-        <p><strong>${learningGoal}</strong></p>
-        <p>We are preparing your personalized journey. You can check in anytime here:</p>
+
+        <p>You just did something that most people postpone indefinitely: you made a clear choice about who you want to become.</p>
+
+        <p><strong>Your learning goal:</strong><br/>
+        <strong>${learningGoal}</strong></p>
+
+        <p>From here, we’ll start building a personalized learning journey around you — your context, your constraints, and what will actually move the needle. We'll send you an email when it's ready but you can check your profile anytime to see what’s ready and what’s coming next:</p>
+
         <p><a href="${profileLink}">${profileLink}</a></p>
-        <p>Thank you,</p>
-        <p>Leadership Factory</p>
+
+        <p>One more thing: Leadership Factory is still an experiment, and you’re among our very first users. That’s a privilege on both sides — you’ll get something unusually personal, and we’ll learn from your experience to make the platform genuinely useful.</p>
+
+        <p>If you’re open to it, I’d love to hear how this step felt and what you’d want next. You can simply reply to this email, or book a time that suits you here:</p>
+
+        <p><a href="https://calendar.app.google/oQ53qMRtWBuiJW839">https://calendar.app.google/oQ53qMRtWBuiJW839</a></p>
+
+        <p>Talk soon,<br/>
+        Simone<br/>
+        Leadership Factory</p>
       `.trim(),
     });
   }
@@ -122,13 +135,20 @@ export async function sendJourneyActivatedEmail({ user, journey }: JourneyActiva
 
   await sendMail({
     to: userEmail,
-    subject: "Your learning journey is activated",
+    subject: "Begin before you feel ready",
     html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-      <p>Your personalized journey is now active and ready for you.</p>
+  
+      <p>You trusted us with your goal and we designed a learning journey just <strong>for you.</strong></p>
+  
+      <p>It’s ready now and it starts here:</p>
+  
       <p><a href="${journeyLink}">${journeyLink}</a></p>
-      <p>Thank you,</p>
-      <p>Leadership Factory</p>
+  
+      <p>Do the smallest “brave” action you can take today — the one you’d usually postpone.</p>
+  
+      <p>Simone<br/>
+      Leadership Factory</p>
     `.trim(),
   });
 }
