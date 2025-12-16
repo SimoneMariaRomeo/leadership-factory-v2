@@ -1,14 +1,14 @@
 // This endpoint marks a step as completed, unlocks the next one, and returns the journey link.
 import { NextResponse } from "next/server";
 import { completeStepAndUnlockNext, journeySlugOrId } from "../../../../../../lib/journeys";
-import { getCurrentUser } from "../../../../../../server/auth/session";
+import { requireUser, UnauthorizedError } from "../../../../../../server/auth/session";
 
 type RouteParams = { params: { stepId: string } };
 
 export async function POST(req: Request, { params }: RouteParams) {
   try {
-    const currentUser = await getCurrentUser(req);
-    const result = await completeStepAndUnlockNext(params.stepId, currentUser?.id || null);
+    const currentUser = await requireUser(req);
+    const result = await completeStepAndUnlockNext(params.stepId, currentUser.id);
 
     if (result.status === "not_found") {
       return NextResponse.json({ error: "Step not found." }, { status: 404 });
@@ -27,6 +27,9 @@ export async function POST(req: Request, { params }: RouteParams) {
       unlockedStepId: result.unlockedStep?.id || null,
     });
   } catch (err) {
+    if (err instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Mark step completed failed:", err);
     return NextResponse.json({ error: "Could not complete this step." }, { status: 500 });
   }

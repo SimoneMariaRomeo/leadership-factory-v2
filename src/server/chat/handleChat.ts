@@ -19,6 +19,7 @@ type AssistantMessage = {
 
 type HandleChatArgs = {
   userId: string | null;
+  guestId?: string | null;
   sessionOutlineId: string;
   journeyStepId?: string | null;
   chatId?: string | null;
@@ -76,8 +77,18 @@ function parseAssistantCommand(raw: string): any | null {
   return null;
 }
 
+// This reads the guestId stored inside chat.metadata when present.
+function readGuestIdFromMetadata(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, unknown>).guestId;
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
 export async function handleChat({
   userId,
+  guestId = null,
   sessionOutlineId,
   journeyStepId = null,
   chatId = null,
@@ -118,18 +129,54 @@ export async function handleChat({
 
   if (!chat) {
     const now = new Date();
-    chat = chatId ? await prisma.learningSessionChat.findUnique({ where: { id: chatId } }) : null;
+    const byId = chatId ? await prisma.learningSessionChat.findUnique({ where: { id: chatId } }) : null;
+    const byGuest =
+      !byId && !journeyStepId && !userId && guestId
+        ? await prisma.learningSessionChat.findFirst({
+            where: {
+              userId: null,
+              sessionOutlineId,
+              metadata: { path: ["guestId"], equals: guestId },
+            },
+            orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
+          })
+        : null;
+
+    chat = byId || byGuest;
+
+    // This blocks someone from attaching messages to a chat that does not belong to them.
+    if (chat) {
+      if (userId) {
+        if (chat.userId && chat.userId !== userId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+      } else {
+        if (!guestId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+        if (chat.userId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+        const chatGuestId = readGuestIdFromMetadata(chat.metadata);
+        if (chatGuestId !== guestId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+      }
+    }
+
     const baseMetadata: Record<string, any> =
       chat?.metadata && typeof chat.metadata === "object" && !Array.isArray(chat.metadata)
         ? { ...(chat.metadata as Record<string, any>) }
         : {};
     const nextMetadata: Record<string, any> = { ...baseMetadata };
+    if (!userId && guestId) {
+      nextMetadata.guestId = guestId;
+    }
 
     chat = chat
       ? await prisma.learningSessionChat.update({
           where: { id: chat.id },
           data: {
-            user: userId ? { connect: { id: userId } } : undefined,
             sessionOutline: { connect: { id: sessionOutlineId } },
             lastMessageAt: now,
             metadata: Object.keys(nextMetadata).length ? nextMetadata : chat.metadata ?? undefined,
@@ -152,8 +199,9 @@ export async function handleChat({
   const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset.";
 
   const outlineForPrompt = journeyFromStep?.sessionOutline || outline;
+  const canCompleteStep = Boolean(journeyStepId && journeyFromStep && !journeyFromStep.journey.isStandard);
   const botTools =
-    journeyStepId && outlineForPrompt.botTools
+    canCompleteStep && outlineForPrompt.botTools
       ? `${outlineForPrompt.botTools}\n\nWhen the user has clearly finished this step, send exactly {"command": "mark_step_completed"} as a JSON message with no other text.`
       : outlineForPrompt.botTools;
 

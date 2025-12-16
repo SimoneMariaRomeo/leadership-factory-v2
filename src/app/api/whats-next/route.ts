@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../server/prismaClient";
 import { requireUser, UnauthorizedError } from "../../../server/auth/session";
 import { sendGoalCommitEmails } from "../../../server/notifications/email";
+import { getGuestIdFromRequest } from "../../../server/guest";
 
 // This handles POST calls from the /whats-next page to commit the goal.
 export async function POST(req: Request) {
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     }
 
     const user = await requireUser(req);
+    const guestId = getGuestIdFromRequest(req);
     const result = await prisma.$transaction(async (tx) => {
       const updatedUser = await tx.user.update({
         where: { id: user.id },
@@ -30,15 +32,19 @@ export async function POST(req: Request) {
         select: { id: true, email: true, name: true, learningGoal: true },
       });
 
-      // Link the latest need-analysis chat to this user if it exists.
+      // Link the latest need-analysis guest chat for this browser, so it appears in "Previous Conversations" after signup.
       const needAnalysisOutline = await tx.learningSessionOutline.findFirst({
         where: { slug: "need-analysis" },
         select: { id: true },
       });
       let linkedChatId: string | null = null;
-      if (needAnalysisOutline) {
+      if (needAnalysisOutline && guestId) {
         const latestChat = await tx.learningSessionChat.findFirst({
-          where: { userId: null, sessionOutlineId: needAnalysisOutline.id },
+          where: {
+            userId: null,
+            sessionOutlineId: needAnalysisOutline.id,
+            metadata: { path: ["guestId"], equals: guestId },
+          },
           orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
           select: { id: true },
         });

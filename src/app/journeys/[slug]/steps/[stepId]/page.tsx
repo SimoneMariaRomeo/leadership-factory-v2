@@ -18,6 +18,24 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   const headerStore = headers();
   const cookieHeader = headerStore.get("cookie");
   const currentUser = await getCurrentUser(requestFromCookieHeader(cookieHeader));
+
+  // Steps are only available after login so chats stay private.
+  if (!currentUser) {
+    return (
+      <div className="content-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="content-inner">
+          <LoginPrompt
+            title="Please log in to view this step"
+            message="Sign in so we can open this session for you."
+            buttonLabel="Login to continue"
+            afterLoginPath={`/journeys/${params.slug}/steps/${params.stepId}`}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const journey = await prisma.learningJourney.findFirst({
     where: { OR: [{ slug: params.slug }, { id: params.slug }] },
     select: { id: true, slug: true, isStandard: true, personalizedForUserId: true },
@@ -58,21 +76,6 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   const access = await loadStepWithAccess(foundStep.id, currentUser?.id || null);
 
   if (access.status === "forbidden") {
-    if (!currentUser) {
-      return (
-        <div className="content-shell">
-          <div className="bg-orbs" aria-hidden="true" />
-          <div className="content-inner">
-            <LoginPrompt
-              title="Please log in to view this step"
-              message="Sign in so we can open this session for you."
-              buttonLabel="Login to continue"
-              afterLoginPath={`/journeys/${params.slug}/steps/${params.stepId}`}
-            />
-          </div>
-        </div>
-      );
-    }
     redirect("/my-profile");
   }
 

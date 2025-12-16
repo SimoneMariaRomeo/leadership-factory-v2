@@ -42,24 +42,27 @@ function buildAfterLoginPath(slug: string, searchParams?: Record<string, string 
 export default async function JourneyPage({ params, searchParams }: JourneyPageProps) {
   const cookieHeader = headers().get("cookie");
   const currentUser = await getCurrentUser(requestFromCookieHeader(cookieHeader));
+
+  // Journeys are only available after login so progress and chats stay private.
+  if (!currentUser) {
+    return (
+      <div className="content-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="content-inner">
+          <LoginPrompt
+            title="Please log in to view this journey"
+            message="Sign in so we can show your journey and keep your progress private."
+            buttonLabel="Login to continue"
+            afterLoginPath={buildAfterLoginPath(params.slug, searchParams)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const journeyResult = await loadJourneyWithStepsBySlug(params.slug, currentUser?.id || null);
 
   if (journeyResult.status === "forbidden") {
-    if (!currentUser) {
-      return (
-        <div className="content-shell">
-          <div className="bg-orbs" aria-hidden="true" />
-          <div className="content-inner">
-            <LoginPrompt
-              title="Please log in to view this journey"
-              message="Sign in so we can show your journey."
-              buttonLabel="Login to continue"
-              afterLoginPath={buildAfterLoginPath(params.slug, searchParams)}
-            />
-          </div>
-        </div>
-      );
-    }
     redirect("/my-profile");
   }
 

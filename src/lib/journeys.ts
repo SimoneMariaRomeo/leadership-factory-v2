@@ -134,12 +134,8 @@ export async function getOrCreateStepChat(stepId: string, userId: string | null)
         },
       });
 
-  if (step.status === "locked") {
-    await prisma.learningJourneyStep.update({
-      where: { id: step.id },
-      data: { status: "unlocked", unlockedAt: step.unlockedAt ?? now },
-    });
-  } else if (!step.unlockedAt) {
+  // Standard journeys are shared templates, so we avoid changing step timestamps for everyone.
+  if (!step.journey.isStandard && !step.unlockedAt) {
     await prisma.learningJourneyStep.update({
       where: { id: step.id },
       data: { unlockedAt: now },
@@ -164,6 +160,9 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
   if (access.status !== "ok") return access;
 
   const step = access.step;
+  if (step.journey.isStandard) {
+    return { status: "forbidden" };
+  }
   if (step.status === "locked") {
     return { status: "locked" };
   }

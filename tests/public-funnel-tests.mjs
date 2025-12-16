@@ -129,8 +129,8 @@ async function main() {
   await intro.findByText((content) => content.includes("When you're ready, let's begin."));
   const readyLink = intro.getByRole("link", { name: "I'M READY" });
   assert(
-    readyLink.getAttribute("href") === "/journeys/goal-clarification/steps/need-analysis",
-    "I'M READY should point to the need-analysis step (slug-based)."
+    readyLink.getAttribute("href") === "/need-analysis",
+    "I'M READY should point to the public need-analysis page."
   );
   logPass("Learning-guide-intro text and CTA look right.");
   cleanup();
