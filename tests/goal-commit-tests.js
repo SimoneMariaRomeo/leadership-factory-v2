@@ -120,7 +120,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database for goal commit checks", "Migrations and seed should load for the dedicated DB.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   runCommand("npx prisma db seed --schema prisma/schema.prisma", "seed script executed");
 
   setTestEmailSender(async (options) => {

@@ -126,10 +126,8 @@ async function seedUser(label) {
 async function seedOutline(journeyId, slug, order = 1) {
   return prisma.learningSessionOutline.create({
     data: {
-      journeyId,
       slug,
       order,
-      live: true,
       title: `Outline ${slug}`,
       objective: "Guide the user",
       content: "Content body",
@@ -146,7 +144,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database", "Migrations should run for admin journey tests.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   await clearData();
 
   await testJourneyFilters();
@@ -338,28 +336,30 @@ async function testNeedAnalysisLink() {
   });
 
   const needOutline = await seedOutline(journey.id, "need-analysis", 1);
-  const chat = await prisma.learningSessionChat.create({
+  const needStepRecord = await prisma.learningJourneyStep.create({
+    data: {
+      journeyId: journey.id,
+      sessionOutlineId: needOutline.id,
+      order: 1,
+      status: "unlocked",
+    },
+  });
+  const needChat = await prisma.learningSessionChat.create({
     data: {
       sessionOutlineId: needOutline.id,
+      step: { connect: { id: needStepRecord.id } },
       sessionTitle: "Need Analysis",
       startedAt: new Date(),
       lastMessageAt: new Date(),
     },
   });
 
-  await prisma.learningJourneyStep.create({
-    data: {
-      journeyId: journey.id,
-      sessionOutlineId: needOutline.id,
-      order: 1,
-      status: "unlocked",
-      chatId: chat.id,
-    },
-  });
-
   const detail = await getJourneyDetail(journey.id);
   const needStep = detail.steps.find((step) => step.sessionOutline.slug === "need-analysis");
-  assert(needStep && needStep.chatId === chat.id, "Need-analysis step should carry chat id.");
+  assert(
+    needStep && needStep.chats.some((item) => item.id === needChat.id),
+    "Need-analysis step should expose the need-analysis chat id."
+  );
 
   logPass("Need-analysis chat id is available for the admin link.");
 }

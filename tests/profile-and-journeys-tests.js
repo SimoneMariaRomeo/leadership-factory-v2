@@ -226,7 +226,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database", "Migrations and seed should load for profile/journeys tests.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   runCommand("npx prisma db seed --schema prisma/schema.prisma", "seed script executed");
 
   await clearTestData();
@@ -262,28 +262,28 @@ async function testProfileRequiresLogin() {
 // Test: nav links depend on auth state.
 async function testNavVisibility() {
   logTest(
-    "Nav shows links based on auth",
-    "Guests should see Login only; signed-in users should see journeys, profile, and Logout."
+    "Nav shows links regardless of auth state",
+    "The top bar should always show Home, Learning Journeys, and Profile links."
   );
 
   clearAuth();
   mockPathname = "/";
   mockAuthResponseUser = null;
-  const guestNav = render(React.createElement(TopNav, { initialUser: null }));
-  expectMissing("Learning Journeys");
-  expectMissing("Profile");
-  expectMissing("Login");
-  logPass("Guest nav hides profile/journeys and keeps the bar minimal.");
+  render(React.createElement(TopNav, { initialUser: null }));
+  screen.getByText("Home");
+  screen.getByText("Learning Journeys");
+  screen.getByText("Profile");
+  logPass("Guest nav exposes the core links.");
   cleanup();
 
   const user = await createTestUser({ emailSuffix: "nav" });
   setAuthCookieForUser(user);
   mockPathname = "/";
-  const authedNav = render(React.createElement(TopNav, { initialUser: mockAuthResponseUser }));
+  render(React.createElement(TopNav, { initialUser: mockAuthResponseUser }));
+  screen.getByText("Home");
   screen.getByText("Learning Journeys");
   screen.getByText("Profile");
-  expectMissing("Logout");
-  logPass("Authed nav shows profile and journeys with no extra chips.");
+  logPass("Authed nav still shows the same links.");
   cleanup();
 }
 
@@ -333,10 +333,11 @@ async function testJourneysGuestView() {
   mockPathname = "/journeys";
   const page = await JourneysPage();
   const view = render(page);
-  await screen.findByText("Learning Journeys");
-  await screen.findByText("Goal Clarification");
-  expectMissing("Please sign in to explore journeys");
-  logPass("Guest view of /journeys shows the public list.");
+  await screen.findByText("Please log in to view learning journeys");
+  screen.getByText("Sign in so we can show the journeys available to you.");
+  screen.getByRole("button", { name: "Login to continue" });
+  expectMissing("Goal Clarification");
+  logPass("Guest view of /journeys shows the gate prompt.");
   cleanup();
 }
 
@@ -456,7 +457,7 @@ async function testLogoutFlow() {
   mockPathname = "/";
   const nav = render(React.createElement(TopNav, { initialUser: null }));
   screen.getByText("Home");
-  expectMissing("Learning Journeys");
+  screen.getByText("Learning Journeys");
   cleanup();
 
   const gatedProfile = await MyProfilePage();

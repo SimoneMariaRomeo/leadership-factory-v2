@@ -16,3 +16,6 @@ NOTIFICATION_EMAIL_FROM="Leadership Factory <...@gmail.com>"
 NOTIFICATION_EMAIL_TO=...@gmail.com
 
 DEFAULT_API="aliyun"   # set to "chatgpt" to switch providers
+
+PRODUCTION_URL="https://www.leadership-factory.cn"
+

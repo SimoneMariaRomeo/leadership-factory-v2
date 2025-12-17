@@ -122,13 +122,11 @@ async function seedJourney(label, isStandard = false) {
 }
 
 // This seeds a simple outline.
-async function seedOutline(journeyId, slug, live = false, order = 1) {
+async function seedOutline(slug, order = 1) {
   return prisma.learningSessionOutline.create({
     data: {
-      journeyId,
       slug,
       order,
-      live,
       title: `Outline ${slug}`,
       objective: "Help the user",
       content: "Talk kindly.",
@@ -145,7 +143,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database", "Migrations should run for admin sessions tests.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   await clearData();
 
   await testListAndFilterOutlines();
@@ -159,24 +157,40 @@ async function main() {
   await pool.end();
 }
 
-// This checks list filters for journey and live flag.
+// This checks list filters for journeys and search text.
 async function testListAndFilterOutlines() {
-  logTest("admin-sessions lists outlines by journey and live status", "Filters should respect journey and live only options.");
+  logTest("admin-sessions lists outlines by journey and search", "Filters should return outlines used by the requested journey and honor search text.");
   await clearData();
 
   const journeyA = await seedJourney("A");
   const journeyB = await seedJourney("B");
 
-  await seedOutline(journeyA.id, "alpha-live", true, 1);
-  await seedOutline(journeyA.id, "alpha-hidden", false, 2);
-  await seedOutline(journeyB.id, "beta-live", true, 1);
+  const outlineALive = await seedOutline("alpha-live", 1);
+  const outlineAHidden = await seedOutline("alpha-hidden", 2);
+  const outlineB = await seedOutline("beta-live", 1);
 
-  const onlyA = await listSessionOutlines({ journeyId: journeyA.id, live: "all" });
+  await prisma.learningJourneyStep.create({
+    data: { journeyId: journeyA.id, sessionOutlineId: outlineALive.id, order: 1, status: "locked" },
+  });
+  await prisma.learningJourneyStep.create({
+    data: { journeyId: journeyA.id, sessionOutlineId: outlineAHidden.id, order: 2, status: "locked" },
+  });
+  await prisma.learningJourneyStep.create({
+    data: { journeyId: journeyB.id, sessionOutlineId: outlineB.id, order: 1, status: "locked" },
+  });
+
+  const onlyA = await listSessionOutlines({ journeyId: journeyA.id });
   assert(onlyA.length === 2, "Journey A should return two outlines.");
-  assert(onlyA.every((item) => item.journeyId === journeyA.id), "All outlines should belong to journey A.");
+  const outlinesForA = onlyA.map((outline) => outline.id);
+  for (const outlineId of outlinesForA) {
+    const stepCount = await prisma.learningJourneyStep.count({
+      where: { journeyId: journeyA.id, sessionOutlineId: outlineId },
+    });
+    assert(stepCount > 0, "Each outline should be linked to the requested journey via at least one step.");
+  }
 
-  const liveOnly = await listSessionOutlines({ journeyId: journeyA.id, live: "live" });
-  assert(liveOnly.length === 1 && liveOnly[0].live === true, "Live filter should return only live outlines.");
+  const searchAlpha = await listSessionOutlines({ search: "alpha" });
+  assert(searchAlpha.every((outline) => outline.slug.includes("alpha")), "Search should respect the provided text.");
 
   logPass("Filters returned the right outlines.");
 }
@@ -191,13 +205,11 @@ async function testCreateLargeOutline() {
   const longTools = `Tool line 1\nTool line 2\n${"Call JSON ".repeat(10)}`;
 
   const outline = await createSessionOutline({
-    journeyId: journey.id,
     title: "Deep Outline",
     slug: "deep-outline",
     content: longContent,
     botTools: longTools,
     firstUserMessage: "Start now",
-    live: false,
     objective: "Do the work",
   });
 
@@ -208,7 +220,6 @@ async function testCreateLargeOutline() {
   let duplicateFailed = false;
   try {
     await createSessionOutline({
-      journeyId: journey.id,
       title: "Copy",
       slug: "deep-outline",
       content: "x",
@@ -228,13 +239,12 @@ async function testEditOutlineFields() {
   logTest("admin-sessions edits fields including slug", "All fields should update and duplicate slug is blocked.");
   await clearData();
   const journey = await seedJourney("edit");
-  const outline = await seedOutline(journey.id, "editable", false, 1);
-  await seedOutline(journey.id, "other", false, 2);
+  const outline = await seedOutline("editable", 1);
+  await seedOutline("other", 2);
 
   const updated = await updateSessionOutline(outline.id, {
     title: "Updated Title",
     slug: "edited-slug",
-    live: true,
     objective: "New objective",
     content: "New content block",
     botTools: "New tools block",
@@ -243,7 +253,6 @@ async function testEditOutlineFields() {
 
   assert(updated.title === "Updated Title", "Title should update.");
   assert(updated.slug === "edited-slug", "Slug should update.");
-  assert(updated.live === true, "Live flag should update.");
   assert(updated.objective === "New objective", "Objective should update.");
   assert(updated.content === "New content block", "Content should update.");
   assert(updated.botTools === "New tools block", "Bot tools should update.");
@@ -267,13 +276,13 @@ async function testDeleteOutlineRules() {
   const journey = await seedJourney("delete");
 
   // Case A: no steps
-  const outlineSolo = await seedOutline(journey.id, "solo", false, 1);
+  const outlineSolo = await seedOutline("solo", 1);
   await deleteSessionOutline(outlineSolo.id);
   const soloGone = await prisma.learningSessionOutline.findUnique({ where: { id: outlineSolo.id } });
   assert(!soloGone, "Outline without steps should be removed.");
 
   // Case B: with steps
-  const outlineWithSteps = await seedOutline(journey.id, "with-steps", false, 2);
+  const outlineWithSteps = await seedOutline("with-steps", 2);
   await prisma.learningJourneyStep.create({
     data: {
       journeyId: journey.id,

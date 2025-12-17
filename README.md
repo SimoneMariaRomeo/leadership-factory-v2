@@ -29,9 +29,5 @@ Important: the `userId` in the link does NOT log the person in. If they are not 
 Available in /docs:
 
 env-contents.md 
-features.md --> in depth explanation of the final project features
-image-checklist.md --> the images that the website uses
-implementation-steps.md --> the progression of what needs to be implemented
-key-pages-additional-notes.md --> guidelines on the text and style of the most important pages of the website
 prisma-database-structure.md 
 visual-guidelines.md

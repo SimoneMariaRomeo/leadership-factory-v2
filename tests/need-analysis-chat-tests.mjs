@@ -98,7 +98,7 @@ async function main() {
     "Prepare database for chat checks",
     "Migrations and seeds should run cleanly on the dedicated test database."
   );
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   runCommand("npx prisma db seed --schema prisma/schema.prisma", "seed script executed");
 
   const { journey, outline, step } = await testNeedAnalysisRoute();
@@ -142,7 +142,7 @@ async function testNeedAnalysisRoute() {
   assert(journey, "Goal Clarification journey should exist.");
 
   const outline = await prisma.learningSessionOutline.findFirst({
-    where: { slug: NEED_OUTLINE_SLUG, journeyId: journey.id },
+    where: { slug: NEED_OUTLINE_SLUG },
   });
   assert(outline, "Need-analysis outline should exist on the journey.");
 
@@ -288,7 +288,7 @@ async function testApiPostRoundtrip(sessionOutlineId, journeyStepId) {
   const body = {
     chatId: null,
     sessionOutlineId,
-    journeyStepId,
+    journeyStepId: null,
     messages: [{ role: "user", content: "I want to work on my confidence." }],
   };
   const request = new Request("http://localhost/api/chat", {
