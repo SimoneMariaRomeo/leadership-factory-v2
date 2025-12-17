@@ -1,69 +1,166 @@
-<!-- This file tells Perplexity Comet what to do and why. -->
-# Perplexity Comet User Checks
+<!-- This file tells Perplexity Comet what to do and how to report in a helpful way. -->
+# Perplexity Comet: Real User Journeys (Go‑Live Checks)
 
-## Who you are
-- You are a person trying to see if the leadership site can help you grow.
-- You have some goals but you are still learning what the site offers.
-- You use a laptop or tablet, and you switch between reading, talking, and clicking when you do not know what to do.
+## Your job
+You are testing a leadership coaching website like a normal person would.
+You will click around, try to finish the “start → chat → confirm goal → sign up → see your saved info” flow, and report anything that feels wrong.
 
-## What to watch
-- Write down how easy it is to find help, read key words, and start something new.
-- Note if any words feel confusing, if buttons change color, or if parts take too long to load.
-- Share how the site makes you feel (calm, stuck, curious) and what you do next.
+Please do not use technical words. Say what you saw and what you felt.
 
-## Ways to test (10 use cases)
+## Most important check (privacy)
+You MUST verify that two people cannot see each other’s chat messages.
+This is the most important check.
 
-### 1. First-time glance
-You land on the home page without a clear goal. Scroll slowly, try to read the hero text, and note if the message tells you what the product is.
-- Try to find one button that says “Start,” “Explore,” or “Talk to us.”
-- Report if the home screen makes you want to learn more or if it needs clearer words.
+## Test accounts (use these if you need them)
+If you need to sign up or log in, you can use:
+- User A email: `marsario@gmail.com`
+- User B email: `marsario+2@gmail.com`
+- Password (for both): `trial-marsword`
+- Name to use: `Mario Sario`
 
-### 2. Discover the journeys
-Look for the part of the site that talks about the journeys or learning paths.
-- Open a journey detail, read a few steps, and see if the text lets you picture what you would do.
-- Mention if the sections feel short, too long, or full of jargon.
+If a page asks for a “learning goal”, you can use:
+- “I want to become a calmer leader in stressful meetings, so I can speak clearly and set better boundaries.”
 
-### 3. Need-analysis chat
-Treat yourself as someone unsure about the next leadership move.
-- Try to open or trigger the “need analysis chat” area, and ask the system about a simple need (for example, “I need a quick leadership refresh”).
-- Note how the chat reacts when you are not sure what to ask and whether it gives clear, friendly suggestions.
+## How to report (very important)
+For each journey below, write:
+1) What you tried (short)
+2) What happened (short)
+3) Did you feel stuck? (yes/no + where)
+4) Any privacy risk? (yes/no)
+5) One screenshot if something looks wrong (include the full page, not just the popup)
 
-### 4. Goal builder walk-through
-Play the part of a person who wants to build a learning goal.
-- Find how to create or edit a goal, add a few lines, and check that you can save or preview the plan.
-- Write down if the goal builder guides you step by step and if the confirm messages feel simple.
+If something is confusing, write the exact text you saw (copy/paste).
+If something is slow, estimate how long (example: “about 10 seconds”).
 
-### 5. Learning journeys and steps
-Assume you are locking in the next few steps.
-- Open a journey, tap into a step, read what is due, and click any action link.
-- Tell us if it is easy to know what you must do and if the steps feel connected.
+## Setup (before you start)
+You will run some steps in two browsers at the same time.
+Pick TWO different browsers (example: Chrome and Firefox), or use one normal window + one Incognito/Private window.
+Call them:
+- Browser A
+- Browser B
 
-### 6. Live admin check
-Act as a manager who wants to see live sessions or coaching.
-- Look for the admin or live session area and note if you can tell when the next live event is.
-- Say whether the dashboard helps you see what is coming and if you might book or cancel from there.
+Do not log in until a step tells you to.
 
-### 7. Program enrollment
-Now you want to join a specific program.
-- Find a program, look at the schedule or price, and go through the join or sign-up flow up to the payment or confirmation page.
-- Share if the steps feel safe, if the price is shown in a clear way, and if you can find help when you hesitate.
+---
 
-### 8. Team planning
-Be a team lead who wants to add a teammate or assign a session.
-- Search for team settings, invite a person, or share a path with them.
-- Say if the instructions keep the process calm and if you feel in control.
+## 10 real user journeys to test
 
-### 9. Resource lookup
-Pretend you are looking for a quick tip or workbook.
-- Search for “resource,” “guide,” or “playbook,” open one, and scroll to see if the text is easy to read and print.
-- Note if the download works and if the copy helps you remember what to do next.
+### Journey 1 — First visit: can you find the start?
+Goal: A new person understands what to do next.
+Steps:
+1) Open the home page.
+2) Scroll a little and look for the main “start” button.
+3) Click the main start button until you reach the need-analysis chat.
+What “good” looks like:
+- You can find the start without guessing.
+- The page explains what will happen in simple words.
 
-### 10. Mobile tour
-You are on a phone or small screen and have limited time.
-- Tilt the screen size by using responsive mode or a small browser window and walk through a short task (for example, find a tip and open a chat).
-- Observe if the layout still feels friendly and if buttons stay easy to tap.
+### Journey 2 — Privacy check: two guests chatting at the same time
+Goal: Two different people do not see each other’s chat text.
+Steps:
+1) In Browser A (not logged in), open the need-analysis chat and send 2 messages (example: “Hi” and “I want to work on confidence”).
+2) In Browser B (not logged in), open the need-analysis chat and send 2 different messages (example: “Hello” and “I struggle with feedback”).
+3) Keep both chats open and send 1 more message in each browser.
+What “good” looks like:
+- Browser A never shows Browser B’s messages.
+- Browser B never shows Browser A’s messages.
+Red flag:
+- You see the other person’s text, even once.
 
-## Wrap-up for Comet
-- Write one quick tale of what worked and what felt strange for each use case you touch.
-- When you are not sure where to go, explore the menu or search field—real people do that.
-- Keep your notes short and simple, using normal words instead of technical terms.
+### Journey 3 — Need-analysis chat → “goal created” moment
+Goal: The chat leads you to a clear goal and moves you forward.
+Steps:
+1) In one browser (still not logged in), continue chatting until the app sends you to the goal confirmation page.
+2) Confirm you can see a goal written on the page.
+What “good” looks like:
+- The chat feels natural and not confusing.
+- You get moved to the next page without you hunting for it.
+
+### Journey 4 — Goal confirmation: edit the goal and keep it
+Goal: Editing works and the final saved goal matches what you edited.
+Steps:
+1) On the goal confirmation page, edit the goal text (change at least 5–10 words).
+2) Continue to the next step.
+What “good” looks like:
+- Your edited goal stays edited.
+- The wording on buttons and titles is clear.
+
+### Journey 5 — Whats-next: get a journey suggestion and try “recommend another”
+Goal: The recommended journey shows up and the “recommend another journey” button works.
+Steps:
+1) On the whats-next page, wait for the recommended journey title + intro to appear.
+2) Click “Recommend another journey” once.
+3) Confirm the title changes (or at least it clearly refreshes).
+What “good” looks like:
+- You see a clear title and intro.
+- If it takes time, it says that in a friendly way.
+
+### Journey 6 — Sign up and save: finish the funnel
+Goal: You can sign up and end up with your goal saved.
+Steps:
+1) On the whats-next page, click “YES, I’M IN!”.
+2) If you see a login/sign-up window, sign up (or log in) as User A.
+3) After success, you should land on “My Profile”.
+4) Confirm the saved goal matches your edited goal from Journey 4.
+What “good” looks like:
+- You end up on My Profile.
+- Your goal text matches what you edited.
+- You do not get stuck in a loop.
+
+### Journey 7 — Chat history: you see your own chat from before login
+Goal: The earlier need-analysis conversation shows up after login.
+Steps:
+1) On My Profile, find “Your Previous Conversations”.
+2) Open the most recent conversation.
+3) Confirm it contains the same topic you talked about before login.
+What “good” looks like:
+- The chat is there and looks like your conversation.
+- It does not show someone else’s messages.
+
+### Journey 8 — Privacy check: User B cannot see User A’s chat
+Goal: A different logged-in user cannot open someone else’s chat link.
+Steps:
+1) Copy the URL of User A’s chat page.
+2) Log out (if needed).
+3) Log in as User B.
+4) Paste User A’s chat URL in the address bar and open it.
+What “good” looks like:
+- You see a “not available” message (or you get redirected away).
+- You do NOT see the chat messages.
+
+### Journey 9 — Journeys page access rules (guest vs logged in)
+Goal: Journeys are protected by login.
+Steps:
+1) Log out.
+2) Try to open `/journeys` by typing it in the address bar.
+3) Confirm you are asked to log in.
+4) Log in as User A and open `/journeys` again.
+What “good” looks like:
+- Guests are blocked with a clear message.
+- Logged-in users can see the journeys list.
+
+### Journey 10 — “Bad day” tests: errors are clear + admin is blocked
+Goal: If something goes wrong, the user gets a clear message. Normal users cannot access admin.
+Steps (Part A: bad day):
+1) While on a chat page, turn off internet briefly (or use airplane mode).
+2) Try to send a chat message.
+3) Turn internet back on and try again.
+What “good” looks like:
+- You get a clear error message.
+- You can recover and continue.
+
+Steps (Part B: admin blocked):
+1) While logged in as User A (normal user), try to open `/admin`.
+2) Try `/admin/journeys` and `/admin/sessions` too.
+3) Optional: open `/api/admin/journeys` in the browser address bar.
+What “good” looks like:
+- You are blocked from admin screens.
+- If you see a message, it is clear and polite.
+
+---
+
+## Final summary (1 page)
+Please end with:
+- A short “overall feeling” (calm / confusing / trustworthy / etc.)
+- The single biggest risk you saw (if any)
+- The top 3 things to fix before launch (simple words)
