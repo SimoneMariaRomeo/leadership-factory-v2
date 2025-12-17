@@ -94,7 +94,7 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
 
         <p>From here, we’ll start building a personalized learning journey around you — your context, your constraints, and what will actually move the needle. We'll send you an email when it's ready but you can check your profile anytime to see what’s ready and what’s coming next:</p>
 
-        <p><a href="${profileLink}">Open yourprofile</a></p>
+        <p><a href="${profileLink}">Open your profile</a></p>
 
         <p>One more thing: Leadership Factory is still an experiment, and you’re among our very first users. That’s a privilege on both sides — you’ll get something unusually personal, and we’ll learn from your experience to make the platform genuinely useful.</p>
 

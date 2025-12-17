@@ -1,5 +1,14 @@
 /* This file holds the shared fonts, colors, and glass look for every page. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
+
+/* This loads the Acme font (from Font Squirrel) for page titles. */
+@font-face {
+  font-family: "Acme";
+  src: url("/fonts/acme/Acme-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --gold: #c79d2d;
@@ -9,8 +18,10 @@
   --muted: #9aa6b8;
   --lavender: #e9e3ff;
   --background: #f2f5fa;
+  --title-font: "Acme", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   color: var(--text-strong);
   font-family: "Inter", sans-serif;
+  font-size: 1rem;
   background: var(--background);
 }
 
@@ -18,10 +29,19 @@
   box-sizing: border-box;
 }
 
+/* This applies the title font to all headings so every page title matches. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--title-font);
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   background: linear-gradient(140deg, #f4f0e8 0%, #f7f9fc 40%, #eef3fa 100%);
+  font-size: 1rem;
 }
 
 a {
@@ -171,14 +191,14 @@ a {
 
 .intro-title {
   margin: 0;
-  font-family: "Playfair Display", serif;
-  font-size: clamp(28px, 4vw, 32px);
+  font-family: var(--title-font);
+  font-size: clamp(1.75rem, 4vw, 2rem);
   color: var(--text-strong);
 }
 
 .intro-paragraph {
   margin: 0;
-  font-size: 18px;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--text-soft);
   max-width: 720px;
@@ -197,7 +217,7 @@ a {
   border-radius: 999px;
   border: 1px solid var(--gold);
   padding: 14px 32px;
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: #ffffff;
@@ -350,7 +370,7 @@ a {
 }
 
 .hero-kicker {
-  font-size: 17px;
+  font-size: 1rem;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
@@ -362,8 +382,8 @@ a {
 }
 
 .hero-title {
-  font-family: "Playfair Display", serif;
-  font-size: clamp(28px, 4vw, 47px);
+  font-family: var(--title-font);
+  font-size: clamp(1.75rem, 4vw, 2.9375rem);
   margin: 0 0 14px;
   color: var(--text-strong);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -371,7 +391,7 @@ a {
 
 .hero-lead {
   margin: 0 0 14px;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--text-soft);
 }
@@ -1430,22 +1450,22 @@ a {
 }
 
 .journey-hero {
-  text-align: center;
+  text-align: left;
   max-width: 900px;
   margin: 0 auto 12px;
 }
 
 .journey-hero .hero-lead {
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 500;
   color: #5a677a;
   font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 .journey-goal-heading {
-  font-family: "Playfair Display", serif;
-  font-size: 22px;
-  text-align: center;
+  font-family: var(--title-font);
+  font-size: 1.375rem;
+  text-align: left;
   color: #2f3b50;
   margin: 18px 0 12px;
 }
@@ -1483,7 +1503,7 @@ a {
 
 .journey-steps-title {
   color: #c79d2d;
-  font-family: "Playfair Display", serif;
+  font-family: var(--title-font);
 }
 
 .journey-step-card {
@@ -1497,14 +1517,14 @@ a {
 }
 
 .journeys-hero {
-  text-align: center;
+  text-align: left;
   padding: 18px 0 8px;
   position: relative;
 }
 
 .journeys-hero-title {
-  font-family: "Playfair Display", serif;
-  font-size: clamp(32px, 5vw, 42px);
+  font-family: var(--title-font);
+  font-size: clamp(2rem, 5vw, 2.625rem);
   background: linear-gradient(135deg, #d4af37 0%, #f4e4bc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1514,7 +1534,7 @@ a {
 
 .journeys-hero-lead {
   margin: 0;
-  font-size: 17px;
+  font-size: 1rem;
   color: #5a677a;
 }
 

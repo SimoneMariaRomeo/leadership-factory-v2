@@ -95,24 +95,26 @@ const { clearPendingGoal, setPendingGoal } = require("../src/lib/pending-goal-st
 async function main() {
   const user = userEvent.setup({ document });
 
-  logTest("Landing to Welcome navigation", "The Start button should point to /welcome.");
+  logTest("Home page is the welcome page", "The home page should show the welcome text and a START link to /learning-guide-intro.");
   const landing = render(React.createElement(HomePage));
-  const startLink = landing.getByRole("link", { name: "Start" });
-  assert(startLink.getAttribute("href") === "/welcome", "Start button should link to /welcome.");
-  logPass("Landing page links to /welcome.");
+  await landing.findByText((content) => content.includes("Welcome!"));
+  await landing.findByText((content) => content.includes("Simone & Robin"));
+  await landing.findByText((content) => content.includes("If you believe that improvement is a choice"));
+  const startLink = landing.getByRole("link", { name: "START" });
+  assert(startLink.getAttribute("href") === "/learning-guide-intro", "START should point to /learning-guide-intro.");
+  logPass("Home page shows the welcome content and points to the guide intro.");
   cleanup();
 
   logTest(
     "Welcome page content",
-    "The welcome page should show the exact title, three paragraphs, and a CONTINUE button to /learning-guide-intro."
+    "The welcome page should show the title, two paragraphs, and a START button to /learning-guide-intro."
   );
   const welcome = render(React.createElement(WelcomePage));
-  await welcome.findByText((content) => content.includes("Welcome to leadership-factory.cn"));
-  await welcome.findByText((content) => content.includes("It's a space created to help you grow"));
-  await welcome.findByText((content) => content.includes("Because every journey begins"));
-  await welcome.findByText((content) => content.includes("Let's take your first step together."));
-  const continueLink = welcome.getByRole("link", { name: "CONTINUE" });
-  assert(continueLink.getAttribute("href") === "/learning-guide-intro", "CONTINUE should point to /learning-guide-intro.");
+  await welcome.findByText((content) => content.includes("Welcome!"));
+  await welcome.findByText((content) => content.includes("Simone & Robin"));
+  await welcome.findByText((content) => content.includes("If you believe that improvement is a choice"));
+  const continueLink = welcome.getByRole("link", { name: "START" });
+  assert(continueLink.getAttribute("href") === "/learning-guide-intro", "START should point to /learning-guide-intro.");
   logPass("Welcome page copy and link look right.");
   cleanup();
 

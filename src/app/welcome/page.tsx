@@ -2,17 +2,18 @@
 import IntroCard from "../components/IntroCard";
 
 const welcomeParagraphs = [
-  { text: "It's a space created to help you grow, reflect, and become the best version of yourself." },
-  { text: "Because every journey begins with a single step." },
-  { text: "Let's take your first step together.", italic: true },
+  {
+    text: "This is a space created by Simone & Robin, two L&D professionals, to support anyone who wants to become the best version of themselves.",
+  },
+  { text: "If you believe that improvement is a choice, click below:" },
 ];
 
 export default function WelcomePage() {
   return (
     <IntroCard
-      title="Welcome to leadership-factory.cn!"
+      title="Welcome!"
       paragraphs={welcomeParagraphs}
-      button={{ label: "CONTINUE", href: "/learning-guide-intro" }}
+      button={{ label: "START", href: "/learning-guide-intro" }}
     />
   );
 }
