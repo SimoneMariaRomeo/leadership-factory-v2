@@ -1,166 +1,143 @@
 <!-- This file tells Perplexity Comet what to do and how to report in a helpful way. -->
-# Perplexity Comet: Real User Journeys (Go‑Live Checks)
+# Perplexity Comet: UX "Taste + Clarity" Checks (Go-Live)
 
 ## Your job
 You are testing a leadership coaching website like a normal person would.
-You will click around, try to finish the “start → chat → confirm goal → sign up → see your saved info” flow, and report anything that feels wrong.
+Your focus is: does it feel clear, calm, and premium?
 
 Please do not use technical words. Say what you saw and what you felt.
 
-## Most important check (privacy)
-You MUST verify that two people cannot see each other’s chat messages.
-This is the most important check.
-
 ## Test accounts (use these if you need them)
 If you need to sign up or log in, you can use:
-- User A email: `marsario@gmail.com`
-- User B email: `marsario+2@gmail.com`
+- Email: `marsario@gmail.com`
+- Backup email: `marsario+2@gmail.com`
 - Password (for both): `trial-marsword`
 - Name to use: `Mario Sario`
 
-If a page asks for a “learning goal”, you can use:
-- “I want to become a calmer leader in stressful meetings, so I can speak clearly and set better boundaries.”
+If a page asks for a "learning goal", you can use:
+- "I want to become a calmer leader in stressful meetings, so I can speak clearly and set better boundaries."
 
 ## How to report (very important)
 For each journey below, write:
 1) What you tried (short)
 2) What happened (short)
-3) Did you feel stuck? (yes/no + where)
-4) Any privacy risk? (yes/no)
-5) One screenshot if something looks wrong (include the full page, not just the popup)
+3) Clarity: what was confusing (if anything)
+4) Taste: what looked or felt "off" (spacing, colors, wording, vibe)
+5) Did you feel stuck? (yes/no + where)
+6) One screenshot if something looks wrong (full page if possible)
 
-If something is confusing, write the exact text you saw (copy/paste).
-If something is slow, estimate how long (example: “about 10 seconds”).
-
-## Setup (before you start)
-You will run some steps in two browsers at the same time.
-Pick TWO different browsers (example: Chrome and Firefox), or use one normal window + one Incognito/Private window.
-Call them:
-- Browser A
-- Browser B
-
-Do not log in until a step tells you to.
+If something is confusing, copy/paste the exact words you saw.
+If something is slow, estimate how long (example: "about 10 seconds").
 
 ---
 
-## 10 real user journeys to test
+## 10 real user journeys to test (UX focus)
 
-### Journey 1 — First visit: can you find the start?
-Goal: A new person understands what to do next.
+### Journey 1 — First impression (home)
+Goal: You quickly understand what this is and what to do next.
 Steps:
 1) Open the home page.
-2) Scroll a little and look for the main “start” button.
-3) Click the main start button until you reach the need-analysis chat.
-What “good” looks like:
-- You can find the start without guessing.
-- The page explains what will happen in simple words.
+2) Without scrolling, tell us what you think the site is for (one sentence).
+3) Find the main "start" button.
+4) Click it.
+Report:
+- Does the page feel premium or messy?
+- Do the words feel clear or vague?
 
-### Journey 2 — Privacy check: two guests chatting at the same time
-Goal: Two different people do not see each other’s chat text.
+### Journey 2 — Welcome page clarity
+Goal: The welcome flow feels simple and friendly.
 Steps:
-1) In Browser A (not logged in), open the need-analysis chat and send 2 messages (example: “Hi” and “I want to work on confidence”).
-2) In Browser B (not logged in), open the need-analysis chat and send 2 different messages (example: “Hello” and “I struggle with feedback”).
-3) Keep both chats open and send 1 more message in each browser.
-What “good” looks like:
-- Browser A never shows Browser B’s messages.
-- Browser B never shows Browser A’s messages.
-Red flag:
-- You see the other person’s text, even once.
+1) Read the welcome page.
+2) Click the main button to continue.
+Report:
+- Any sentence that feels too long or "marketing-like"?
+- Any button label that feels unclear?
 
-### Journey 3 — Need-analysis chat → “goal created” moment
-Goal: The chat leads you to a clear goal and moves you forward.
+### Journey 3 — Need-analysis chat (tone and guidance)
+Goal: The chat feels helpful and natural.
 Steps:
-1) In one browser (still not logged in), continue chatting until the app sends you to the goal confirmation page.
-2) Confirm you can see a goal written on the page.
-What “good” looks like:
-- The chat feels natural and not confusing.
-- You get moved to the next page without you hunting for it.
+1) Start the need-analysis chat.
+2) Send 3 short messages about your situation (simple, real-life).
+3) Notice if the chat asks clear questions (not too many).
+Report:
+- Does the chat feel warm and human?
+- Are the questions easy to answer?
+- Does the layout feel calm (spacing, font size, scrolling)?
 
-### Journey 4 — Goal confirmation: edit the goal and keep it
-Goal: Editing works and the final saved goal matches what you edited.
+### Journey 4 — Chat input experience (small details)
+Goal: Typing and reading feels smooth.
 Steps:
-1) On the goal confirmation page, edit the goal text (change at least 5–10 words).
-2) Continue to the next step.
-What “good” looks like:
-- Your edited goal stays edited.
-- The wording on buttons and titles is clear.
+1) Type a long message (2–3 lines).
+2) Send it.
+3) Look for: auto-scroll, message spacing, readability, and whether you lose your place.
+Report:
+- Anything annoying or distracting?
+- Any confusing icons or buttons?
 
-### Journey 5 — Whats-next: get a journey suggestion and try “recommend another”
-Goal: The recommended journey shows up and the “recommend another journey” button works.
+### Journey 5 — Goal confirmation page (edit experience)
+Goal: Editing the goal feels obvious and safe.
 Steps:
-1) On the whats-next page, wait for the recommended journey title + intro to appear.
-2) Click “Recommend another journey” once.
-3) Confirm the title changes (or at least it clearly refreshes).
-What “good” looks like:
-- You see a clear title and intro.
-- If it takes time, it says that in a friendly way.
+1) Reach the goal confirmation page.
+2) Edit the goal (change at least 5–10 words).
+3) Continue.
+Report:
+- Did you worry you might "break" something by editing?
+- Was it clear how to confirm?
 
-### Journey 6 — Sign up and save: finish the funnel
-Goal: You can sign up and end up with your goal saved.
+### Journey 6 — Whats-next page (trust + calm)
+Goal: The next step feels trustworthy and clear.
 Steps:
-1) On the whats-next page, click “YES, I’M IN!”.
-2) If you see a login/sign-up window, sign up (or log in) as User A.
-3) After success, you should land on “My Profile”.
-4) Confirm the saved goal matches your edited goal from Journey 4.
-What “good” looks like:
-- You end up on My Profile.
-- Your goal text matches what you edited.
-- You do not get stuck in a loop.
+1) Wait for the recommended journey title + intro to appear.
+2) Click "Recommend another journey" once.
+3) Read the new suggestion (or the refreshed suggestion).
+Report:
+- Does this page feel calming or stressful?
+- Do you understand what will happen next in the real world?
 
-### Journey 7 — Chat history: you see your own chat from before login
-Goal: The earlier need-analysis conversation shows up after login.
+### Journey 7 — Sign up / log in modal (clarity)
+Goal: The sign up experience feels easy and not scary.
 Steps:
-1) On My Profile, find “Your Previous Conversations”.
-2) Open the most recent conversation.
-3) Confirm it contains the same topic you talked about before login.
-What “good” looks like:
-- The chat is there and looks like your conversation.
-- It does not show someone else’s messages.
+1) On the whats-next page, click the main confirm button (example: "YES, I'M IN!").
+2) If you see a login/sign-up window, complete it.
+Report:
+- Are the labels clear? (email, password, etc.)
+- Any confusing error messages?
+- Does it feel safe and normal?
 
-### Journey 8 — Privacy check: User B cannot see User A’s chat
-Goal: A different logged-in user cannot open someone else’s chat link.
+### Journey 8 — My Profile page (layout and meaning)
+Goal: The profile feels clean and easy to understand.
 Steps:
-1) Copy the URL of User A’s chat page.
-2) Log out (if needed).
-3) Log in as User B.
-4) Paste User A’s chat URL in the address bar and open it.
-What “good” looks like:
-- You see a “not available” message (or you get redirected away).
-- You do NOT see the chat messages.
+1) After login, you should land on My Profile.
+2) Read your saved goal area.
+3) Look at the journeys section.
+Report:
+- Do you understand what each section is for?
+- Does the page feel "too busy" or "just right"?
 
-### Journey 9 — Journeys page access rules (guest vs logged in)
-Goal: Journeys are protected by login.
+### Journey 9 — Previous Conversations (presentation)
+Goal: The conversation list is clear and useful.
 Steps:
-1) Log out.
-2) Try to open `/journeys` by typing it in the address bar.
-3) Confirm you are asked to log in.
-4) Log in as User A and open `/journeys` again.
-What “good” looks like:
-- Guests are blocked with a clear message.
-- Logged-in users can see the journeys list.
+1) On My Profile, find "Your Previous Conversations".
+2) Open the latest conversation.
+3) Try to continue the chat with one more message.
+Report:
+- Is it clear which conversation is which?
+- Does the chat page feel the same style as the rest of the site?
 
-### Journey 10 — “Bad day” tests: errors are clear + admin is blocked
-Goal: If something goes wrong, the user gets a clear message. Normal users cannot access admin.
-Steps (Part A: bad day):
-1) While on a chat page, turn off internet briefly (or use airplane mode).
-2) Try to send a chat message.
-3) Turn internet back on and try again.
-What “good” looks like:
-- You get a clear error message.
-- You can recover and continue.
-
-Steps (Part B: admin blocked):
-1) While logged in as User A (normal user), try to open `/admin`.
-2) Try `/admin/journeys` and `/admin/sessions` too.
-3) Optional: open `/api/admin/journeys` in the browser address bar.
-What “good” looks like:
-- You are blocked from admin screens.
-- If you see a message, it is clear and polite.
+### Journey 10 — Mobile/small screen check (taste)
+Goal: The site still feels good on a small screen.
+Steps:
+1) Make the browser window narrow (phone size).
+2) Re-check: home page, need-analysis chat, and My Profile.
+Report:
+- Any text too small?
+- Any buttons hard to tap?
+- Anything overlapping or cut off?
 
 ---
 
 ## Final summary (1 page)
 Please end with:
-- A short “overall feeling” (calm / confusing / trustworthy / etc.)
-- The single biggest risk you saw (if any)
-- The top 3 things to fix before launch (simple words)
+- Overall feeling (calm / confusing / premium / not premium / etc.)
+- Top 3 wording changes you recommend (copy/paste the exact old text + your new version)
+- Top 3 design fixes (simple words, example: "buttons look too similar" / "too much text" / "hard to see the main action")
