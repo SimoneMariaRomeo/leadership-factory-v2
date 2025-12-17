@@ -26,7 +26,7 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   const [hasStoredGoal, setHasStoredGoal] = useState(false);
   const paragraphs = useMemo(
     () => [
-      "Here is a personalized learning journey title and intro based on what you shared.",
+      "Here is a personalized learning suggestion based on what you shared.",
       "Our team will now create the detailed sessions and steps for this journey.",
       "If you want a different angle, ask for another recommendation, then confirm to lock it in.",
       "Please make sure you are signed in so we can send the details to your inbox.",
@@ -334,7 +334,6 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
             <h1 className="intro-title">{typedTitle}</h1>
             <p className="intro-paragraph">{typedParagraphs[0]}</p>
             <div className="goal-box" style={{ width: "100%", maxWidth: "680px" }}>
-              <div className="goal-label">YOUR RECOMMENDED JOURNEY</div>
               {hasStoredGoal ? (
                 <>
                   <div style={{ fontWeight: 700, marginBottom: "8px" }}>

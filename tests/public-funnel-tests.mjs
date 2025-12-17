@@ -159,7 +159,7 @@ async function main() {
   setPendingGoal("Edited Goal Text");
   const whatsNext = render(React.createElement(WhatsNextPage, { searchParams: {} }));
   await whatsNext.findByText("You did it!");
-  whatsNext.getByText("Here is a personalized learning journey title and intro based on what you shared.");
+  whatsNext.getByText("Here is a personalized learning suggestion based on what you shared.");
   whatsNext.getByText("Our team will now create the detailed sessions and steps for this journey.");
   whatsNext.getByText("If you want a different angle, ask for another recommendation, then confirm to lock it in.");
   whatsNext.getByText("Please make sure you are signed in so we can send the details to your inbox.");
