@@ -993,10 +993,23 @@ a {
   left: 14%;
   width: 18px;
   height: 18px;
-  animation: fallingStar 2.2s ease-in forwards;
+  animation: fallingStar 2.2s cubic-bezier(0.6, 0.05, 0.35, 1) forwards;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
   pointer-events: none;
   opacity: 0;
+}
+
+.falling-star::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -22px;
+  width: 38px;
+  height: 6px;
+  transform: translateY(-50%) skewX(-16deg);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(199, 157, 45, 0.6) 70%, rgba(199, 157, 45, 0.05) 100%);
+  filter: blur(2px);
+  opacity: 0.7;
 }
 
 @keyframes fallingStar {
@@ -1004,8 +1017,14 @@ a {
     transform: translate(0, -40px) rotate(0deg) scale(0.9);
     opacity: 0;
   }
-  10% {
+  12% {
     opacity: 1;
+  }
+  38% {
+    transform: translate(140px, 200px) rotate(12deg) scale(0.86);
+  }
+  68% {
+    transform: translate(240px, 380px) rotate(16deg) scale(0.82);
   }
   100% {
     transform: translate(320px, 520px) rotate(18deg) scale(0.8);
