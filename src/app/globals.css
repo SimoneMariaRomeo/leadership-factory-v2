@@ -1815,7 +1815,19 @@ a {
 }
 
 .dirty-row {
-  background: #fff8d6;
+  background: rgba(255, 224, 224, 0.8);
+  border: 1px solid rgba(209, 67, 67, 0.4);
+}
+
+.dirty-card {
+  background: rgba(255, 224, 224, 0.5) !important;
+  border: 1px solid rgba(209, 67, 67, 0.45) !important;
+  box-shadow: 0 14px 30px rgba(209, 67, 67, 0.12) !important;
+}
+
+.dirty-note {
+  color: #842029;
+  font-weight: 600;
 }
 
 .pill {

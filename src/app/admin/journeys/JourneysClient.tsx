@@ -96,6 +96,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(initialDetail?.id || initialJourneys[0]?.id || null);
   const [journeyDetail, setJourneyDetail] = useState<JourneyDetail | null>(initialDetail);
   const [journeyForm, setJourneyForm] = useState<JourneyForm>(() => buildJourneyForm(initialDetail));
+  const [journeyDirty, setJourneyDirty] = useState(false);
+  const [dirtySteps, setDirtySteps] = useState<Set<string>>(new Set());
+  const [reorderDirty, setReorderDirty] = useState(false);
   const [newJourney, setNewJourney] = useState<NewJourneyForm>({ title: "", slug: "", intro: "", isStandard: false });
   const [filters, setFilters] = useState<Filters>({ isStandard: "all", status: "all", userEmail: "" });
   const [loadingList, setLoadingList] = useState(false);
@@ -124,6 +127,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
     if (journeyDetail) {
       setAddStepOutlineId(outlines[0]?.id || "");
     }
+    setJourneyDirty(false);
+    setDirtySteps(new Set());
+    setReorderDirty(false);
   }, [journeyDetail, outlines]);
 
   useEffect(() => {
@@ -177,6 +183,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setJourneyDetail(data.journey);
       setSelectedJourneyId(journeyId);
       setJourneyForm(buildJourneyForm(data.journey));
+      setJourneyDirty(false);
+      setDirtySteps(new Set());
+      setReorderDirty(false);
     } catch (error: any) {
       console.error("Loading journey failed:", error);
       setMessage(error?.message || "Could not load journey.");
@@ -206,6 +215,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setJourneyDetail(data.journey);
       setJourneyForm(buildJourneyForm(data.journey));
       setJourneys((prev) => prev.map((item) => (item.id === data.journey.id ? data.journey : item)));
+      setJourneyDirty(false);
+      setDirtySteps(new Set());
+      setReorderDirty(false);
       setMessage("Saved.");
     } catch (error: any) {
       console.error("Saving journey failed:", error);
@@ -261,6 +273,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setSelectedJourneyId(data.journey.id);
       setJourneyDetail(data.journey);
       setJourneyForm(buildJourneyForm(data.journey));
+      setJourneyDirty(false);
+      setDirtySteps(new Set());
+      setReorderDirty(false);
       setMessage("Journey duplicated.");
     } catch (error: any) {
       console.error("Duplicating journey failed:", error);
@@ -297,6 +312,9 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setSelectedJourneyId(data.journey.id);
       setJourneyDetail(data.journey);
       setJourneyForm(buildJourneyForm(data.journey));
+      setJourneyDirty(false);
+      setDirtySteps(new Set());
+      setReorderDirty(false);
       setNewJourney({ title: "", slug: "", intro: "", isStandard: false });
       setMessage("Journey created.");
     } catch (error: any) {
@@ -332,6 +350,12 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
           ? { ...prev, steps: prev.steps.map((item) => (item.id === stepId ? data.step : item)) }
           : prev
       );
+      setDirtySteps((prev) => {
+        const next = new Set(prev);
+        next.delete(stepId);
+        return next;
+      });
+      setReorderDirty(false);
       setMessage("Step saved.");
     } catch (error: any) {
       console.error("Saving step failed:", error);
@@ -352,6 +376,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
     const [moved] = reordered.splice(index, 1);
     reordered.splice(targetIndex, 0, moved);
 
+    setReorderDirty(true);
     setReordering(true);
     setMessage(null);
     try {
@@ -365,6 +390,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       if (!response.ok) throw new Error(data?.error || "Could not reorder steps.");
 
       setJourneyDetail((prev) => (prev ? { ...prev, steps: data.steps } : prev));
+      setReorderDirty(false);
       setMessage("Order saved.");
     } catch (error: any) {
       console.error("Reordering failed:", error);
@@ -389,6 +415,8 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       if (!response.ok) throw new Error(data?.error || "Could not add step.");
 
       setJourneyDetail((prev) => (prev ? { ...prev, steps: [...prev.steps, data.step] } : prev));
+      setDirtySteps(new Set());
+      setReorderDirty(false);
       setMessage("Step added.");
     } catch (error: any) {
       console.error("Adding step failed:", error);
@@ -408,6 +436,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
           }
         : prev
     );
+    setDirtySteps((prev) => new Set(prev).add(stepId));
   };
 
   // This formats timestamps in a simple way.
@@ -418,6 +447,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   };
 
   const journeyObjectivesLines = journeyForm.objectivesText || "";
+  const hasUnsaved = journeyDirty || dirtySteps.size > 0 || reorderDirty;
 
   return (
     <div className="admin-grid journeys-grid">
@@ -571,7 +601,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
         </div>
       </div>
 
-        <div className="admin-form-card">
+        <div className={`admin-form-card ${hasUnsaved ? "dirty-card" : ""}`}>
             <div className="admin-card-head">
               <div>
                 <h3 className="admin-title">Journey detail</h3>
@@ -615,7 +645,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   className="admin-input"
                   type="text"
                   value={journeyForm.title}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, title: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, title: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                 />
               </label>
               <label className="admin-label">
@@ -625,7 +658,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   type="text"
                   value={journeyForm.slug}
                   disabled={journeyDetail.status === "active"}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, slug: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, slug: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                 />
               </label>
               <label className="admin-label">
@@ -634,7 +670,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   className="admin-input"
                   style={statusStyles[journeyForm.status] || undefined}
                   value={journeyForm.status}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, status: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, status: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                 >
                   <option value="draft">Draft</option>
                   <option value="awaiting_review">Awaiting review</option>
@@ -646,13 +685,14 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                 <input
                   type="checkbox"
                   checked={journeyForm.isStandard}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setJourneyForm((prev) => ({
                       ...prev,
                       isStandard: event.target.checked,
                       personalizedUserEmail: event.target.checked ? "" : prev.personalizedUserEmail,
-                    }))
-                  }
+                    }));
+                    setJourneyDirty(true);
+                  }}
                 />
                 <span>Standard journey</span>
               </label>
@@ -663,7 +703,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   type="text"
                   value={journeyForm.personalizedUserEmail}
                   disabled={journeyForm.isStandard}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, personalizedUserEmail: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, personalizedUserEmail: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                   placeholder="email@example.com"
                 />
               </label>
@@ -673,7 +716,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   className="admin-input"
                   rows={3}
                   value={journeyForm.intro}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, intro: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, intro: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                 />
               </label>
               <label className="admin-label">
@@ -682,7 +728,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   className="admin-input"
                   rows={4}
                   value={journeyObjectivesLines}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, objectivesText: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, objectivesText: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                 />
               </label>
               <label className="admin-label">
@@ -691,7 +740,10 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                   className="admin-input"
                   rows={3}
                   value={journeyForm.userGoalSummary}
-                  onChange={(event) => setJourneyForm((prev) => ({ ...prev, userGoalSummary: event.target.value }))}
+                  onChange={(event) => {
+                    setJourneyForm((prev) => ({ ...prev, userGoalSummary: event.target.value }));
+                    setJourneyDirty(true);
+                  }}
                 />
               </label>
             </div>
@@ -700,6 +752,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
               <button type="button" className="primary-button" onClick={handleSaveJourney} disabled={savingJourney}>
                 {savingJourney ? "Saving..." : "Save journey"}
               </button>
+              {hasUnsaved ? <span className="dirty-note">Unsaved changes</span> : null}
             </div>
 
             <div className="admin-card-head" style={{ marginTop: "18px" }}>

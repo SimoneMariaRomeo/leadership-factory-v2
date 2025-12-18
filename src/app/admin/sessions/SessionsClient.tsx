@@ -305,6 +305,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
             </tbody>
           </table>
         </div>
+        {dirtyIds.size > 0 ? <p className="dirty-note" style={{ marginTop: 8 }}>Unsaved rows are highlighted. Save to clear.</p> : null}
       </div>
 
         <div className="admin-form-card">
