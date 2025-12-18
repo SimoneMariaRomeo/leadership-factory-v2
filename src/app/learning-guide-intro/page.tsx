@@ -12,7 +12,7 @@ const guideParagraphs = [
 export default function LearningGuideIntroPage() {
   return (
     <IntroCard
-      title="I'm your learning guide, here to guide your journey of discovery and growth."
+      title="I'm your learning guide, here to support you along your journey of discovery and growth."
       paragraphs={guideParagraphs}
       button={{ label: "I'M READY", href: "/need-analysis" }}
     />

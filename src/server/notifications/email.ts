@@ -87,24 +87,38 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
       html: `
         <p>Hi${user.name ? ` ${user.name}` : ""},</p>
 
-        <p>You just did something that most people postpone indefinitely: you made a clear choice about who you want to become.</p>
+        <p>You just did something many people put off: you made a conscious choice about how you want to develop.</p>
 
-        <p><strong style="color:#c79d2d;">Your learning goal:</strong><br/>
+        <p><strong style="color:#c79d2d;">Your goal:</strong><br/>
         <strong style="color:#c79d2d;">${learningGoal}</strong></p>
 
-        <p>From here, we’ll start building a personalized learning journey around you — your context, your constraints, and what will actually move the needle. We'll send you an email when it's ready but you can check your profile anytime to see what’s ready and what’s coming next:</p>
+        <p>
+        From here, I’ll start shaping a personalized learning journey <em>with you</em>: grounded in your context, your constraints, and what will actually help you push your growth boundaries.
+        </p>
 
-        <p><a href="${profileLink}">Open your profile</a></p>
+        <p>
+        You don’t need to do anything right now. I’ll email you when the first step is ready (usually within a few days).
+        </p>
 
-        <p>One more thing: Leadership Factory is still an experiment, and you’re among our very first users. That’s a privilege on both sides — you’ll get something unusually personal, and we’ll learn from your experience to make the platform genuinely useful.</p>
+        <p>
+        One more thing: Leadership Factory is still evolving, and you’re among our first users. That means this will be unusually personal, and your input will directly shape what we build next.
+        </p>
 
-        <p>If you’re open to it, I’d love to hear how this step felt and what you’d want next. You can simply reply to this email, or book a time that suits you here:</p>
+        <p>
+        If you’re open to it, just hit reply and tell me one thing:<br/>
+        <strong>How was the experience so far? How could we make it better?</strong>
+        </p>
 
-        <p><a href="https://calendar.app.google/oQ53qMRtWBuiJW839">Open my Google Calendar</a></p>
+        <p>
+        If you’d rather talk it through live, you can book a time that suits you here:<br/>
+        <a href="https://calendar.app.google/oQ53qMRtWBuiJW839">Book a conversation</a>
+        </p>
 
-        <p>Talk soon,<br/>
+        <p>
+        Talk soon,<br/>
         Simone<br/>
-        Leadership Factory</p>
+        Leadership Factory
+        </p>
       `.trim(),
     });
   }

@@ -196,7 +196,7 @@ export async function handleChat({
 
   const journeyForPrompt = journeyFromStep?.journey || null;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
-  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset.";
+  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset. Format your replies with bold, italics and new lines to improve readability.";
 
   const outlineForPrompt = journeyFromStep?.sessionOutline || outline;
   const canCompleteStep = Boolean(journeyStepId && journeyFromStep && !journeyFromStep.journey.isStandard);

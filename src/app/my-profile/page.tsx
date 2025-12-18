@@ -84,9 +84,15 @@ export default async function MyProfilePage() {
               </div>
               <div>
                 <h1 className="hero-title welcome-title" style={{ margin: 0 }}>
-                  <span className="welcome-underline">Welcome back, </span>
-                  <span className="welcome-name">{user.name || user.email || "your profile"}!</span>
+                  <span className="welcome-name">
+                    Hi {user.name || user.email || "there"}!
+                  </span>
+                  <br />
+                  <span className="welcome-focus">
+                    Here’s what you’re working on
+                  </span>
                 </h1>
+
               </div>
             </div>
             <div id="tour-goal">
