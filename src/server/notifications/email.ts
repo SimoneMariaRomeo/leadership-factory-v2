@@ -89,8 +89,8 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
 
         <p>You just did something that most people postpone indefinitely: you made a clear choice about who you want to become.</p>
 
-        <p><strong>Your learning goal:</strong><br/>
-        <strong>${learningGoal}</strong></p>
+        <p><strong style="color:#c79d2d;">Your learning goal:</strong><br/>
+        <strong style="color:#c79d2d;">${learningGoal}</strong></p>
 
         <p>From here, we’ll start building a personalized learning journey around you — your context, your constraints, and what will actually move the needle. We'll send you an email when it's ready but you can check your profile anytime to see what’s ready and what’s coming next:</p>
 
