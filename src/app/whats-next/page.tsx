@@ -27,7 +27,7 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
   const paragraphs = useMemo(
     () => [
       "Here is a personalized learning suggestion based on what you shared.",
-      "Our team will now create the detailed sessions and steps for this journey.",
+      "We’ll now turn this into a concrete journey you can actually follow: step by step.",
       "If you want a different angle, ask for another recommendation, then confirm to lock it in.",
       "Please make sure you are signed in so we can send the details to your inbox.",
     ],
@@ -333,7 +333,10 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
           <div className="intro-text-col">
             <h1 className="intro-title">{typedTitle}</h1>
             <p className="intro-paragraph">{typedParagraphs[0]}</p>
-            <div className="goal-box" style={{ width: "100%", maxWidth: "680px" }}>
+            <div
+              className="goal-box"
+              style={{ width: "100%", maxWidth: "680px", background: "var(--gold-soft)" }}
+            >
               {hasStoredGoal ? (
                 <>
                   <div style={{ fontWeight: 700, marginBottom: "8px" }}>
@@ -408,7 +411,7 @@ export default function WhatsNextPage({ searchParams }: WhatsNextPageProps) {
                 <span />
               </span>
               <span className="btn-label" style={isSubmitting ? { visibility: "hidden" } : undefined}>
-                YES, I'M IN!
+                YES, buld my journey!
               </span>
             </button>
           </div>
