@@ -5,7 +5,7 @@ const welcomeParagraphs = [
   {
     text: "This is a space created by Simone & Robin, two L&D professionals, to support anyone who wants to become the best version of themselves.",
   },
-  { text: "If you believe that improvement is a choice, click below:" },
+  { text: "If you believe that improvement is a choice, click below.", italic: true },
 ];
 
 export default function WelcomePage() {
