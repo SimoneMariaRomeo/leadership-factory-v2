@@ -383,9 +383,9 @@ a {
 }
 
 .hero-kicker {
-  font-size: var(--body-sm);
+  /* font-size: var(--body-sm); */
   letter-spacing: 1px;
-  text-transform: uppercase;
+  /*  text-transform: uppercase; */
   color: var(--muted);
   margin-bottom: 10px;
 }
@@ -1605,7 +1605,7 @@ a {
 .journey-steps-title {
   color: #c79d2d;
   font-family: var(--title-font);
-  font-size: var(--body-xl);
+  font-size: var(--body-xxl);
 }
 
 .journey-step-card {

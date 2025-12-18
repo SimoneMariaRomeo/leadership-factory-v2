@@ -209,8 +209,10 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
     return date.toLocaleString();
   };
 
+  const hasUnsaved = dirtyIds.size > 0;
+
   return (
-    <div className={`admin-grid ${dirtyIds.size > 0 ? "dirty-page" : ""}`}>
+    <div className="admin-grid">
       <div className="admin-filters-card">
         <div className="admin-card-head">
           <h3 className="admin-title">Filters</h3>
@@ -308,7 +310,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
         {dirtyIds.size > 0 ? <p className="dirty-note" style={{ marginTop: 8 }}>Unsaved rows are highlighted. Save to clear.</p> : null}
       </div>
 
-        <div className="admin-form-card">
+        <div className={`admin-form-card ${hasUnsaved ? "dirty-card" : ""}`}>
         <div className="admin-card-head">
           <div>
             <h3 className="admin-title">{creatingNew ? "Create outline" : "Edit outline"}</h3>
