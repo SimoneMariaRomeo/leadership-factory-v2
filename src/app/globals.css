@@ -21,6 +21,11 @@
   --title-font: "Acme", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --body-size: 1rem;
   --body-line: 1.6;
+  --body-sm: calc(var(--body-size) * 0.94);
+  --body-xs: calc(var(--body-size) * 0.82);
+  --body-lg: calc(var(--body-size) * 1.125);
+  --body-xl: calc(var(--body-size) * 1.25);
+  --body-xxl: calc(var(--body-size) * 1.375);
   color: var(--text-strong);
   font-family: "Inter", sans-serif;
   font-size: var(--body-size);
@@ -44,7 +49,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: linear-gradient(140deg, #f4f0e8 0%, #f7f9fc 40%, #eef3fa 100%);
-  font-size: 1rem;
+  font-size: var(--body-size);
 }
 
 a {
@@ -136,7 +141,7 @@ a {
 .solo-start {
   min-width: 150px;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--body-size);
 }
 
 .luxury-gradient {
@@ -201,8 +206,8 @@ a {
 
 .intro-paragraph {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: var(--body-size);
+  line-height: var(--body-line);
   color: var(--text-soft);
   max-width: 720px;
 }
@@ -220,7 +225,7 @@ a {
   border-radius: 999px;
   border: 1px solid var(--gold);
   padding: 14px 32px;
-  font-size: 1rem;
+  font-size: var(--body-size);
   font-weight: 700;
   letter-spacing: 0.5px;
   color: #ffffff;
@@ -291,7 +296,7 @@ a {
   left: 50%;
   transform: translate(-50%, -60%);
   font-weight: 800;
-  font-size: 20px;
+  font-size: var(--body-xl);
   letter-spacing: 0.5px;
   color: #ffffff;
   text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
@@ -373,7 +378,7 @@ a {
 }
 
 .hero-kicker {
-  font-size: 1rem;
+  font-size: var(--body-sm);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
@@ -499,7 +504,7 @@ a {
 
 .goal-label {
   display: inline-block;
-  font-size: 12px;
+  font-size: var(--body-xs);
   letter-spacing: 1px;
   font-weight: 700;
   color: #6b21a8;
@@ -521,13 +526,13 @@ a {
   border-radius: 16px;
   border: 1px solid rgba(212, 175, 55, 0.4);
   background: rgba(255, 255, 255, 0.9);
-  font-size: 16px;
+  font-size: var(--body-size);
   color: var(--text-strong);
 }
 
 .tiny-note {
   margin-top: 10px;
-  font-size: 13px;
+  font-size: var(--body-sm);
   color: var(--muted);
 }
 
@@ -590,7 +595,7 @@ a {
 }
 
 .chat-avatar-initial {
-  font-size: 12px;
+  font-size: var(--body-xs);
   font-weight: 700;
   color: var(--text-strong);
 }
@@ -599,8 +604,8 @@ a {
   padding: 12px 14px;
   border-radius: 16px;
   max-width: 76%;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: var(--body-sm);
+  line-height: var(--body-line);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
 }
 
@@ -648,7 +653,7 @@ a {
   background: rgba(199, 157, 45, 0.12);
   border: 1px solid rgba(199, 157, 45, 0.35);
   color: var(--text-strong);
-  font-size: 14px;
+  font-size: var(--body-sm);
 }
 
 .chat-error {
@@ -657,7 +662,7 @@ a {
   background: rgba(209, 67, 67, 0.12);
   border: 1px solid rgba(209, 67, 67, 0.35);
   color: #842029;
-  font-size: 14px;
+  font-size: var(--body-sm);
 }
 
 .chat-input-row {
@@ -674,7 +679,7 @@ a {
   border-radius: 16px;
   border: 1px solid rgba(17, 24, 39, 0.12);
   background: #ffffff;
-  font-size: 15px;
+  font-size: var(--body-sm);
   color: var(--text-strong);
   resize: vertical;
 }
@@ -910,7 +915,7 @@ a {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: var(--body-sm);
   font-weight: 700;
   color: var(--text-strong);
   background: rgba(199, 157, 45, 0.12);
@@ -926,14 +931,14 @@ a {
   background: rgba(47, 59, 80, 0.06);
   color: var(--text-strong);
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--body-xs);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .journey-title {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--body-lg);
   font-weight: 800;
   color: var(--text-strong);
 }
@@ -1088,14 +1093,14 @@ a {
 }
 
 .mini-stat-label {
-  font-size: 12px;
+  font-size: var(--body-xs);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--muted);
 }
 
 .mini-stat-value {
-  font-size: 22px;
+  font-size: var(--body-xxl);
   font-weight: 800;
   color: var(--text-strong);
 }
@@ -1366,7 +1371,7 @@ a {
 
 .tour-kicker {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--body-xs);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
@@ -1498,7 +1503,7 @@ a {
 }
 
 .journey-hero .hero-lead {
-  font-size: 1rem;
+  font-size: var(--body-size);
   font-weight: 500;
   color: #5a677a;
   font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -1506,7 +1511,7 @@ a {
 
 .journey-goal-heading {
   font-family: var(--title-font);
-  font-size: 1.375rem;
+  font-size: var(--body-xxl);
   text-align: left;
   color: #2f3b50;
   margin: 18px 0 12px;
@@ -1576,7 +1581,7 @@ a {
 
 .journeys-hero-lead {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--body-size);
   color: #5a677a;
 }
 
@@ -1641,7 +1646,7 @@ a {
 
 .admin-quick-links .secondary-button {
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: var(--body-sm);
 }
 
 .admin-grid {
@@ -1689,7 +1694,7 @@ a {
 .admin-title {
   margin: 0;
   font-family: "Playfair Display", serif;
-  font-size: 20px;
+  font-size: var(--body-xl);
   color: var(--text-strong);
 }
 
@@ -1697,7 +1702,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
+  font-size: var(--body-sm);
   color: var(--text-soft);
   margin-bottom: 10px;
 }
@@ -1713,7 +1718,7 @@ a {
   border-radius: 10px;
   border: 1px solid rgba(47, 59, 80, 0.12);
   background: rgba(255, 255, 255, 0.86);
-  font-size: 14px;
+  font-size: var(--body-sm);
   color: var(--text-strong);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
@@ -1741,7 +1746,7 @@ a {
   padding: 10px 8px;
   border-bottom: 1px solid rgba(47, 59, 80, 0.08);
   text-align: left;
-  font-size: 14px;
+  font-size: var(--body-sm);
 }
 
 .admin-table th {
@@ -1767,7 +1772,7 @@ a {
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--body-xs);
   font-weight: 700;
   letter-spacing: 0.2px;
 }
