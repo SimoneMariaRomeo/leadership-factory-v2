@@ -105,7 +105,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }: AuthModalP
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-          <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
+          <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "var(--title-sm)" }}>
             {mode === "login" ? "Welcome back" : "Join us"}
           </h2>
           <button
@@ -115,7 +115,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }: AuthModalP
             style={{
               background: "none",
               border: "none",
-              fontSize: "18px",
+              fontSize: "var(--body-lg)",
               cursor: "pointer",
               color: "#5f6b7b",
             }}
@@ -169,7 +169,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }: AuthModalP
                   padding: "12px",
                   borderRadius: "10px",
                   border: "1px solid rgba(212,175,55,0.35)",
-                  fontSize: "15px",
+                  fontSize: "var(--body-sm)",
                 }}
                 placeholder="Your name"
               />
@@ -189,7 +189,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }: AuthModalP
                 padding: "12px",
                 borderRadius: "10px",
                 border: "1px solid rgba(212,175,55,0.35)",
-                fontSize: "15px",
+                fontSize: "var(--body-sm)",
               }}
               placeholder="you@example.com"
             />
@@ -209,7 +209,7 @@ export default function AuthModal({ open, onClose, onAuthenticated }: AuthModalP
                 padding: "12px",
                 borderRadius: "10px",
                 border: "1px solid rgba(212,175,55,0.35)",
-                fontSize: "15px",
+                fontSize: "var(--body-sm)",
               }}
               placeholder="At least 8 characters"
             />

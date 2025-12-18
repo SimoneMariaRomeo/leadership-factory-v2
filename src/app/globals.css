@@ -26,6 +26,9 @@
   --body-lg: calc(var(--body-size) * 1.125);
   --body-xl: calc(var(--body-size) * 1.25);
   --body-xxl: calc(var(--body-size) * 1.375);
+  --body-compact: calc(var(--body-size) * 0.9);
+  --title-sm: calc(var(--body-size) * 1.5);
+  --title-lg: calc(var(--body-size) * 1.6);
   --title-main: calc(var(--body-size) * 2);
   --title-hero: calc(var(--body-size) * 2.6);
   color: var(--text-strong);
@@ -1602,6 +1605,7 @@ a {
 .journey-steps-title {
   color: #c79d2d;
   font-family: var(--title-font);
+  font-size: var(--body-xl);
 }
 
 .journey-step-card {

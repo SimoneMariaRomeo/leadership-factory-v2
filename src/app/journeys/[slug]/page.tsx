@@ -122,7 +122,7 @@ export default async function JourneyPage({ params, searchParams }: JourneyPageP
         </div>
 
         <div className="journey-detail" style={{ gap: "14px" }}>
-          <h3 className="journey-title journey-steps-title" style={{ fontSize: "20px" }}>
+          <h3 className="journey-title journey-steps-title">
             Available Sessions:
           </h3>
           {journey.steps.length === 0 ? (
@@ -142,7 +142,7 @@ export default async function JourneyPage({ params, searchParams }: JourneyPageP
                     }}
                   >
                     <div className="journey-card-top">
-                      <h4 className="journey-title" style={{ fontSize: "18px" }}>
+                      <h4 className="journey-title">
                         {step.sessionOutline.title}
                       </h4>
                       <span

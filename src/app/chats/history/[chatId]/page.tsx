@@ -75,7 +75,7 @@ export default async function ChatHistoryPage({ params }: ChatHistoryPageProps) 
       <div className="content-inner" style={{ gap: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
           <div>
-            <h1 className="hero-title" style={{ marginBottom: 4, fontSize: "26px" }}>
+            <h1 className="hero-title" style={{ marginBottom: 4, fontSize: "var(--title-lg)" }}>
               Chat transcript
             </h1>
             <p className="hero-lead" style={{ marginBottom: 0 }}>
@@ -119,4 +119,3 @@ export default async function ChatHistoryPage({ params }: ChatHistoryPageProps) 
     </main>
   );
 }
-

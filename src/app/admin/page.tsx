@@ -63,7 +63,7 @@ export default async function AdminHomePage() {
         <div className="admin-grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>
           <div className="admin-filters-card">
             <h3 className="admin-title">Session outlines</h3>
-            <p className="hero-lead" style={{ fontSize: "14px", marginBottom: "12px" }}>
+            <p className="hero-lead" style={{ fontSize: "var(--body-compact)", marginBottom: "12px" }}>
               Create, edit, and delete session outlines with filters for live and journey.
             </p>
             <Link href="/admin/sessions" className="primary-button" style={{ display: "inline-block", textAlign: "center" }}>
@@ -73,7 +73,7 @@ export default async function AdminHomePage() {
 
           <div className="admin-filters-card">
             <h3 className="admin-title">Journeys & steps</h3>
-            <p className="hero-lead" style={{ fontSize: "14px", marginBottom: "12px" }}>
+            <p className="hero-lead" style={{ fontSize: "var(--body-compact)", marginBottom: "12px" }}>
               Edit journey details, assign users, and manage steps with reorder controls.
             </p>
             <Link href="/admin/journeys" className="primary-button" style={{ display: "inline-block", textAlign: "center" }}>

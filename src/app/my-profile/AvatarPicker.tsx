@@ -84,7 +84,7 @@ export default function AvatarPicker({ name, email, picture }: AvatarPickerProps
           <div className="avatar-modal-backdrop" onClick={() => setOpen(false)} />
           <div className="avatar-modal-content">
             <div className="avatar-modal-head">
-              <h3 className="hero-title" style={{ margin: 0, fontSize: "18px" }}>
+              <h3 className="hero-title" style={{ margin: 0, fontSize: "var(--body-lg)" }}>
                 Choose an avatar
               </h3>
               <button type="button" className="secondary-button nav-button" onClick={() => setOpen(false)}>
