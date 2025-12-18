@@ -210,7 +210,7 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
   };
 
   return (
-    <div className="admin-grid">
+    <div className={`admin-grid ${dirtyIds.size > 0 ? "dirty-page" : ""}`}>
       <div className="admin-filters-card">
         <div className="admin-card-head">
           <h3 className="admin-title">Filters</h3>

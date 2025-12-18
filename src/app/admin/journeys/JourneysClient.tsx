@@ -450,7 +450,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const hasUnsaved = journeyDirty || dirtySteps.size > 0 || reorderDirty;
 
   return (
-    <div className="admin-grid journeys-grid">
+    <div className={`admin-grid journeys-grid ${hasUnsaved ? "dirty-page" : ""}`}>
       <div className="admin-filters-card">
         <div className="admin-card-head">
           <h3 className="admin-title">Filters</h3>
