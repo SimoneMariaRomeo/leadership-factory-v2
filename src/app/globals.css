@@ -989,11 +989,11 @@ a {
 
 .falling-star {
   position: fixed;
-  top: -28px;
-  left: 14%;
+  top: -36px;
+  left: -36px;
   width: 18px;
   height: 18px;
-  animation: fallingStar 2.2s cubic-bezier(0.6, 0.05, 0.35, 1) forwards;
+  animation: fallingStar 2.4s cubic-bezier(0.65, 0.05, 0.2, 1) forwards;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
   pointer-events: none;
   opacity: 0;
@@ -1014,20 +1014,17 @@ a {
 
 @keyframes fallingStar {
   0% {
-    transform: translate(0, -40px) rotate(0deg) scale(0.9);
+    transform: translate(-20px, -20px) rotate(0deg) scale(0.9);
     opacity: 0;
   }
-  12% {
+  15% {
     opacity: 1;
   }
-  38% {
-    transform: translate(140px, 200px) rotate(12deg) scale(0.86);
-  }
-  68% {
-    transform: translate(240px, 380px) rotate(16deg) scale(0.82);
+  45% {
+    transform: translate(70vw, 55vh) rotate(12deg) scale(0.86);
   }
   100% {
-    transform: translate(320px, 520px) rotate(18deg) scale(0.8);
+    transform: translate(120vw, 110vh) rotate(16deg) scale(0.8);
     opacity: 0;
   }
 }
