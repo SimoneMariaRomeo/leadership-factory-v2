@@ -19,7 +19,7 @@
   --lavender: #e9e3ff;
   --background: #f2f5fa;
   --title-font: "Acme", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --body-size: 1rem;
+  --body-size: 1.1rem;
   --body-line: 1.6;
   --body-sm: calc(var(--body-size) * 0.94);
   --body-xs: calc(var(--body-size) * 0.82);
@@ -981,6 +981,36 @@ a {
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+.welcome-with-star {
+  position: relative;
+}
+
+.falling-star {
+  position: fixed;
+  top: -28px;
+  left: 14%;
+  width: 18px;
+  height: 18px;
+  animation: fallingStar 2.2s ease-in forwards;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+  pointer-events: none;
+  opacity: 0;
+}
+
+@keyframes fallingStar {
+  0% {
+    transform: translate(0, -40px) rotate(0deg) scale(0.9);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(320px, 520px) rotate(18deg) scale(0.8);
+    opacity: 0;
+  }
 }
 
 .journey-progress {
