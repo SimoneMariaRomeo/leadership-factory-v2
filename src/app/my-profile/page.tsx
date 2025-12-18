@@ -112,14 +112,21 @@ export default async function MyProfilePage() {
                   </p>
                 </Link>
               ) : (
-                <div className="journey-empty">
-                  <p className="hero-lead" style={{ marginBottom: 0 }}>
-                    We’re shaping your first steps based on your goal.
+                <>
+                  <div className="journey-wait-box" aria-live="polite">
+                    <p style={{ margin: "0 0 6px", fontWeight: 700, color: "var(--text-strong)" }}>
+                      Shaping your journey
+                    </p>
+                    <div className="journey-progress" role="progressbar" aria-valuetext="Preparing your journey" />
+                    <p className="hero-lead" style={{ marginBottom: 0 }}>
+                      We're turning your goal into small, practical steps. Your first step will appear here, usually
+                      within 2-3 days.
+                    </p>
+                  </div>
+                  <p className="hero-lead" style={{ margin: "12px 0 0", color: "var(--text-soft)" }}>
+                    You don't need to do anything right now. We'll let you know as soon as it's ready.
                   </p>
-                  <p className="hero-lead" style={{ marginBottom: 0 }}>
-                    You’ll see them here as soon as they’re ready (usually within a few days).
-                  </p>
-                </div>
+                </>
               )}
             </div>
           </section>
