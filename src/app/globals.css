@@ -507,7 +507,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 17px;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--text-strong);
 }
 
@@ -937,7 +938,8 @@ a {
 .journey-intro {
   margin: 0;
   color: var(--text-soft);
-  line-height: 1.55;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .journey-link {
@@ -1470,6 +1472,8 @@ a {
 
 .journey-intro-text {
   color: var(--text-soft);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .journey-objectives {
