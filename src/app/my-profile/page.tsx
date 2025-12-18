@@ -32,7 +32,7 @@ export default async function MyProfilePage() {
     );
   }
 
-  const [personalizedJourneys, standardJourneys, recentChats] = await Promise.all([
+  const [personalizedJourneys, recentChats] = await Promise.all([
     prisma.learningJourney.findMany({
       where: {
         isStandard: false,
@@ -52,11 +52,6 @@ export default async function MyProfilePage() {
         updatedAt: true,
       },
     }),
-    prisma.learningJourney.findMany({
-      where: { isStandard: true, status: "active" },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, title: true, slug: true, intro: true, status: true, isStandard: true },
-    }),
     prisma.learningSessionChat.findMany({
       where: { userId: user.id },
       orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
@@ -66,7 +61,6 @@ export default async function MyProfilePage() {
   ]);
 
   const recommendedJourney = personalizedJourneys[0] || null;
-  const combinedJourneys = [...personalizedJourneys, ...standardJourneys];
 
   const formatDate = (date: Date | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null;
@@ -120,37 +114,13 @@ export default async function MyProfilePage() {
               ) : (
                 <div className="journey-empty">
                   <p className="hero-lead" style={{ marginBottom: 0 }}>
-                    We are preparing your personalized journey. It will appear here soon.
+                    We’re shaping your first steps based on your goal.
+                  </p>
+                  <p className="hero-lead" style={{ marginBottom: 0 }}>
+                    You’ll see them here as soon as they’re ready (usually within a few days).
                   </p>
                 </div>
               )}
-            </div>
-          </section>
-
-          <section className="profile-section">
-            <div className="section-card">
-              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
-                Learning Journeys
-              </h2>
-              {combinedJourneys.length > 0 ? (
-                <div className="journey-grid">
-                  {combinedJourneys.map((journey) => (
-                    <Link
-                      key={journey.id}
-                      href={`/journeys/${journey.slug || journey.id}`}
-                      className="journey-card journey-card-link-wrapper"
-                      aria-label={journey.title}
-                    >
-                      <h3 className="journey-title">{journey.title}</h3>
-                      <p className="journey-intro">
-                        {journey.intro ||
-                          (journey as any).userGoalSummary ||
-                          "Open to see more once details are added in the next step."}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
             </div>
           </section>
 
