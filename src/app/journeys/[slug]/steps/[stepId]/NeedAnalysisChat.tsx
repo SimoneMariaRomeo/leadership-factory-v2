@@ -1,6 +1,6 @@
 "use client";
 
-// This component shows the chat box for need-analysis or step sessions and reacts to JSON commands.
+// This component shows the chat box for define-your-goal or step sessions and reacts to JSON commands.
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { handleAssistantGoalCommand } from "../../../../../lib/assistant-command-handler";

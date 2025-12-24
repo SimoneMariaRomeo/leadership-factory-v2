@@ -116,7 +116,7 @@ async function main() {
   await testChatAndMessageRelations();
 
   logTest(
-    "7) Need-analysis outline content",
+    "7) Define-your-goal outline content",
     "botTools should mention the create_learning_goal JSON and other fields should be filled."
   );
   await testNeedAnalysisOutlineContent();
@@ -406,7 +406,7 @@ async function testChatAndMessageRelations() {
   logPass("Chat and message relations load correctly.");
 }
 
-// Need-analysis outline content rules.
+// Define-your-goal outline content rules.
 async function testNeedAnalysisOutlineContent() {
   const journey = await prisma.learningJourney.create({
     data: { title: "Need Analysis Journey", slug: `need-journey-${Date.now()}`, isStandard: false, status: "draft" },
@@ -429,7 +429,7 @@ Rules:
 `.trim();
   const outline = await prisma.learningSessionOutline.create({
     data: {
-      slug: "need-analysis",
+      slug: "define-your-goal",
       order: 1,
       title: "Need Analysis",
       objective: "Help the user clarify a goal.",
@@ -443,7 +443,7 @@ Rules:
   assert(outline.botTools.includes('"learningGoal":'), "botTools should mention the learningGoal field.");
   assert(outline.content.length > 0, "Outline content should not be empty.");
   assert(outline.firstUserMessage.length > 0, "firstUserMessage should not be empty.");
-  logPass("Need-analysis outline fields carry the required instructions.");
+  logPass("Define-your-goal outline fields carry the required instructions.");
 }
 
 // Timestamp behaviour.

@@ -323,9 +323,9 @@ async function testStepsAddEditReorder() {
   logPass("Steps add, edit, and reorder correctly.");
 }
 
-// This checks need-analysis chat link data is present.
+// This checks define-your-goal chat link data is present.
 async function testNeedAnalysisLink() {
-  logTest("admin-journey need-analysis chat link available", "Journey detail should expose chat id for need-analysis step.");
+  logTest("admin-journey define-your-goal chat link available", "Journey detail should expose chat id for define-your-goal step.");
   await clearData();
 
   const journey = await createJourney({
@@ -335,7 +335,7 @@ async function testNeedAnalysisLink() {
     status: "draft",
   });
 
-  const needOutline = await seedOutline(journey.id, "need-analysis", 1);
+  const needOutline = await seedOutline(journey.id, "define-your-goal", 1);
   const needStepRecord = await prisma.learningJourneyStep.create({
     data: {
       journeyId: journey.id,
@@ -355,13 +355,13 @@ async function testNeedAnalysisLink() {
   });
 
   const detail = await getJourneyDetail(journey.id);
-  const needStep = detail.steps.find((step) => step.sessionOutline.slug === "need-analysis");
+  const needStep = detail.steps.find((step) => step.sessionOutline.slug === "define-your-goal");
   assert(
     needStep && needStep.chats.some((item) => item.id === needChat.id),
-    "Need-analysis step should expose the need-analysis chat id."
+    "Define-your-goal step should expose the define-your-goal chat id."
   );
 
-  logPass("Need-analysis chat id is available for the admin link.");
+  logPass("Define-your-goal chat id is available for the admin link.");
 }
 
 main().catch((error) => {

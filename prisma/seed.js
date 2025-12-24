@@ -14,9 +14,9 @@ const prisma = new PrismaClient({ adapter });
 
 const GOAL_JOURNEY_ID = "journey-goal-clarification";
 const GOAL_JOURNEY_SLUG = "goal-clarification";
-const NEED_OUTLINE_ID = "outline-need-analysis";
-const NEED_OUTLINE_SLUG = "need-analysis";
-const NEED_STEP_ID = "step-goal-clarification-need-analysis";
+const NEED_OUTLINE_ID = "outline-define-your-goal";
+const NEED_OUTLINE_SLUG = "define-your-goal";
+const NEED_STEP_ID = "step-goal-clarification-define-your-goal";
 
 const needAnalysisContent = [
   "Start a conversation to define the user's learning needs within maximum 5 messages by identifying:",
@@ -50,7 +50,7 @@ async function main() {
     throw new Error("DATABASE_URL is required to run the seed script.");
   }
 
-  console.log("Seeding Goal Clarification journey and need-analysis outline...");
+  console.log("Seeding Goal Clarification journey and define-your-goal outline...");
 
   const goalJourney = await prisma.learningJourney.upsert({
     where: { slug: GOAL_JOURNEY_SLUG },
@@ -95,7 +95,7 @@ async function main() {
       botTools: needAnalysisBotTools,
       firstUserMessage: "Before we begin, tell me briefly what brings you here.",
       order: 1,
-      tags: ["need-analysis", "goal-clarification", "standard-journey"],
+      tags: ["define-your-goal", "goal-clarification", "standard-journey"],
     },
     create: {
       id: NEED_OUTLINE_ID,
@@ -106,7 +106,7 @@ async function main() {
       content: needAnalysisContent,
       botTools: needAnalysisBotTools,
       firstUserMessage: "Before we begin, tell me briefly what brings you here.",
-      tags: ["need-analysis", "goal-clarification", "standard-journey"],
+      tags: ["define-your-goal", "goal-clarification", "standard-journey"],
     },
   });
 
@@ -152,7 +152,7 @@ async function main() {
     },
   });
 
-  console.log("Seed complete: Goal Clarification journey with need-analysis step ready.");
+  console.log("Seed complete: Goal Clarification journey with define-your-goal step ready.");
 }
 
 main()

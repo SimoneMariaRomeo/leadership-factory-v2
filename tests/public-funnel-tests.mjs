@@ -120,7 +120,7 @@ async function main() {
 
   logTest(
     "Learning-guide-intro page content & CTA",
-    "This page should introduce the guide and send people to the need-analysis step."
+    "This page should introduce the guide and send people to the define-your-goal step."
   );
   const intro = render(React.createElement(LearningGuideIntroPage));
   await intro.findByText((content) => content.includes("I'm your learning guide, here to guide your journey of discovery and growth."));
@@ -131,8 +131,8 @@ async function main() {
   await intro.findByText((content) => content.includes("When you're ready, let's begin."));
   const readyLink = intro.getByRole("link", { name: "I'M READY" });
   assert(
-    readyLink.getAttribute("href") === "/need-analysis",
-    "I'M READY should point to the public need-analysis page."
+    readyLink.getAttribute("href") === "/define-your-goal",
+    "I'M READY should point to the public define-your-goal page."
   );
   logPass("Learning-guide-intro text and CTA look right.");
   cleanup();

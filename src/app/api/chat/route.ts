@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     let guestId: string | null = null;
     let guestCookieToSet: ReturnType<typeof ensureGuestId>["cookieToSet"] | null = null;
 
-    // Only the public need-analysis chat is allowed before login.
+    // Only the public define-your-goal chat is allowed before login.
     if (!currentUser) {
       if (journeyStepId) {
         return NextResponse.json({ error: "Please log in to continue." }, { status: 401 });
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       if (!outline) {
         return NextResponse.json({ error: "Session not found." }, { status: 404 });
       }
-      if (outline.slug !== "need-analysis") {
+      if (outline.slug !== "define-your-goal") {
         return NextResponse.json({ error: "Please log in to continue." }, { status: 401 });
       }
       const ensured = ensureGuestId(req);

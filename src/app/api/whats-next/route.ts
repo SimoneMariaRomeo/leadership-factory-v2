@@ -32,9 +32,9 @@ export async function POST(req: Request) {
         select: { id: true, email: true, name: true, learningGoal: true },
       });
 
-      // Link the latest need-analysis guest chat for this browser, so it appears in "Previous Conversations" after signup.
+      // Link the latest define-your-goal guest chat for this browser, so it appears in "Previous Conversations" after signup.
       const needAnalysisOutline = await tx.learningSessionOutline.findFirst({
-        where: { slug: "need-analysis" },
+        where: { slug: "define-your-goal" },
         select: { id: true },
       });
       let linkedChatId: string | null = null;

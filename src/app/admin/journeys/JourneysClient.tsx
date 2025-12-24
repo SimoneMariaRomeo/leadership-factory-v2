@@ -112,7 +112,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const [message, setMessage] = useState<string | null>(null);
 
   const needAnalysisChatId = useMemo(() => {
-    const needStep = journeyDetail?.steps.find((step) => step.sessionOutline?.slug === "need-analysis");
+    const needStep = journeyDetail?.steps.find((step) => step.sessionOutline?.slug === "define-your-goal");
     if (!needStep || !needStep.chats?.length) return null;
     const sorted = [...needStep.chats].sort((a, b) => {
       const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0;
@@ -607,7 +607,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                 <h3 className="admin-title">Journey detail</h3>
                 {needAnalysisChatId ? (
                   <Link href={`/chats/history/${needAnalysisChatId}`} className="tiny-note link-button" target="_blank">
-                    Need-analysis chat
+                    Define-your-goal chat
                   </Link>
                 ) : null}
               </div>

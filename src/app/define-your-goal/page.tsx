@@ -1,4 +1,4 @@
-// This page runs the public need-analysis chat before someone logs in.
+// This page runs the public define-your-goal chat before someone logs in.
 import { cookies } from "next/headers";
 import NeedAnalysisChat from "../journeys/[slug]/steps/[stepId]/NeedAnalysisChat";
 import { prisma } from "../../server/prismaClient";
@@ -7,9 +7,9 @@ import { GUEST_COOKIE_NAME } from "../../server/guest";
 export const dynamic = "force-dynamic";
 
 export default async function NeedAnalysisPage() {
-  // This loads the shared need-analysis outline so we can start the chat.
+  // This loads the shared define-your-goal outline so we can start the chat.
   const outline = await prisma.learningSessionOutline.findUnique({
-    where: { slug: "need-analysis" },
+    where: { slug: "define-your-goal" },
     select: { id: true, firstUserMessage: true },
   });
 
@@ -19,7 +19,7 @@ export default async function NeedAnalysisPage() {
         <div className="bg-orbs" aria-hidden="true" />
         <div className="content-inner">
           <div className="glass-card">
-            <h1 className="hero-title">Need-analysis is not ready yet.</h1>
+            <h1 className="hero-title">Define-your-goal is not ready yet.</h1>
             <p className="hero-lead">Please try again later.</p>
           </div>
         </div>

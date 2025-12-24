@@ -52,10 +52,10 @@ Report:
 - Any sentence that feels too long or "marketing-like"?
 - Any button label that feels unclear?
 
-### Journey 3 — Need-analysis chat (tone and guidance)
+### Journey 3 — Define-your-goal chat (tone and guidance)
 Goal: The chat feels helpful and natural.
 Steps:
-1) Start the need-analysis chat.
+1) Start the define-your-goal chat.
 2) Send 3 short messages about your situation (simple, real-life).
 3) Notice if the chat asks clear questions (not too many).
 Report:
@@ -129,7 +129,7 @@ Report:
 Goal: The site still feels good on a small screen.
 Steps:
 1) Make the browser window narrow (phone size).
-2) Re-check: home page, need-analysis chat, and My Profile.
+2) Re-check: home page, define-your-goal chat, and My Profile.
 Report:
 - Any text too small?
 - Any buttons hard to tap?

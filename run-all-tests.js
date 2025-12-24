@@ -6,7 +6,7 @@ const commands = [
   "npm run test:public-funnel",
   "npm run test:step4-create-learning-goal",
   "npm run test:goal-commit",
-  "npm run test:need-analysis-chat",
+  "npm run test:define-your-goal-chat",
   "npm run test:profile-and-journeys",
 ];
 

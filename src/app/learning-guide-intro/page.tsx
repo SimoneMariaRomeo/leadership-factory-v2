@@ -14,7 +14,7 @@ export default function LearningGuideIntroPage() {
     <IntroCard
       title="I'm your learning guide, here to support you along your journey of discovery and growth."
       paragraphs={guideParagraphs}
-      button={{ label: "I'M READY", href: "/need-analysis" }}
+      button={{ label: "I'M READY", href: "/define-your-goal" }}
     />
   );
 }
