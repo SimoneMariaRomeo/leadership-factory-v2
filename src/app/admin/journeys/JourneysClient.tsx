@@ -107,6 +107,7 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
   const [deletingJourney, setDeletingJourney] = useState(false);
   const [duplicatingJourney, setDuplicatingJourney] = useState(false);
   const [stepSaving, setStepSaving] = useState<string | null>(null);
+  const [stepDeleting, setStepDeleting] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
   const [addStepOutlineId, setAddStepOutlineId] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null);
@@ -362,6 +363,40 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       setMessage(error?.message || "Could not save step.");
     } finally {
       setStepSaving(null);
+    }
+  };
+
+  // This removes one step from the journey.
+  const handleDeleteStep = async (stepId: string) => {
+    if (!journeyDetail) return;
+    const step = journeyDetail.steps.find((item) => item.id === stepId);
+    if (!step) return;
+    const stepLabel = step.sessionOutline?.title || "this step";
+    const confirmMessage = `Remove "${stepLabel}" from this journey? This cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    setStepDeleting(stepId);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/journeys/${journeyDetail.id}/steps/${stepId}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Could not remove step.");
+
+      setJourneyDetail((prev) =>
+        prev ? { ...prev, steps: prev.steps.filter((item) => item.id !== stepId) } : prev
+      );
+      setDirtySteps((prev) => {
+        const next = new Set(prev);
+        next.delete(stepId);
+        return next;
+      });
+      setReorderDirty(false);
+      setMessage("Step removed.");
+    } catch (error: any) {
+      console.error("Removing step failed:", error);
+      setMessage(error?.message || "Could not remove step.");
+    } finally {
+      setStepDeleting(null);
     }
   };
 
@@ -859,9 +894,17 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                           type="button"
                           className="primary-button"
                           onClick={() => handleSaveStep(step.id)}
-                          disabled={stepSaving === step.id}
+                          disabled={stepSaving === step.id || stepDeleting === step.id}
                         >
                           {stepSaving === step.id ? "Saving..." : "Save step"}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button danger"
+                          onClick={() => handleDeleteStep(step.id)}
+                          disabled={stepDeleting === step.id || stepSaving === step.id}
+                        >
+                          {stepDeleting === step.id ? "Removing..." : "Remove step"}
                         </button>
                       </div>
                     </div>

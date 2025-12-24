@@ -318,6 +318,18 @@ export async function updateJourneyStep(stepId: string, data: StepUpdateInput) {
   });
 }
 
+// This removes one step from a journey.
+export async function deleteJourneyStep(journeyId: string, stepId: string) {
+  const step = await prisma.learningJourneyStep.findFirst({ where: { id: stepId, journeyId } });
+  if (!step) {
+    throw new AdminValidationError("Step not found.");
+  }
+
+  await prisma.learningJourneyStep.delete({ where: { id: stepId } });
+
+  return { deletedStepId: stepId };
+}
+
 // This rewrites the order numbers based on the provided list.
 export async function reorderJourneySteps(journeyId: string, orderedStepIds: string[]) {
   const steps = await prisma.learningJourneyStep.findMany({ where: { journeyId } });
