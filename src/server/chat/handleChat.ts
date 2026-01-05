@@ -61,13 +61,9 @@ function buildSystemMessage({
 }
 
 // This checks if the assistant reply is a pure JSON command.
-function parseAssistantCommand(raw: string): any | null {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
-    return null;
-  }
+function parseAssistantCommand(rawJson: string): any | null {
   try {
-    const parsed = JSON.parse(trimmed);
+    const parsed = JSON.parse(rawJson);
     if (parsed && typeof parsed === "object" && typeof parsed.command === "string") {
       return parsed;
     }
@@ -75,6 +71,123 @@ function parseAssistantCommand(raw: string): any | null {
     console.error("Failed to parse assistant command JSON:", err);
   }
   return null;
+}
+
+// This finds the end of a JSON object inside a longer string.
+function findJsonObjectEndIndex(text: string, startIndex: number): number | null {
+  if (text[startIndex] !== "{") {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let index = startIndex; index < text.length; index += 1) {
+    const character = text[index];
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
+      }
+
+      if (character === "\\") {
+        isEscaped = true;
+        continue;
+      }
+
+      if (character === '"') {
+        inString = false;
+      }
+
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (character === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index + 1;
+      }
+    }
+  }
+
+  return null;
+}
+
+// This pulls a JSON command out of a reply even if the model also wrote normal text.
+function splitAssistantResponse(raw: string): { content: string; command: any | null; commandText: string | null } {
+  const trimmed = raw.trim();
+
+  const strictCommand = trimmed.startsWith("{") && trimmed.endsWith("}") ? parseAssistantCommand(trimmed) : null;
+  if (strictCommand) {
+    return { content: "", command: strictCommand, commandText: trimmed };
+  }
+
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/gi;
+  let match: RegExpExecArray | null = null;
+  let lastCodeBlockCommand: { command: any; commandText: string; start: number; end: number } | null = null;
+
+  while ((match = codeBlockRegex.exec(raw)) !== null) {
+    const candidateText = (match[1] || "").trim();
+    if (!candidateText.startsWith("{") || !candidateText.endsWith("}")) {
+      continue;
+    }
+
+    const parsed = parseAssistantCommand(candidateText);
+    if (!parsed) {
+      continue;
+    }
+
+    lastCodeBlockCommand = {
+      command: parsed,
+      commandText: candidateText,
+      start: match.index,
+      end: codeBlockRegex.lastIndex,
+    };
+  }
+
+  if (lastCodeBlockCommand) {
+    const cleaned = `${raw.slice(0, lastCodeBlockCommand.start)}${raw.slice(lastCodeBlockCommand.end)}`.trim();
+    return { content: cleaned, command: lastCodeBlockCommand.command, commandText: lastCodeBlockCommand.commandText };
+  }
+
+  const commandStartRegex = /{[\s\r\n]*"command"\s*:/g;
+  const candidateStarts: number[] = [];
+  let startMatch: RegExpExecArray | null = null;
+
+  while ((startMatch = commandStartRegex.exec(raw)) !== null) {
+    candidateStarts.push(startMatch.index);
+  }
+
+  for (let index = candidateStarts.length - 1; index >= 0; index -= 1) {
+    const startIndex = candidateStarts[index];
+    const endIndex = findJsonObjectEndIndex(raw, startIndex);
+    if (!endIndex) {
+      continue;
+    }
+
+    const candidateText = raw.slice(startIndex, endIndex).trim();
+    const parsed = parseAssistantCommand(candidateText);
+    if (!parsed) {
+      continue;
+    }
+
+    const cleaned = `${raw.slice(0, startIndex)}${raw.slice(endIndex)}`.trim();
+    return { content: cleaned, command: parsed, commandText: candidateText };
+  }
+
+  return { content: raw, command: null, commandText: null };
 }
 
 // This reads the guestId stored inside chat.metadata when present.
@@ -232,17 +345,38 @@ export async function handleChat({
   }
 
   const assistantText = await callModel({ messages: modelMessages, provider: process.env.DEFAULT_API });
-  const assistantCommand = parseAssistantCommand(assistantText);
-  const assistantContent = assistantCommand ? null : assistantText;
+  const split = splitAssistantResponse(assistantText);
+  const assistantCommand = split.command;
+  const assistantContent = split.content.trim().length > 0 ? split.content.trim() : null;
 
-  await prisma.message.create({
-    data: {
-      chatId: chat.id,
-      role: "assistant",
-      content: assistantText,
-      command: assistantCommand,
-    },
-  });
+  if (assistantCommand) {
+    if (assistantContent) {
+      await prisma.message.create({
+        data: {
+          chatId: chat.id,
+          role: "assistant",
+          content: assistantContent,
+        },
+      });
+    }
+
+    await prisma.message.create({
+      data: {
+        chatId: chat.id,
+        role: "assistant",
+        content: split.commandText || JSON.stringify(assistantCommand),
+        command: assistantCommand,
+      },
+    });
+  } else {
+    await prisma.message.create({
+      data: {
+        chatId: chat.id,
+        role: "assistant",
+        content: assistantText.trim().length > 0 ? assistantText : " ",
+      },
+    });
+  }
 
   await prisma.learningSessionChat.update({
     where: { id: chat.id },

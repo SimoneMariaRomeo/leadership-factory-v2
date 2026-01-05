@@ -1,6 +1,9 @@
 // This page shows a read-only chat transcript with the same look as the live chat.
 import Link from "next/link";
 import { headers } from "next/headers";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import LoginPrompt from "../../../components/LoginPrompt";
 import { prisma } from "../../../../server/prismaClient";
 import { getCurrentUser, requestFromCookieHeader } from "../../../../server/auth/session";
@@ -108,7 +111,9 @@ export default async function ChatHistoryPage({ params }: ChatHistoryPageProps) 
                     )}
                   </div>
                   <div className={`chat-bubble ${message.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}>
-                    {message.content}
+                    <div className="chat-markdown">
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{message.content || ""}</ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               ))

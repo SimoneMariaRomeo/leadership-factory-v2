@@ -3,6 +3,9 @@
 // This component shows the chat box for define-your-goal or step sessions and reacts to JSON commands.
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import { handleAssistantGoalCommand } from "../../../../../lib/assistant-command-handler";
 
 type ChatRole = "user" | "assistant";
@@ -179,7 +182,7 @@ export default function NeedAnalysisChat({
     <div className="chat-panel">
       <div className="chat-messages" aria-live="polite">
         {messages
-          .filter((message) => Boolean(message.content))
+          .filter((message): message is ChatMessage & { content: string } => typeof message.content === "string" && message.content.trim().length > 0)
           .map((message) => (
             <div key={message.id} className={`chat-row ${message.role === "user" ? "chat-row-user" : ""}`}>
               <div className={`chat-avatar ${message.role === "user" ? "chat-avatar-user" : ""}`}>
@@ -194,7 +197,9 @@ export default function NeedAnalysisChat({
                 )}
               </div>
               <div className={`chat-bubble ${message.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}`}>
-                {message.content}
+                <div className="chat-markdown">
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{message.content}</ReactMarkdown>
+                </div>
               </div>
             </div>
           ))}
