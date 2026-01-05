@@ -467,7 +467,18 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
       prev
         ? {
             ...prev,
-            steps: prev.steps.map((step) => (step.id === stepId ? { ...step, [field]: value } : step)),
+            steps: prev.steps.map((step) => {
+              if (step.id !== stepId) return step;
+              if (field === "sessionOutlineId") {
+                const selectedOutline = outlines.find((option) => option.id === value);
+                return {
+                  ...step,
+                  sessionOutlineId: value,
+                  sessionOutline: selectedOutline ? { ...selectedOutline } : step.sessionOutline,
+                };
+              }
+              return { ...step, [field]: value };
+            }),
           }
         : prev
     );
@@ -806,7 +817,17 @@ export default function JourneysClient({ initialJourneys, initialDetail, outline
                         <div>
                           <p className="tiny-note">Order {index + 1}</p>
                           <p className="admin-title" style={{ marginBottom: 4 }}>
-                            {step.sessionOutline?.title || "Untitled outline"}
+                            {step.sessionOutlineId ? (
+                              <Link
+                                href={`/admin/sessions?outlineId=${step.sessionOutlineId}`}
+                                className="admin-title-link"
+                                title="Open this outline in Sessions"
+                              >
+                                {step.sessionOutline?.title || "Untitled outline"}
+                              </Link>
+                            ) : (
+                              step.sessionOutline?.title || "Untitled outline"
+                            )}
                           </p>
                           <p className="tiny-note">Status: {step.status}</p>
                         </div>

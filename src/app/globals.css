@@ -1753,6 +1753,22 @@ a {
   color: var(--text-strong);
 }
 
+.admin-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-title-link:hover {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
+.admin-title-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--gold), transparent 20%);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 .admin-label {
   display: flex;
   flex-direction: column;
