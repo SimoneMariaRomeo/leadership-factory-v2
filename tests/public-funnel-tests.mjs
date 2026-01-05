@@ -123,7 +123,7 @@ async function main() {
     "This page should introduce the guide and send people to the define-your-goal step."
   );
   const intro = render(React.createElement(LearningGuideIntroPage));
-  await intro.findByText((content) => content.includes("I'm your learning guide, here to guide your journey of discovery and growth."));
+  await intro.findByText((content) => content.includes("I'm your learning guide, here to support you along your journey of discovery and growth."));
   await intro.findByText(
     "I'll ask you a few easy questions about what you'd like to work on, such as your goals, confidence, communication, relationships, or everyday challenges."
   );
@@ -160,13 +160,13 @@ async function main() {
   const whatsNext = render(React.createElement(WhatsNextPage, { searchParams: {} }));
   await whatsNext.findByText("You did it!");
   whatsNext.getByText("Here is a personalized learning suggestion based on what you shared.");
-  whatsNext.getByText("Our team will now create the detailed sessions and steps for this journey.");
+  whatsNext.getByText("We’ll now turn this into a concrete journey you can actually follow: step by step.");
   whatsNext.getByText("If you want a different angle, ask for another recommendation, then confirm to lock it in.");
   whatsNext.getByText("Please make sure you are signed in so we can send the details to your inbox.");
   await whatsNext.findByText("Test Journey Title");
   whatsNext.getByText("Test intro text crafted for the goal.");
   whatsNext.getByRole("button", { name: "Recommend another journey" });
-  const yesButton = whatsNext.getByRole("button", { name: "YES, I'M IN!" });
+  const yesButton = whatsNext.getByRole("button", { name: "YES, buld my journey!" });
   await user.click(yesButton);
   whatsNext.getByText("Welcome back");
   const loginButtons = whatsNext.getAllByRole("button", { name: "Login" });
