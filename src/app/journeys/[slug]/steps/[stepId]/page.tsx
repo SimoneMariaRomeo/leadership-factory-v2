@@ -109,6 +109,18 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
     );
   }
 
+  const journeySteps = await prisma.learningJourneyStep.findMany({
+    where: { journeyId: step.journeyId },
+    orderBy: { order: "asc" },
+    select: { id: true },
+  });
+  const stepIndex = journeySteps.findIndex((entry) => entry.id === step.id);
+  const previousStep = stepIndex > 0 ? journeySteps[stepIndex - 1] : null;
+  const nextStep = stepIndex >= 0 && stepIndex < journeySteps.length - 1 ? journeySteps[stepIndex + 1] : null;
+  const journeyHome = `/journeys/${journeySlug}`;
+  const previousHref = previousStep ? `/journeys/${journeySlug}/steps/${previousStep.id}` : journeyHome;
+  const nextHref = nextStep ? `/journeys/${journeySlug}/steps/${nextStep.id}` : journeyHome;
+
   const chatLink = await getOrCreateStepChat(step.id, currentUser?.id || null);
   const chatId = chatLink.status === "ok" ? chatLink.chat.id : null;
   const chatMessages =
@@ -139,6 +151,8 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
           userName={currentUser?.name || null}
           userEmail={currentUser?.email || null}
           userPicture={(currentUser as any)?.picture || null}
+          prevHref={previousHref}
+          nextHref={nextHref}
         />
       </div>
     </main>

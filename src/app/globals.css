@@ -742,6 +742,13 @@ a {
   border-top: 1px solid rgba(17, 24, 39, 0.06);
 }
 
+.chat-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+}
+
 .chat-input {
   flex: 1;
   padding: 14px;

@@ -27,6 +27,8 @@ type NeedAnalysisChatProps = {
   userName?: string | null;
   userEmail?: string | null;
   userPicture?: string | null;
+  prevHref?: string;
+  nextHref?: string;
 };
 
 export default function NeedAnalysisChat({
@@ -39,6 +41,8 @@ export default function NeedAnalysisChat({
   userEmail = null,
   userPicture = null,
   journeySlug = null,
+  prevHref,
+  nextHref,
 }: NeedAnalysisChatProps) {
   // This lets us move the user to the goal confirmation page.
   const router = useRouter();
@@ -243,6 +247,23 @@ export default function NeedAnalysisChat({
         />
         <button className="primary-button chat-send" type="button" onClick={handleSend} disabled={disabled}>
           {disabled ? "Sending..." : "Send"}
+        </button>
+      </div>
+
+      <div className="chat-nav">
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => router.push(prevHref || `/journeys/${journeySlug || ""}`)}
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => router.push(nextHref || `/journeys/${journeySlug || ""}`)}
+        >
+          Next
         </button>
       </div>
     </div>
