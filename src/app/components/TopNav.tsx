@@ -26,6 +26,10 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  useEffect(() => {
+    setUser(initialUser || null);
+  }, [initialUser]);
+
   // This fetches the latest auth state so the nav stays in sync.
   const refreshUser = async () => {
     setChecking(true);
