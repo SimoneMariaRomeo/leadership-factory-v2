@@ -1,4 +1,4 @@
-// This script checks the need-analysis chat flow and JSON command handling.
+// This script checks the define-your-goal chat flow and JSON command handling.
 import path from "path";
 import { createRequire } from "module";
 import { execSync } from "child_process";
@@ -27,7 +27,7 @@ const { PrismaClient } = require("../generated/prisma");
 const TEST_DB_NAME = process.env.NEED_ANALYSIS_CHAT_TEST_DB || "need_analysis_chat_tests";
 const TEST_SHADOW_DB_NAME = `${TEST_DB_NAME}_shadow`;
 const GOAL_JOURNEY_SLUG = "goal-clarification";
-const NEED_OUTLINE_SLUG = "need-analysis";
+const NEED_OUTLINE_SLUG = "define-your-goal";
 
 const databaseUrl = withDbName(process.env.DATABASE_URL, TEST_DB_NAME);
 const shadowDatabaseUrl = withDbName(process.env.SHADOW_DATABASE_URL || process.env.DATABASE_URL, TEST_SHADOW_DB_NAME);
@@ -98,7 +98,7 @@ async function main() {
     "Prepare database for chat checks",
     "Migrations and seeds should run cleanly on the dedicated test database."
   );
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   runCommand("npx prisma db seed --schema prisma/schema.prisma", "seed script executed");
 
   const { journey, outline, step } = await testNeedAnalysisRoute();
@@ -111,7 +111,7 @@ async function main() {
   await testRealConversationReturnsJson(outline.id, step.id, "aliyun");
   await testRealConversationReturnsJson(outline.id, step.id, "chatgpt");
 
-  console.log("\nNeed-analysis chat checks completed.");
+  console.log("\nDefine-your-goal chat checks completed.");
 }
 
 // Drops and recreates the dedicated test databases so each run starts fresh.
@@ -129,11 +129,11 @@ async function recreateDatabase(adminUrl, dbName) {
   await adminPool.end();
 }
 
-// Checks that the need-analysis outline and step are wired correctly.
+// Checks that the define-your-goal outline and step are wired correctly.
 async function testNeedAnalysisRoute() {
   logTest(
-    "[Chat] Need-analysis route loads correct outline and step",
-    "The goal-clarification journey should include the need-analysis outline and step."
+    "[Chat] Define-your-goal route loads correct outline and step",
+    "The goal-clarification journey should include the define-your-goal outline and step."
   );
 
   const journey = await prisma.learningJourney.findFirst({
@@ -142,20 +142,20 @@ async function testNeedAnalysisRoute() {
   assert(journey, "Goal Clarification journey should exist.");
 
   const outline = await prisma.learningSessionOutline.findFirst({
-    where: { slug: NEED_OUTLINE_SLUG, journeyId: journey.id },
+    where: { slug: NEED_OUTLINE_SLUG },
   });
-  assert(outline, "Need-analysis outline should exist on the journey.");
+  assert(outline, "Define-your-goal outline should exist on the journey.");
 
   const step = await prisma.learningJourneyStep.findFirst({
     where: { sessionOutlineId: outline.id, journeyId: journey.id },
   });
-  assert(step, "Need-analysis step should point to the outline.");
+  assert(step, "Define-your-goal step should point to the outline.");
   assert(step.sessionOutlineId === outline.id, "Step should store the outline id.");
   assert(outline.objective && outline.objective.length > 0, "Outline objective should not be empty.");
   assert(outline.content && outline.content.length > 0, "Outline content should not be empty.");
   assert(outline.botTools && outline.botTools.includes("create_learning_goal"), "botTools should mention create_learning_goal.");
   assert(outline.firstUserMessage && outline.firstUserMessage.length > 0, "firstUserMessage should be present.");
-  logPass("Need-analysis outline and step look correct.");
+  logPass("Define-your-goal outline and step look correct.");
 
   return { journey, outline, step };
 }
@@ -235,7 +235,7 @@ async function testPromptConstruction(sessionOutlineId, journeyStepId) {
   const firstUserTurn = capturedMessages[1];
   assert(systemMessage.content.includes("Session objective"), "System prompt should include the objective label.");
   assert(systemMessage.content.toLowerCase().includes("tools and json commands"), "System prompt should list bot tools.");
-  assert(systemMessage.content.includes("Current user goal"), "System prompt should mention the current user goal.");
+  assert(systemMessage.content.includes("Current user goals"), "System prompt should mention the current user goals.");
   assert(firstUserTurn.content.length > 0, "First user message should be present.");
   logPass("Prompt carries objective, content, botTools, and goal summary.");
 }
@@ -278,7 +278,7 @@ async function testJsonCommandStorage(sessionOutlineId, journeyStepId) {
 // Validates the /api/chat POST roundtrip.
 async function testApiPostRoundtrip(sessionOutlineId, journeyStepId) {
   logTest(
-    "[Chat] /api/chat POST works end-to-end for need-analysis",
+    "[Chat] /api/chat POST works end-to-end for define-your-goal",
     "The API should return a chatId and assistant message with content or command."
   );
 
@@ -288,7 +288,7 @@ async function testApiPostRoundtrip(sessionOutlineId, journeyStepId) {
   const body = {
     chatId: null,
     sessionOutlineId,
-    journeyStepId,
+    journeyStepId: null,
     messages: [{ role: "user", content: "I want to work on my confidence." }],
   };
   const request = new Request("http://localhost/api/chat", {

@@ -142,10 +142,8 @@ async function createJourney({ title, isStandard, personalizedForUserId = null, 
 async function createOutline({ journeyId, slug, order, title }) {
   return prisma.learningSessionOutline.create({
     data: {
-      journeyId,
       slug,
       order,
-      live: true,
       title,
       objective: `${title} objective`,
       content: "Coach the user kindly.",
@@ -177,7 +175,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database", "Migrations should run for journeys and steps tests.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   await clearData();
 
   await testStandardJourneyVisible();
@@ -280,8 +278,14 @@ async function testStepChatCreation() {
   const first = await getOrCreateStepChat(step.id, user.id);
   assert(first.status === "ok", "Chat should be created for unlocked step.");
   assert(first.chat.sessionOutlineId === outline.id, "Chat should point to the outline.");
-  const stepAfterChat = await prisma.learningJourneyStep.findUnique({ where: { id: step.id } });
-  assert(stepAfterChat.chatId === first.chat.id, "Step should store the chat id.");
+  const stepAfterChat = await prisma.learningJourneyStep.findUnique({
+    where: { id: step.id },
+    include: { chats: true },
+  });
+  assert(
+    stepAfterChat?.chats.some((linkedChat) => linkedChat.id === first.chat.id),
+    "Step should store the chat id through the chats relation."
+  );
 
   const second = await getOrCreateStepChat(step.id, user.id);
   const chatCount = await prisma.learningSessionChat.count({ where: { sessionOutlineId: outline.id } });

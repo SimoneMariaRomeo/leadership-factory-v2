@@ -21,8 +21,6 @@ model User {
   passwordHash            String
   picture                 String?
   role                    String
-  learningGoal            String?
-  learningGoalConfirmedAt DateTime?
   botRole                 String
   profileTour             Boolean   @default(true)
   createdAt               DateTime  @default(now())
@@ -30,6 +28,24 @@ model User {
 
   chats    LearningSessionChat[]
   journeys LearningJourney[]     @relation("UserJourneys")
+  goals    UserGoal[]
+}
+
+enum GoalStatus {
+  active
+  achieved
+}
+
+model UserGoal {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statement String
+  status    GoalStatus @default(active)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
 }
 
 model LearningSessionChat {

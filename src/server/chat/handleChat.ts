@@ -19,6 +19,7 @@ type AssistantMessage = {
 
 type HandleChatArgs = {
   userId: string | null;
+  guestId?: string | null;
   sessionOutlineId: string;
   journeyStepId?: string | null;
   chatId?: string | null;
@@ -32,14 +33,16 @@ function buildSystemMessage({
   objective,
   content,
   botTools,
-  userGoalSummary,
+  userGoals,
 }: {
   botRole: string;
   objective?: string | null;
   content: string;
   botTools: string;
-  userGoalSummary?: string | null;
+  userGoals?: string[] | null;
 }): LlmMessage {
+  const cleanedGoals = (userGoals || []).map((goal) => goal.trim()).filter((goal) => goal.length > 0);
+  const goalsText = cleanedGoals.length ? cleanedGoals.map((goal) => `- ${goal}`).join("\n") : "not defined yet";
   const systemText = [
     botRole,
     "",
@@ -52,21 +55,17 @@ function buildSystemMessage({
     "Tools and JSON commands you can use:",
     botTools,
     "",
-    "Current user goal:",
-    userGoalSummary || "not defined yet",
+    "Current user goals:",
+    goalsText,
   ].join("\n");
 
   return { role: "system", content: systemText };
 }
 
 // This checks if the assistant reply is a pure JSON command.
-function parseAssistantCommand(raw: string): any | null {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
-    return null;
-  }
+function parseAssistantCommand(rawJson: string): any | null {
   try {
-    const parsed = JSON.parse(trimmed);
+    const parsed = JSON.parse(rawJson);
     if (parsed && typeof parsed === "object" && typeof parsed.command === "string") {
       return parsed;
     }
@@ -76,8 +75,135 @@ function parseAssistantCommand(raw: string): any | null {
   return null;
 }
 
+// This finds the end of a JSON object inside a longer string.
+function findJsonObjectEndIndex(text: string, startIndex: number): number | null {
+  if (text[startIndex] !== "{") {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let index = startIndex; index < text.length; index += 1) {
+    const character = text[index];
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
+      }
+
+      if (character === "\\") {
+        isEscaped = true;
+        continue;
+      }
+
+      if (character === '"') {
+        inString = false;
+      }
+
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (character === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index + 1;
+      }
+    }
+  }
+
+  return null;
+}
+
+// This pulls a JSON command out of a reply even if the model also wrote normal text.
+function splitAssistantResponse(raw: string): { content: string; command: any | null; commandText: string | null } {
+  const trimmed = raw.trim();
+
+  const strictCommand = trimmed.startsWith("{") && trimmed.endsWith("}") ? parseAssistantCommand(trimmed) : null;
+  if (strictCommand) {
+    return { content: "", command: strictCommand, commandText: trimmed };
+  }
+
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/gi;
+  let match: RegExpExecArray | null = null;
+  let lastCodeBlockCommand: { command: any; commandText: string; start: number; end: number } | null = null;
+
+  while ((match = codeBlockRegex.exec(raw)) !== null) {
+    const candidateText = (match[1] || "").trim();
+    if (!candidateText.startsWith("{") || !candidateText.endsWith("}")) {
+      continue;
+    }
+
+    const parsed = parseAssistantCommand(candidateText);
+    if (!parsed) {
+      continue;
+    }
+
+    lastCodeBlockCommand = {
+      command: parsed,
+      commandText: candidateText,
+      start: match.index,
+      end: codeBlockRegex.lastIndex,
+    };
+  }
+
+  if (lastCodeBlockCommand) {
+    const cleaned = `${raw.slice(0, lastCodeBlockCommand.start)}${raw.slice(lastCodeBlockCommand.end)}`.trim();
+    return { content: cleaned, command: lastCodeBlockCommand.command, commandText: lastCodeBlockCommand.commandText };
+  }
+
+  const commandStartRegex = /{[\s\r\n]*"command"\s*:/g;
+  const candidateStarts: number[] = [];
+  let startMatch: RegExpExecArray | null = null;
+
+  while ((startMatch = commandStartRegex.exec(raw)) !== null) {
+    candidateStarts.push(startMatch.index);
+  }
+
+  for (let index = candidateStarts.length - 1; index >= 0; index -= 1) {
+    const startIndex = candidateStarts[index];
+    const endIndex = findJsonObjectEndIndex(raw, startIndex);
+    if (!endIndex) {
+      continue;
+    }
+
+    const candidateText = raw.slice(startIndex, endIndex).trim();
+    const parsed = parseAssistantCommand(candidateText);
+    if (!parsed) {
+      continue;
+    }
+
+    const cleaned = `${raw.slice(0, startIndex)}${raw.slice(endIndex)}`.trim();
+    return { content: cleaned, command: parsed, commandText: candidateText };
+  }
+
+  return { content: raw, command: null, commandText: null };
+}
+
+// This reads the guestId stored inside chat.metadata when present.
+function readGuestIdFromMetadata(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, unknown>).guestId;
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
 export async function handleChat({
   userId,
+  guestId = null,
   sessionOutlineId,
   journeyStepId = null,
   chatId = null,
@@ -118,18 +244,54 @@ export async function handleChat({
 
   if (!chat) {
     const now = new Date();
-    chat = chatId ? await prisma.learningSessionChat.findUnique({ where: { id: chatId } }) : null;
+    const byId = chatId ? await prisma.learningSessionChat.findUnique({ where: { id: chatId } }) : null;
+    const byGuest =
+      !byId && !journeyStepId && !userId && guestId
+        ? await prisma.learningSessionChat.findFirst({
+            where: {
+              userId: null,
+              sessionOutlineId,
+              metadata: { path: ["guestId"], equals: guestId },
+            },
+            orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
+          })
+        : null;
+
+    chat = byId || byGuest;
+
+    // This blocks someone from attaching messages to a chat that does not belong to them.
+    if (chat) {
+      if (userId) {
+        if (chat.userId && chat.userId !== userId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+      } else {
+        if (!guestId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+        if (chat.userId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+        const chatGuestId = readGuestIdFromMetadata(chat.metadata);
+        if (chatGuestId !== guestId) {
+          throw new Error("Not allowed to use this chat.");
+        }
+      }
+    }
+
     const baseMetadata: Record<string, any> =
       chat?.metadata && typeof chat.metadata === "object" && !Array.isArray(chat.metadata)
         ? { ...(chat.metadata as Record<string, any>) }
         : {};
     const nextMetadata: Record<string, any> = { ...baseMetadata };
+    if (!userId && guestId) {
+      nextMetadata.guestId = guestId;
+    }
 
     chat = chat
       ? await prisma.learningSessionChat.update({
           where: { id: chat.id },
           data: {
-            user: userId ? { connect: { id: userId } } : undefined,
             sessionOutline: { connect: { id: sessionOutlineId } },
             lastMessageAt: now,
             metadata: Object.keys(nextMetadata).length ? nextMetadata : chat.metadata ?? undefined,
@@ -149,11 +311,28 @@ export async function handleChat({
 
   const journeyForPrompt = journeyFromStep?.journey || null;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
-  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset.";
+  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset. You talk in a friend, casual, informal, very simple English and short sentences. Format your replies with bold, italics and new lines to improve readability.";
 
   const outlineForPrompt = journeyFromStep?.sessionOutline || outline;
+  const isDefineYourGoal = outlineForPrompt?.slug === "define-your-goal";
+  const activeGoals =
+    userId && !isDefineYourGoal
+      ? await prisma.userGoal.findMany({
+          where: { userId, status: "active" },
+          orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+          select: { statement: true },
+        })
+      : [];
+  const goalStatements = activeGoals.map((goal) => goal.statement).filter((goal) => goal.trim().length > 0);
+  const goalsForPrompt =
+    !isDefineYourGoal && goalStatements.length > 0
+      ? goalStatements
+      : !isDefineYourGoal && journeyForPrompt?.userGoalSummary
+        ? [journeyForPrompt.userGoalSummary]
+        : [];
+  const canCompleteStep = Boolean(journeyStepId && journeyFromStep && !journeyFromStep.journey.isStandard);
   const botTools =
-    journeyStepId && outlineForPrompt.botTools
+    canCompleteStep && outlineForPrompt.botTools
       ? `${outlineForPrompt.botTools}\n\nWhen the user has clearly finished this step, send exactly {"command": "mark_step_completed"} as a JSON message with no other text.`
       : outlineForPrompt.botTools;
 
@@ -163,7 +342,7 @@ export async function handleChat({
       objective: outlineForPrompt.objective,
       content: outlineForPrompt.content,
       botTools,
-      userGoalSummary: journeyForPrompt?.userGoalSummary || "not defined yet",
+      userGoals: goalsForPrompt,
     }),
     { role: "user", content: outlineForPrompt.firstUserMessage },
     ...messages.map((message) => ({ role: message.role, content: message.content })),
@@ -184,17 +363,38 @@ export async function handleChat({
   }
 
   const assistantText = await callModel({ messages: modelMessages, provider: process.env.DEFAULT_API });
-  const assistantCommand = parseAssistantCommand(assistantText);
-  const assistantContent = assistantCommand ? null : assistantText;
+  const split = splitAssistantResponse(assistantText);
+  const assistantCommand = split.command;
+  const assistantContent = split.content.trim().length > 0 ? split.content.trim() : null;
 
-  await prisma.message.create({
-    data: {
-      chatId: chat.id,
-      role: "assistant",
-      content: assistantText,
-      command: assistantCommand,
-    },
-  });
+  if (assistantCommand) {
+    if (assistantContent) {
+      await prisma.message.create({
+        data: {
+          chatId: chat.id,
+          role: "assistant",
+          content: assistantContent,
+        },
+      });
+    }
+
+    await prisma.message.create({
+      data: {
+        chatId: chat.id,
+        role: "assistant",
+        content: split.commandText || JSON.stringify(assistantCommand),
+        command: assistantCommand,
+      },
+    });
+  } else {
+    await prisma.message.create({
+      data: {
+        chatId: chat.id,
+        role: "assistant",
+        content: assistantText.trim().length > 0 ? assistantText : " ",
+      },
+    });
+  }
 
   await prisma.learningSessionChat.update({
     where: { id: chat.id },

@@ -40,7 +40,7 @@ export default async function ChatPage({ params }: { params: ChatPageParams }) {
     },
   });
 
-  if (!chat || (chat.userId && chat.userId !== user.id) || !chat.sessionOutlineId) {
+  if (!chat || !chat.sessionOutlineId || (user.role !== "admin" && chat.userId !== user.id)) {
     return (
       <div className="content-shell">
         <div className="bg-orbs" aria-hidden="true" />

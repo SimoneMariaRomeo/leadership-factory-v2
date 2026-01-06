@@ -1,9 +1,9 @@
-// This page shows the signed-in user's goal, recommended journey, and all of their journeys.
+// This page shows the signed-in user's goals, recommended journey, and recent conversations.
 import Link from "next/link";
 import { headers } from "next/headers";
 import LoginPrompt from "../components/LoginPrompt";
 import ProfileTour from "./ProfileTour";
-import EditableGoalCard from "./EditableGoalCard";
+import GoalsPanel from "./GoalsPanel";
 import AvatarPicker from "./AvatarPicker";
 import SignOutButton from "./SignOutButton";
 import { prisma } from "../../server/prismaClient";
@@ -21,18 +21,18 @@ export default async function MyProfilePage() {
       <div className="content-shell">
         <div className="bg-orbs" aria-hidden="true" />
         <div className="content-inner">
-          <LoginPrompt
-            title="Please log in to see your profile"
-            message="Sign in to view your learning goal, journeys, and conversations."
-            buttonLabel="Login to continue"
-            afterLoginPath="/my-profile"
-          />
+            <LoginPrompt
+              title="Please log in to see your profile"
+              message="Sign in to view your learning goals, journeys, and conversations."
+              buttonLabel="Login to continue"
+              afterLoginPath="/my-profile"
+            />
         </div>
       </div>
     );
   }
 
-  const [personalizedJourneys, standardJourneys, recentChats] = await Promise.all([
+  const [personalizedJourneys, recentChats, goals] = await Promise.all([
     prisma.learningJourney.findMany({
       where: {
         isStandard: false,
@@ -52,21 +52,20 @@ export default async function MyProfilePage() {
         updatedAt: true,
       },
     }),
-    prisma.learningJourney.findMany({
-      where: { isStandard: true, status: "active" },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: { id: true, title: true, slug: true, intro: true, status: true, isStandard: true },
-    }),
     prisma.learningSessionChat.findMany({
       where: { userId: user.id },
       orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
       take: 5,
       select: { id: true, sessionTitle: true, startedAt: true },
     }),
+    prisma.userGoal.findMany({
+      where: { userId: user.id },
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      select: { id: true, statement: true, status: true, updatedAt: true },
+    }),
   ]);
 
   const recommendedJourney = personalizedJourneys[0] || null;
-  const combinedJourneys = [...personalizedJourneys, ...standardJourneys];
 
   const formatDate = (date: Date | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null;
@@ -90,13 +89,16 @@ export default async function MyProfilePage() {
               </div>
               <div>
                 <h1 className="hero-title welcome-title" style={{ margin: 0 }}>
-                  <span className="welcome-underline">Welcome back, </span>
-                  <span className="welcome-name">{user.name || user.email || "your profile"}!</span>
+                  <span className="welcome-name">
+                    Hi {user.name || user.email || "there"}!
+                  </span>
+                  <br />
+                  <span className="welcome-focus">
+                    Here’s what you’re working on
+                  </span>
                 </h1>
+
               </div>
-            </div>
-            <div id="tour-goal">
-              <EditableGoalCard initialGoal={user.learningGoal} confirmedAt={user.learningGoalConfirmedAt} />
             </div>
           </section>
 
@@ -118,40 +120,34 @@ export default async function MyProfilePage() {
                   </p>
                 </Link>
               ) : (
-                <div className="journey-empty">
-                  <p className="hero-lead" style={{ marginBottom: 0 }}>
-                    We are preparing your personalized journey. It will appear here soon.
+                <>
+                  <div className="journey-wait-box" aria-live="polite">
+                    <p style={{ margin: "0 0 6px", fontWeight: 700, color: "var(--text-strong)" }}>
+                      Shaping your journey
+                    </p>
+                    <div className="journey-progress" role="progressbar" aria-valuetext="Preparing your journey" />
+                    <p className="hero-lead" style={{ marginBottom: 0 }}>
+                      We're turning your goal into small, practical steps. Your first step will appear here, usually
+                      within 2-3 days.
+                    </p>
+                  </div>
+                  <p className="hero-lead" style={{ margin: "12px 0 0", color: "var(--text-soft)" }}>
+                    You don't need to do anything right now. We'll let you know as soon as it's ready.
                   </p>
-                </div>
+                </>
               )}
             </div>
           </section>
 
-          <section className="profile-section">
-            <div className="section-card">
-              <h2 className="hero-kicker section-title" style={{ marginBottom: "12px" }}>
-                Learning Journeys
-              </h2>
-              {combinedJourneys.length > 0 ? (
-                <div className="journey-grid">
-                  {combinedJourneys.map((journey) => (
-                    <Link
-                      key={journey.id}
-                      href={`/journeys/${journey.slug || journey.id}`}
-                      className="journey-card journey-card-link-wrapper"
-                      aria-label={journey.title}
-                    >
-                      <h3 className="journey-title">{journey.title}</h3>
-                      <p className="journey-intro">
-                        {journey.intro ||
-                          (journey as any).userGoalSummary ||
-                          "Open to see more once details are added in the next step."}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+          <section className="profile-section" id="tour-goal">
+            <GoalsPanel
+              goals={goals.map((goal) => ({
+                id: goal.id,
+                statement: goal.statement,
+                status: goal.status,
+                updatedAt: goal.updatedAt.toISOString(),
+              }))}
+            />
           </section>
 
           <section className="profile-section">

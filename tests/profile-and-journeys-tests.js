@@ -157,7 +157,7 @@ async function recreateDatabase(adminUrl, dbName) {
 function setAuthCookieForUser(user) {
   const token = signUserToken(user.id);
   cookieHeader = `${AUTH_COOKIE_NAME}=${token}`;
-  mockAuthResponseUser = { id: user.id, email: user.email, name: user.name, learningGoal: user.learningGoal };
+  mockAuthResponseUser = { id: user.id, email: user.email, name: user.name };
 }
 
 // This clears auth for guest scenarios.
@@ -167,20 +167,28 @@ function clearAuth() {
   localStorage.removeItem("lf_my_profile_seen");
 }
 
-// This creates a new test user with optional goal fields.
-async function createTestUser({ emailSuffix, learningGoal = null, learningGoalConfirmedAt = null }) {
+// This creates a new test user with optional goals.
+async function createTestUser({ emailSuffix, goals = [] }) {
   const unique = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const email = `test-profile-${emailSuffix || unique}@example.com`;
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash: "hash",
       role: "user",
       botRole: "coachee",
-      learningGoal,
-      learningGoalConfirmedAt,
     },
   });
+  if (goals.length) {
+    await prisma.userGoal.createMany({
+      data: goals.map((goal) => ({
+        userId: user.id,
+        statement: goal.statement,
+        status: goal.status || "active",
+      })),
+    });
+  }
+  return user;
 }
 
 // This removes personalized journeys and test users so each test has a clean slate.
@@ -190,14 +198,14 @@ async function clearTestData() {
 }
 
 // This seeds two personalized journeys for the same user.
-async function createPersonalizedJourneys(user) {
+async function createPersonalizedJourneys(user, goalSummary) {
   const first = await prisma.learningJourney.create({
     data: {
       title: "First personalized journey",
       intro: "First intro",
       isStandard: false,
       personalizedForUserId: user.id,
-      userGoalSummary: user.learningGoal || "First goal text",
+      userGoalSummary: goalSummary || "First goal text",
       status: "awaiting_review",
       slug: "personal-1",
     },
@@ -209,7 +217,7 @@ async function createPersonalizedJourneys(user) {
       intro: "Second intro",
       isStandard: false,
       personalizedForUserId: user.id,
-      userGoalSummary: user.learningGoal || "Second goal text",
+      userGoalSummary: goalSummary || "Second goal text",
       status: "active",
       slug: "personal-2",
     },
@@ -226,7 +234,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database", "Migrations and seed should load for profile/journeys tests.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   runCommand("npx prisma db seed --schema prisma/schema.prisma", "seed script executed");
 
   await clearTestData();
@@ -253,7 +261,7 @@ async function testProfileRequiresLogin() {
   const page = await MyProfilePage();
   const view = render(page);
   await screen.findByText("Please log in to see your profile");
-  screen.getByText("Sign in to view your learning goal, journeys, and conversations.");
+  screen.getByText("Sign in to view your learning goals, journeys, and conversations.");
   screen.getByRole("button", { name: "Login to continue" });
   logPass("Guest view shows the auth prompt.");
   cleanup();
@@ -262,28 +270,28 @@ async function testProfileRequiresLogin() {
 // Test: nav links depend on auth state.
 async function testNavVisibility() {
   logTest(
-    "Nav shows links based on auth",
-    "Guests should see Login only; signed-in users should see journeys, profile, and Logout."
+    "Nav shows links regardless of auth state",
+    "The top bar should always show Home, Learning Journeys, and Profile links."
   );
 
   clearAuth();
   mockPathname = "/";
   mockAuthResponseUser = null;
-  const guestNav = render(React.createElement(TopNav, { initialUser: null }));
-  expectMissing("Learning Journeys");
-  expectMissing("Profile");
-  expectMissing("Login");
-  logPass("Guest nav hides profile/journeys and keeps the bar minimal.");
+  render(React.createElement(TopNav, { initialUser: null }));
+  screen.getByText("Home");
+  screen.getByText("Learning Journeys");
+  screen.getByText("Profile");
+  logPass("Guest nav exposes the core links.");
   cleanup();
 
   const user = await createTestUser({ emailSuffix: "nav" });
   setAuthCookieForUser(user);
   mockPathname = "/";
-  const authedNav = render(React.createElement(TopNav, { initialUser: mockAuthResponseUser }));
+  render(React.createElement(TopNav, { initialUser: mockAuthResponseUser }));
+  screen.getByText("Home");
   screen.getByText("Learning Journeys");
   screen.getByText("Profile");
-  expectMissing("Logout");
-  logPass("Authed nav shows profile and journeys with no extra chips.");
+  logPass("Authed nav still shows the same links.");
   cleanup();
 }
 
@@ -294,7 +302,7 @@ async function testJourneysShowStandardOnly() {
     "Standard journeys should appear; personalized ones should stay hidden."
   );
   await clearTestData();
-  const user = await createTestUser({ emailSuffix: "journeys", learningGoal: "Test goal", learningGoalConfirmedAt: new Date() });
+  const user = await createTestUser({ emailSuffix: "journeys" });
   await prisma.learningJourney.create({
     data: {
       title: "Personalized hidden journey",
@@ -333,10 +341,11 @@ async function testJourneysGuestView() {
   mockPathname = "/journeys";
   const page = await JourneysPage();
   const view = render(page);
-  await screen.findByText("Learning Journeys");
-  await screen.findByText("Goal Clarification");
-  expectMissing("Please sign in to explore journeys");
-  logPass("Guest view of /journeys shows the public list.");
+  await screen.findByText("Please log in to view learning journeys");
+  screen.getByText("Sign in so we can show the journeys available to you.");
+  screen.getByRole("button", { name: "Login to continue" });
+  expectMissing("Goal Clarification");
+  logPass("Guest view of /journeys shows the gate prompt.");
   cleanup();
 }
 
@@ -349,10 +358,9 @@ async function testProfileShowsGoalAndJourneys() {
   await clearTestData();
   const user = await createTestUser({
     emailSuffix: "profile",
-    learningGoal: "Grow as a calm leader",
-    learningGoalConfirmedAt: new Date(),
+    goals: [{ statement: "Grow as a calm leader", status: "active" }],
   });
-  const { first, second } = await createPersonalizedJourneys(user);
+  const { first, second } = await createPersonalizedJourneys(user, "Grow as a calm leader");
 
   setAuthCookieForUser(user);
   mockPathname = "/my-profile";
@@ -388,8 +396,7 @@ async function testProfileEmptyStateNoJourneys() {
   await clearTestData();
   const user = await createTestUser({
     emailSuffix: "empty",
-    learningGoal: "Wait for my plan",
-    learningGoalConfirmedAt: new Date(),
+    goals: [{ statement: "Wait for my plan", status: "active" }],
   });
 
   setAuthCookieForUser(user);
@@ -397,9 +404,10 @@ async function testProfileEmptyStateNoJourneys() {
   const view = render(page);
 
   screen.getByText("Wait for my plan");
-  expectMissing("Recommended");
-  screen.getByText("Goal Clarification");
-  logPass("No personalized journeys show, but the standard template remains visible.");
+  expectMissing("Latest personalized journey");
+  screen.getByText("Shaping your journey");
+  screen.getByText("You don't need to do anything right now. We'll let you know as soon as it's ready.");
+  logPass("No personalized journey link shows and the waiting message is visible.");
   cleanup();
 }
 
@@ -412,8 +420,7 @@ async function testProfileTourFlag() {
   await clearTestData();
   const user = await createTestUser({
     emailSuffix: "tour",
-    learningGoal: "Learn tour",
-    learningGoalConfirmedAt: new Date(),
+    goals: [{ statement: "Learn tour", status: "active" }],
   });
   clearAuth();
   setAuthCookieForUser(user);
@@ -442,8 +449,7 @@ async function testLogoutFlow() {
   await clearTestData();
   const user = await createTestUser({
     emailSuffix: "logout",
-    learningGoal: "Check logout",
-    learningGoalConfirmedAt: new Date(),
+    goals: [{ statement: "Check logout", status: "active" }],
   });
   setAuthCookieForUser(user);
 
@@ -456,7 +462,7 @@ async function testLogoutFlow() {
   mockPathname = "/";
   const nav = render(React.createElement(TopNav, { initialUser: null }));
   screen.getByText("Home");
-  expectMissing("Learning Journeys");
+  screen.getByText("Learning Journeys");
   cleanup();
 
   const gatedProfile = await MyProfilePage();

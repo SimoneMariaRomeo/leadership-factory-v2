@@ -23,7 +23,12 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
   const [user, setUser] = useState<NavUser | null>(initialUser);
   const [checking, setChecking] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    setUser(initialUser || null);
+  }, [initialUser]);
 
   // This fetches the latest auth state so the nav stays in sync.
   const refreshUser = async () => {
@@ -66,6 +71,10 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
   const handleAuthSuccess = async () => {
     setShowAuthModal(false);
     await refreshUser();
+    if (pendingPath) {
+      router.push(pendingPath);
+      setPendingPath(null);
+    }
     router.refresh();
   };
 
@@ -76,6 +85,7 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
     const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
       if (requiresAuth && !user) {
         event.preventDefault();
+        setPendingPath(href);
         setShowAuthModal(true);
       }
     };
@@ -102,7 +112,14 @@ export default function TopNav({ initialUser = null }: TopNavProps) {
           </div>
         </div>
       </nav>
-      <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} onAuthenticated={handleAuthSuccess} />
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingPath(null);
+        }}
+        onAuthenticated={handleAuthSuccess}
+      />
     </>
   );
 }

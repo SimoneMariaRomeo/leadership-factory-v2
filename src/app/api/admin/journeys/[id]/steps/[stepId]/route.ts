@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, UnauthorizedError } from "../../../../../../../server/auth/session";
 import { AdminValidationError } from "../../../../../../../server/admin/sessions";
-import { updateJourneyStep } from "../../../../../../../server/admin/journeys";
+import { deleteJourneyStep, updateJourneyStep } from "../../../../../../../server/admin/journeys";
 
 type RouteParams = { params: { id: string; stepId: string } };
 
@@ -16,6 +16,17 @@ export async function PUT(req: Request, { params }: RouteParams) {
       status: body.status,
     });
     return NextResponse.json({ step });
+  } catch (error) {
+    return respondError(error);
+  }
+}
+
+// This removes a step from a journey.
+export async function DELETE(req: Request, { params }: RouteParams) {
+  try {
+    await requireAdmin(req);
+    const result = await deleteJourneyStep(params.id, params.stepId);
+    return NextResponse.json(result);
   } catch (error) {
     return respondError(error);
   }

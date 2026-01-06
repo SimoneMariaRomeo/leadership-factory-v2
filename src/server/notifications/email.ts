@@ -7,6 +7,11 @@ type GoalCommitEmailInput = {
   journey: { id: string; personalizedForUserId?: string | null };
 };
 
+type JourneyActivatedEmailInput = {
+  user: { id: string; email: string | null; name: string | null };
+  journey: { id: string; slug: string | null };
+};
+
 type MailOptions = {
   to: string;
   subject: string;
@@ -15,6 +20,13 @@ type MailOptions = {
 
 let transportPromise: Promise<nodemailer.Transporter> | null = null;
 let testSender: ((options: MailOptions) => Promise<void>) | null = null;
+
+// This reads the website URL so email links point to the right place.
+function getProductionUrl() {
+  const configured = (process.env.PRODUCTION_URL || "").trim();
+  const base = configured || "http://localhost:3000";
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+}
 
 // This lets tests provide a fake sender.
 export function setTestEmailSender(sender: ((options: MailOptions) => Promise<void>) | null) {
@@ -64,21 +76,35 @@ async function sendMail(options: MailOptions) {
 export async function sendGoalCommitEmails({ user, learningGoal, journey }: GoalCommitEmailInput) {
   const userEmail = user.email;
   const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
-  const profileLink = "https://www.leadership-factory.cn/my-profile";
-  const adminLink = `https://www.leadership-factory.cn/admin/journeys/${journey.id}`;
+  const baseUrl = getProductionUrl();
+  const profileLink = `${baseUrl}/my-profile`;
+  const adminLink = `${baseUrl}/admin/journeys/${journey.id}`;
 
   if (userEmail) {
     await sendMail({
       to: userEmail,
-      subject: "Your new learning goal is confirmed",
+      subject: "You’ve committed. Now let’s build around you",
       html: `
         <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-        <p>Your learning goal is now confirmed:</p>
-        <p><strong>${learningGoal}</strong></p>
-        <p>We are preparing your personalized journey. You can check in anytime here:</p>
-        <p><a href="${profileLink}">${profileLink}</a></p>
-        <p>Thank you,</p>
-        <p>Leadership Factory</p>
+
+        <p>You just did something many people put off: you made a conscious choice about how you want to develop.</p>
+
+        <p><strong style="color:#c79d2d;">Your goal:</strong><br/>
+        <strong style="color:#c79d2d;">${learningGoal}</strong></p>
+
+        <p>
+        From here, We’ll start shaping a personalized learning journey <em>with you</em>: grounded in your context, your constraints, and what will actually help you push your growth boundaries.
+        </p>
+
+        <p>
+        <strong>You don’t need to do anything right now. We’ll email you when the the first step is ready (usually within a few days).</strong>
+        </p>
+
+        <p>
+        Talk soon,<br/>
+        Simone<br/>
+        Leadership Factory
+        </p>
       `.trim(),
     });
   }
@@ -96,4 +122,33 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
       `.trim(),
     });
   }
+}
+
+// This tells a user when their personalized journey is ready to start.
+export async function sendJourneyActivatedEmail({ user, journey }: JourneyActivatedEmailInput) {
+  const userEmail = user.email;
+  if (!userEmail) return;
+
+  const baseUrl = getProductionUrl();
+  const journeySlugOrId = journey.slug || journey.id;
+  const journeyLink = `${baseUrl}/journeys/${journeySlugOrId}?userId=${encodeURIComponent(user.id)}`;
+
+  await sendMail({
+    to: userEmail,
+    subject: "Begin before you feel ready",
+    html: `
+      <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+  
+      <p>You trusted us with your goal and we designed a learning journey just <strong>for you.</strong></p>
+  
+      <p>It’s ready now and it starts here:</p>
+  
+      <p><a href="${journeyLink}">Open your journey</a></p>
+  
+      <p>Do the smallest “brave” action you can take today — the one you’d usually postpone.</p>
+  
+      <p>Simone<br/>
+      Leadership Factory</p>
+    `.trim(),
+  });
 }

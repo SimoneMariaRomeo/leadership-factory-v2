@@ -1,10 +1,32 @@
-// This page lists the active standard journeys for anyone to browse.
+// This page lists the active standard journeys for signed-in users to browse.
+import { headers } from "next/headers";
 import { prisma } from "../../server/prismaClient";
+import LoginPrompt from "../components/LoginPrompt";
 import JourneyGridReveal from "./JourneyGridReveal";
+import { getCurrentUser, requestFromCookieHeader } from "../../server/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function JourneysPage() {
+  const cookieHeader = headers().get("cookie");
+  const user = await getCurrentUser(requestFromCookieHeader(cookieHeader));
+
+  if (!user) {
+    return (
+      <div className="content-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="content-inner">
+          <LoginPrompt
+            title="Please log in to view learning journeys"
+            message="Sign in so we can show the journeys available to you."
+            buttonLabel="Login to continue"
+            afterLoginPath="/journeys"
+          />
+        </div>
+      </div>
+    );
+  }
+
   const standardJourneys = await prisma.learningJourney.findMany({
     where: { isStandard: true, status: "active", personalizedForUserId: null },
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],

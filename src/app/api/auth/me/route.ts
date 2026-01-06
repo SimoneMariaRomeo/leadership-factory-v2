@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "../../../../server/auth/session";
 
+export const dynamic = "force-dynamic";
+
 // This handles the GET request and returns the active user or null.
 export async function GET(req: Request) {
   try {

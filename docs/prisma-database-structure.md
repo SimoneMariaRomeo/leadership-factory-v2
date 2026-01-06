@@ -8,8 +8,6 @@ model User {
   passwordHash            String
   picture                 String?
   role                    String                // "user" | "admin"
-  learningGoal            String?
-  learningGoalConfirmedAt DateTime?
   botRole                 String
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
@@ -17,6 +15,17 @@ model User {
   // Relations
   chats                   LearningSessionChat[]
   journeys                LearningJourney[]      @relation("UserJourneys")    // personalized journeys
+  goals                   UserGoal[]
+}
+
+model UserGoal {
+  id                      String   @id @default(cuid())
+  userId                  String
+  user                    User     @relation(fields: [userId], references: [id])
+  statement               String
+  status                  String   // "active" | "achieved"
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model LearningSessionChat {

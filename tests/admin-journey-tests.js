@@ -126,10 +126,8 @@ async function seedUser(label) {
 async function seedOutline(journeyId, slug, order = 1) {
   return prisma.learningSessionOutline.create({
     data: {
-      journeyId,
       slug,
       order,
-      live: true,
       title: `Outline ${slug}`,
       objective: "Guide the user",
       content: "Content body",
@@ -146,7 +144,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database", "Migrations should run for admin journey tests.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   await clearData();
 
   await testJourneyFilters();
@@ -325,9 +323,9 @@ async function testStepsAddEditReorder() {
   logPass("Steps add, edit, and reorder correctly.");
 }
 
-// This checks need-analysis chat link data is present.
+// This checks define-your-goal chat link data is present.
 async function testNeedAnalysisLink() {
-  logTest("admin-journey need-analysis chat link available", "Journey detail should expose chat id for need-analysis step.");
+  logTest("admin-journey define-your-goal chat link available", "Journey detail should expose chat id for define-your-goal step.");
   await clearData();
 
   const journey = await createJourney({
@@ -337,31 +335,33 @@ async function testNeedAnalysisLink() {
     status: "draft",
   });
 
-  const needOutline = await seedOutline(journey.id, "need-analysis", 1);
-  const chat = await prisma.learningSessionChat.create({
+  const needOutline = await seedOutline(journey.id, "define-your-goal", 1);
+  const needStepRecord = await prisma.learningJourneyStep.create({
+    data: {
+      journeyId: journey.id,
+      sessionOutlineId: needOutline.id,
+      order: 1,
+      status: "unlocked",
+    },
+  });
+  const needChat = await prisma.learningSessionChat.create({
     data: {
       sessionOutlineId: needOutline.id,
+      step: { connect: { id: needStepRecord.id } },
       sessionTitle: "Need Analysis",
       startedAt: new Date(),
       lastMessageAt: new Date(),
     },
   });
 
-  await prisma.learningJourneyStep.create({
-    data: {
-      journeyId: journey.id,
-      sessionOutlineId: needOutline.id,
-      order: 1,
-      status: "unlocked",
-      chatId: chat.id,
-    },
-  });
-
   const detail = await getJourneyDetail(journey.id);
-  const needStep = detail.steps.find((step) => step.sessionOutline.slug === "need-analysis");
-  assert(needStep && needStep.chatId === chat.id, "Need-analysis step should carry chat id.");
+  const needStep = detail.steps.find((step) => step.sessionOutline.slug === "define-your-goal");
+  assert(
+    needStep && needStep.chats.some((item) => item.id === needChat.id),
+    "Define-your-goal step should expose the define-your-goal chat id."
+  );
 
-  logPass("Need-analysis chat id is available for the admin link.");
+  logPass("Define-your-goal chat id is available for the admin link.");
 }
 
 main().catch((error) => {

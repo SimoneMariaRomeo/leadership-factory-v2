@@ -134,12 +134,8 @@ export async function getOrCreateStepChat(stepId: string, userId: string | null)
         },
       });
 
-  if (step.status === "locked") {
-    await prisma.learningJourneyStep.update({
-      where: { id: step.id },
-      data: { status: "unlocked", unlockedAt: step.unlockedAt ?? now },
-    });
-  } else if (!step.unlockedAt) {
+  // Standard journeys are shared templates, so we avoid changing step timestamps for everyone.
+  if (!step.journey.isStandard && !step.unlockedAt) {
     await prisma.learningJourneyStep.update({
       where: { id: step.id },
       data: { unlockedAt: now },
@@ -164,15 +160,17 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
   if (access.status !== "ok") return access;
 
   const step = access.step;
+  if (step.journey.isStandard) {
+    return { status: "forbidden" };
+  }
   if (step.status === "locked") {
     return { status: "locked" };
   }
 
   const now = new Date();
   const journeyId = step.journeyId;
-  const journey = step.journey;
 
-  const { completedStep, unlockedStep } = await prisma.$transaction(async (tx) => {
+  const { completedStep, unlockedStep, journey } = await prisma.$transaction(async (tx) => {
     const currentStep = await tx.learningJourneyStep.findUnique({
       where: { id: stepId },
       include: { journey: true, sessionOutline: true, chats: true },
@@ -209,7 +207,19 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
       });
     }
 
-    return { completedStep: updatedStep, unlockedStep: unlocked };
+    const remainingSteps = await tx.learningJourneyStep.count({
+      where: { journeyId, status: { not: "completed" } },
+    });
+
+    const updatedJourney =
+      remainingSteps === 0 &&
+      currentStep.journey.status === "active" &&
+      !currentStep.journey.isStandard &&
+      Boolean(currentStep.journey.personalizedForUserId)
+        ? await tx.learningJourney.update({ where: { id: journeyId }, data: { status: "completed" } })
+        : currentStep.journey;
+
+    return { completedStep: updatedStep, unlockedStep: unlocked, journey: updatedJourney };
   });
 
   return { status: "ok", journey, completedStep, unlockedStep };

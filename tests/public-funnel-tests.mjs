@@ -95,33 +95,35 @@ const { clearPendingGoal, setPendingGoal } = require("../src/lib/pending-goal-st
 async function main() {
   const user = userEvent.setup({ document });
 
-  logTest("Landing to Welcome navigation", "The Start button should point to /welcome.");
+  logTest("Home page is the welcome page", "The home page should show the welcome text and a START link to /learning-guide-intro.");
   const landing = render(React.createElement(HomePage));
-  const startLink = landing.getByRole("link", { name: "Start" });
-  assert(startLink.getAttribute("href") === "/welcome", "Start button should link to /welcome.");
-  logPass("Landing page links to /welcome.");
+  await landing.findByText((content) => content.includes("Welcome!"));
+  await landing.findByText((content) => content.includes("Simone & Robin"));
+  await landing.findByText((content) => content.includes("If you believe that improvement is a choice"));
+  const startLink = landing.getByRole("link", { name: "START" });
+  assert(startLink.getAttribute("href") === "/learning-guide-intro", "START should point to /learning-guide-intro.");
+  logPass("Home page shows the welcome content and points to the guide intro.");
   cleanup();
 
   logTest(
     "Welcome page content",
-    "The welcome page should show the exact title, three paragraphs, and a CONTINUE button to /learning-guide-intro."
+    "The welcome page should show the title, two paragraphs, and a START button to /learning-guide-intro."
   );
   const welcome = render(React.createElement(WelcomePage));
-  await welcome.findByText((content) => content.includes("Welcome to leadership-factory.cn"));
-  await welcome.findByText((content) => content.includes("It's a space created to help you grow"));
-  await welcome.findByText((content) => content.includes("Because every journey begins"));
-  await welcome.findByText((content) => content.includes("Let's take your first step together."));
-  const continueLink = welcome.getByRole("link", { name: "CONTINUE" });
-  assert(continueLink.getAttribute("href") === "/learning-guide-intro", "CONTINUE should point to /learning-guide-intro.");
+  await welcome.findByText((content) => content.includes("Welcome!"));
+  await welcome.findByText((content) => content.includes("Simone & Robin"));
+  await welcome.findByText((content) => content.includes("If you believe that improvement is a choice"));
+  const continueLink = welcome.getByRole("link", { name: "START" });
+  assert(continueLink.getAttribute("href") === "/learning-guide-intro", "START should point to /learning-guide-intro.");
   logPass("Welcome page copy and link look right.");
   cleanup();
 
   logTest(
     "Learning-guide-intro page content & CTA",
-    "This page should introduce the guide and send people to the need-analysis step."
+    "This page should introduce the guide and send people to the define-your-goal step."
   );
   const intro = render(React.createElement(LearningGuideIntroPage));
-  await intro.findByText((content) => content.includes("I'm your learning guide, here to guide your journey of discovery and growth."));
+  await intro.findByText((content) => content.includes("I'm your learning guide, here to support you along your journey of discovery and growth."));
   await intro.findByText(
     "I'll ask you a few easy questions about what you'd like to work on, such as your goals, confidence, communication, relationships, or everyday challenges."
   );
@@ -129,8 +131,8 @@ async function main() {
   await intro.findByText((content) => content.includes("When you're ready, let's begin."));
   const readyLink = intro.getByRole("link", { name: "I'M READY" });
   assert(
-    readyLink.getAttribute("href") === "/journeys/goal-clarification/steps/need-analysis",
-    "I'M READY should point to the need-analysis step (slug-based)."
+    readyLink.getAttribute("href") === "/define-your-goal",
+    "I'M READY should point to the public define-your-goal page."
   );
   logPass("Learning-guide-intro text and CTA look right.");
   cleanup();
@@ -157,14 +159,14 @@ async function main() {
   setPendingGoal("Edited Goal Text");
   const whatsNext = render(React.createElement(WhatsNextPage, { searchParams: {} }));
   await whatsNext.findByText("You did it!");
-  whatsNext.getByText("Here is a personalized learning journey title and intro based on what you shared.");
-  whatsNext.getByText("Our team will now create the detailed sessions and steps for this journey.");
+  whatsNext.getByText("Here is a personalized learning suggestion based on what you shared.");
+  whatsNext.getByText("We’ll now turn this into a concrete journey you can actually follow: step by step.");
   whatsNext.getByText("If you want a different angle, ask for another recommendation, then confirm to lock it in.");
   whatsNext.getByText("Please make sure you are signed in so we can send the details to your inbox.");
   await whatsNext.findByText("Test Journey Title");
   whatsNext.getByText("Test intro text crafted for the goal.");
   whatsNext.getByRole("button", { name: "Recommend another journey" });
-  const yesButton = whatsNext.getByRole("button", { name: "YES, I'M IN!" });
+  const yesButton = whatsNext.getByRole("button", { name: "YES, buld my journey!" });
   await user.click(yesButton);
   whatsNext.getByText("Welcome back");
   const loginButtons = whatsNext.getAllByRole("button", { name: "Login" });

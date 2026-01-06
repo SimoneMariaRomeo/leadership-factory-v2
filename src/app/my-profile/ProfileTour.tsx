@@ -1,7 +1,7 @@
 "use client";
 
 // This card appears only on the first profile visit and hides after the user clicks Got it.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 type ProfileTourProps = {
   userId: string | null;
@@ -13,7 +13,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const [liveSteps, setLiveSteps] = useState<{ id: string; title: string; description: string }[]>([]);
+  const [liveSteps, setLiveSteps] = useState<{ id: string; title: string; description: ReactNode }[]>([]);
 
   useEffect(() => {
     setShow(initialShow);
@@ -30,11 +30,15 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
         description: "Take a quick tour to discover the main areas of your profile.",
       },
       { id: "tour-avatar", title: "This is your profile avatar", description: "Click it anytime to change it." },
-      { id: "tour-goal", title: "This is your learning goal", description: "Edit your goal here, or create a new one from the main page. It will be used to tailor your journey." },
       {
         id: "tour-personalized",
         title: "Your personalized journey",
         description: "When ready, your tailored journey appears here. We'll send you an email when there's an update.",
+      },
+      {
+        id: "tour-goal",
+        title: "These are your learning goals",
+        description: "Edit goals, add new ones, or mark them achieved to keep your journey on track.",
       },
       {
         id: "tour-conversations",
@@ -45,6 +49,16 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
         id: "tour-nav-journeys",
         title: "Learning journeys menu",
         description: "Browse all available journeys while your personalized plan is being crafted.",
+      },
+      {
+        id: "tour-ready-center",
+        title: "You're all set",
+        description: (
+          <>
+            <strong>You don't need to do anything right now.</strong> We'll email you when your personalized learning journey is ready
+            (usually within a few days).
+          </>
+        ),
       },
     ],
     []
@@ -70,7 +84,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
       const tooltipHeight = 180;
       const navGuard = 72; // keeps the tooltip clear of the top nav
 
-      if (stepId === "tour-start-anchor") {
+      if (stepId === "tour-start-anchor" || stepId === "tour-ready-center") {
         const left = Math.max(16, (window.innerWidth - tooltipWidth) / 2);
         const top = Math.max(navGuard + 8, (window.innerHeight - tooltipHeight) / 2);
         setTooltipPos({ top, left });
@@ -105,6 +119,15 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
       setHighlightRect(null);
       return;
     }
+    const isCenteredStep = step.id === "tour-start-anchor" || step.id === "tour-ready-center";
+    if (isCenteredStep) {
+      // Special case: centered steps use a synthetic center rect.
+      const centerRect = new DOMRect(window.innerWidth / 2 - 1, window.innerHeight / 2 - 1, 2, 2);
+      setHighlightRect(centerRect);
+      positionTooltip(centerRect, step.id);
+      return;
+    }
+
     const el = document.getElementById(step.id);
     if (!el) {
       // Skip missing targets and finish if none remain.
@@ -113,14 +136,6 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
       } else {
         setStepIndex((prev) => prev + 1);
       }
-      return;
-    }
-
-    // Special case: intro step uses a synthetic center rect.
-    if (step.id === "tour-start-anchor") {
-      const centerRect = new DOMRect(window.innerWidth / 2 - 1, window.innerHeight / 2 - 1, 2, 2);
-      setHighlightRect(centerRect);
-      positionTooltip(centerRect, step.id);
       return;
     }
 
@@ -172,6 +187,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
 
   const safeIndex = Math.min(stepIndex, liveSteps.length - 1);
   const currentStep = liveSteps[safeIndex];
+  const isLastStep = safeIndex >= liveSteps.length - 1;
 
   return (
     <>
@@ -201,7 +217,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
                 Skip
               </button>
               <button type="button" className="primary-button nav-button" onClick={handleNext}>
-                Next
+                {isLastStep ? "Done" : "Next"}
               </button>
             </div>
           </div>

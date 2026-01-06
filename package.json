@@ -11,6 +11,9 @@
     "pg": "^8.13.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -43,7 +46,7 @@
     "db:seed": "prisma db seed",
     "test:schema-and-seed": "node tests/schema-and-seed-tests.js",
     "test:public-funnel": "node tests/public-funnel-tests.mjs",
-    "test:need-analysis-chat": "node tests/need-analysis-chat-tests.mjs",
+    "test:define-your-goal-chat": "node tests/define-your-goal-chat-tests.mjs",
     "test:step4-create-learning-goal": "node tests/step4-create-learning-goal-tests.js",
     "test:goal-commit": "node tests/goal-commit-tests.js",
     "test:profile-and-journeys": "node tests/profile-and-journeys-tests.js",

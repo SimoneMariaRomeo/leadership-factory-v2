@@ -4,6 +4,8 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { prisma } from "../../../server/prismaClient";
 import { callChatModel, type LlmMessage } from "../../../server/llm/client";
+import { ensureGuestId } from "../../../server/guest";
+import { checkRateLimit } from "../../../server/rateLimit";
 
 type RecommendJourneyRequest = {
   learningGoal?: unknown;
@@ -48,6 +50,40 @@ async function loadJourneyExamples() {
 
 export async function POST(req: Request) {
   try {
+    // This rate limits the expensive AI call so one person cannot spam it.
+    const ensured = ensureGuestId(req);
+    const guestId = ensured.guestId;
+    const guestCookieToSet = ensured.cookieToSet;
+    const ip = String(req.headers.get("x-forwarded-for") || "")
+      .split(",")[0]
+      .trim();
+
+    const perGuestLimit = checkRateLimit(`recommend:guest:${guestId}`, 6, 60_000);
+    if (!perGuestLimit.allowed) {
+      const limited = NextResponse.json(
+        { error: "Too many requests. Please wait a bit and try again." },
+        { status: 429, headers: { "Retry-After": String(perGuestLimit.retryAfterSeconds) } }
+      );
+      if (guestCookieToSet) {
+        limited.cookies.set(guestCookieToSet);
+      }
+      return limited;
+    }
+
+    if (ip) {
+      const perIpLimit = checkRateLimit(`recommend:ip:${ip}`, 20, 60_000);
+      if (!perIpLimit.allowed) {
+        const limited = NextResponse.json(
+          { error: "Too many requests from this network. Please wait and try again." },
+          { status: 429, headers: { "Retry-After": String(perIpLimit.retryAfterSeconds) } }
+        );
+        if (guestCookieToSet) {
+          limited.cookies.set(guestCookieToSet);
+        }
+        return limited;
+      }
+    }
+
     const body = (await req.json()) as RecommendJourneyRequest;
     const learningGoal = typeof body.learningGoal === "string" ? body.learningGoal.trim() : "";
     const avoidJourneys =
@@ -98,10 +134,16 @@ export async function POST(req: Request) {
       aiIntro ||
       `This journey is designed around your goal: ${learningGoal}. It will help you build skills, habits, and confidence step by step.`;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       title: fallbackTitle,
       intro: fallbackIntro,
     });
+
+    if (guestCookieToSet) {
+      response.cookies.set(guestCookieToSet);
+    }
+
+    return response;
   } catch (err) {
     console.error("Recommend journey failed:", err);
     return NextResponse.json({ error: "Could not recommend a journey." }, { status: 500 });

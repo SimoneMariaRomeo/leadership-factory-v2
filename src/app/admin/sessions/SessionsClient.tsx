@@ -1,7 +1,8 @@
 "use client";
 
 // This component runs the admin outline UI in the browser.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type JourneyOption = {
   id: string;
@@ -45,6 +46,10 @@ type OutlineForm = {
 };
 
 export default function SessionsClient({ journeys, initialOutlines }: SessionsClientProps) {
+  const searchParams = useSearchParams();
+  const outlineIdFromQuery = searchParams.get("outlineId");
+  const hasPickedOutlineFromQuery = useRef(false);
+
   const [outlines, setOutlines] = useState<OutlineRecord[]>(initialOutlines);
   const [filters, setFilters] = useState<Filters>({ journeyId: "", search: "" });
   const [selectedId, setSelectedId] = useState<string | null>(initialOutlines[0]?.id || null);
@@ -56,6 +61,22 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedOutline = useMemo(() => outlines.find((item) => item.id === selectedId) || null, [outlines, selectedId]);
+
+  useEffect(() => {
+    if (hasPickedOutlineFromQuery.current) return;
+    if (!outlineIdFromQuery) return;
+
+    const outlineExists = outlines.some((outline) => outline.id === outlineIdFromQuery);
+    if (!outlineExists) return;
+
+    hasPickedOutlineFromQuery.current = true;
+    setSelectedId(outlineIdFromQuery);
+    setMessage(null);
+
+    setTimeout(() => {
+      document.getElementById("outline-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }, [outlineIdFromQuery, outlines]);
 
   useEffect(() => {
     if (selectedId && selectedOutline) {
@@ -209,6 +230,8 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
     return date.toLocaleString();
   };
 
+  const hasUnsaved = dirtyIds.size > 0;
+
   return (
     <div className="admin-grid">
       <div className="admin-filters-card">
@@ -305,9 +328,10 @@ export default function SessionsClient({ journeys, initialOutlines }: SessionsCl
             </tbody>
           </table>
         </div>
+        {dirtyIds.size > 0 ? <p className="dirty-note" style={{ marginTop: 8 }}>Unsaved rows are highlighted. Save to clear.</p> : null}
       </div>
 
-        <div className="admin-form-card">
+        <div id="outline-editor" className={`admin-form-card ${hasUnsaved ? "dirty-card" : ""}`}>
         <div className="admin-card-head">
           <div>
             <h3 className="admin-title">{creatingNew ? "Create outline" : "Edit outline"}</h3>

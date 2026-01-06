@@ -79,7 +79,7 @@ function runCommand(command, label) {
   logPass(label);
 }
 
-// This makes a fresh test user with no goal yet.
+// This makes a fresh test user with no goals yet.
 async function createTestUser(emailOverride) {
   const unique = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   return prisma.user.create({
@@ -88,7 +88,6 @@ async function createTestUser(emailOverride) {
       passwordHash: "hash",
       role: "user",
       botRole: "coachee",
-      learningGoal: null,
     },
   });
 }
@@ -120,7 +119,7 @@ async function main() {
   prisma = new PrismaClient({ adapter });
 
   logTest("Prepare database for goal commit checks", "Migrations and seed should load for the dedicated DB.");
-  runCommand("npx prisma migrate dev --schema prisma/schema.prisma", "prisma migrate dev completed");
+  runCommand("npx prisma migrate deploy --schema prisma/schema.prisma", "prisma migrate deploy completed");
   runCommand("npx prisma db seed --schema prisma/schema.prisma", "seed script executed");
 
   setTestEmailSender(async (options) => {
@@ -159,8 +158,8 @@ async function testUnauthenticatedCannotCommit() {
   const response = await POST(request);
   assert(response.status === 401, "Status should be 401 for missing auth.");
 
-  const afterUser = await prisma.user.findUnique({ where: { id: user.id } });
-  assert(afterUser?.learningGoal === null, "User learningGoal should stay null.");
+  const afterGoals = await prisma.userGoal.count({ where: { userId: user.id } });
+  assert(afterGoals === 0, "User goals should stay empty.");
   const afterJourneys = await prisma.learningJourney.count({ where: { isStandard: false } });
   assert(afterJourneys === beforeJourneys, "No personalized journey should be created.");
   logPass("Unauthorized request was blocked and data stayed unchanged.");
@@ -169,8 +168,8 @@ async function testUnauthenticatedCannotCommit() {
 // Test: commit should save goal text and timestamp.
 async function testGoalCommitPersistsGoalAndTimestamp() {
   logTest(
-    "Goal commit persists user goal and timestamp",
-    "Authenticated request should save learningGoal and set learningGoalConfirmedAt."
+    "Goal commit persists user goal",
+    "Authenticated request should create a new active goal row with the submitted text."
   );
   await clearTestData();
   const user = await createTestUser();
@@ -189,17 +188,15 @@ async function testGoalCommitPersistsGoalAndTimestamp() {
   const data = await response.json();
   assert(response.status === 200 && data?.success === true, "Response should be 200 with success true.");
 
-  const updatedUser = await prisma.user.findUnique({ where: { id: user.id } });
-  assert(
-    updatedUser?.learningGoal === "Improve my executive communication skills",
-    "learningGoal should match the submitted text."
-  );
-  assert(updatedUser?.learningGoalConfirmedAt, "learningGoalConfirmedAt should be set.");
-  assert(
-    updatedUser.learningGoalConfirmedAt.getTime() >= startedAt,
-    "learningGoalConfirmedAt should be a recent timestamp."
-  );
-  logPass("User goal and confirmation time were saved.");
+  const goals = await prisma.userGoal.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+  assert(goals.length === 1, "One goal should be created.");
+  assert(goals[0].statement === "Improve my executive communication skills", "Goal text should match the request.");
+  assert(goals[0].status === "active", "New goal should be active.");
+  assert(goals[0].createdAt.getTime() >= startedAt, "Goal createdAt should be recent.");
+  logPass("User goal was saved in the goals table.");
 }
 
 // Test: commit should create one personalized journey shell.
@@ -242,8 +239,8 @@ async function testGoalCommitCreatesPersonalizedJourney() {
 // Test: repeat commits create multiple journeys and update goal each time.
 async function testRepeatCommitCreatesAdditionalJourneys() {
   logTest(
-    "Repeat commit creates additional journeys and updates the goal",
-    "A second commit should add another journey and refresh the user fields."
+    "Repeat commit creates additional journeys and adds a goal each time",
+    "A second commit should add another journey and another goal row."
   );
   await clearTestData();
   const user = await createTestUser();
@@ -259,8 +256,8 @@ async function testRepeatCommitCreatesAdditionalJourneys() {
     )
   );
   assert(firstResponse.status === 200, "First commit should return 200.");
-  const afterFirstUser = await prisma.user.findUnique({ where: { id: user.id } });
-  const firstConfirmedAt = afterFirstUser?.learningGoalConfirmedAt?.getTime() || 0;
+  const firstGoals = await prisma.userGoal.findMany({ where: { userId: user.id } });
+  assert(firstGoals.length === 1, "First commit should create one goal.");
 
   const secondResponse = await POST(
     buildAuthedRequest(
@@ -273,12 +270,13 @@ async function testRepeatCommitCreatesAdditionalJourneys() {
     )
   );
   assert(secondResponse.status === 200, "Second commit should return 200.");
-  const afterSecondUser = await prisma.user.findUnique({ where: { id: user.id } });
-  assert(afterSecondUser?.learningGoal === "Second goal text", "User goal should update to the latest text.");
-  assert(
-    (afterSecondUser?.learningGoalConfirmedAt?.getTime() || 0) >= firstConfirmedAt,
-    "learningGoalConfirmedAt should move forward."
-  );
+  const secondGoals = await prisma.userGoal.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "asc" },
+  });
+  assert(secondGoals.length === 2, "Second commit should create a second goal.");
+  assert(secondGoals[0].statement === "First goal text", "First goal should be kept.");
+  assert(secondGoals[1].statement === "Second goal text", "Second goal should be saved.");
 
   const journeys = await prisma.learningJourney.findMany({
     where: { personalizedForUserId: user.id, isStandard: false },
@@ -358,8 +356,10 @@ async function testEndpointIgnoresClientSuppliedUserId() {
   assert(journeysForB.length === 0, "No journey should be created for the other user.");
   const userARecord = await prisma.user.findUnique({ where: { id: userA.id } });
   const userBRecord = await prisma.user.findUnique({ where: { id: userB.id } });
-  assert(userARecord?.learningGoal === "Only for user A", "User A goal should be updated.");
-  assert(userBRecord?.learningGoal === null, "User B goal should stay untouched.");
+  const goalsForA = await prisma.userGoal.findMany({ where: { userId: userA.id } });
+  const goalsForB = await prisma.userGoal.findMany({ where: { userId: userB.id } });
+  assert(goalsForA.length === 1 && goalsForA[0].statement === "Only for user A", "User A goal should be saved.");
+  assert(goalsForB.length === 0, "User B goals should stay untouched.");
   logPass("Endpoint derived the user solely from the auth cookie.");
 }
 
