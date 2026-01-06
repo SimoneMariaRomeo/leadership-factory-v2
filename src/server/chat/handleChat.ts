@@ -311,7 +311,7 @@ export async function handleChat({
 
   const journeyForPrompt = journeyFromStep?.journey || null;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
-  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset. You write informal, simple English and short sentences. Format your replies with bold, italics and new lines to improve readability.";
+  const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset. You talk in a friend, casual, informal, very simple English and short sentences. Format your replies with bold, italics and new lines to improve readability.";
 
   const outlineForPrompt = journeyFromStep?.sessionOutline || outline;
   const isDefineYourGoal = outlineForPrompt?.slug === "define-your-goal";

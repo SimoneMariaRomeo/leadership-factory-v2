@@ -55,7 +55,7 @@ export default function ProfileTour({ userId, show: initialShow }: ProfileTourPr
         title: "You're all set",
         description: (
           <>
-            <strong>You don't need to do anything right now.</strong> We'll email you when the first step is ready
+            <strong>You don't need to do anything right now.</strong> We'll email you when your personalized learning journey is ready
             (usually within a few days).
           </>
         ),

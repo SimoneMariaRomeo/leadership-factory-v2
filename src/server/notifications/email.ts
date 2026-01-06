@@ -97,7 +97,7 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
         </p>
 
         <p>
-        <strong>You don’t need to do anything right now. We’ll email you when the first step is ready (usually within a few days).</strong>
+        <strong>You don’t need to do anything right now. We’ll email you when the the first step is ready (usually within a few days).</strong>
         </p>
 
         <p>
