@@ -1,40 +1,23 @@
-TEST REPORT (2026-01-05)
 
-This file is a simple report of what happened when I ran the tests.
+TO FIX 
 
-How I ran the tests
-- I ran each test command one by one.
-- Note: `npm run test:all` stops at the first failure, so I did not use it for the full report.
+1)
+Bot prompt to avoid wrong formatting to cross check goal:
+/define-your-goal
+Wanting to move forward but feeling held back by self-doubt—that tension between determination and uncertainty is a powerful signal. It’s not lack of ability; it’s likely an inner confidence gap surfacing under pressure.
 
-Results (PASS/FAIL)
-- PASS: `npm run test:schema-and-seed`
-- FAIL: `npm run test:public-funnel`
-- PASS: `npm run test:step4-create-learning-goal`
-- PASS: `npm run test:goal-commit`
-- PASS: `npm run test:define-your-goal-chat`
-- FAIL: `npm run test:profile-and-journeys`
-- PASS: `npm run test:journeys-and-steps`
-- PASS: `npm run test:live-admin`
+So far, we have:
 
-Summary
-- 6 tests passed.
-- 2 tests failed.
+[X Situation]: Launching a personal business amid paralyzing uncertainty and mental fog
+[Y Pattern]: A recurring thought of "I have no clue what I'm doing," triggering procrastination
+[Z Learning]: Building self-trust and clarity under ambiguity
+[X Goal]: Successfully moving forward with the business despite uncertainty
+Does it resonate that developing confidence in navigating the unknown could be the key learning you're seeking?
 
-FAILURE DETAILS
-
-1) `npm run test:public-funnel`
-- What failed: “Learning-guide-intro page content & CTA”.
-- Why it failed: the test expects a sentence that no longer matches the page text.
-  - Test expects: “I'm your learning guide, here to guide your journey of discovery and growth.”
-  - Page now shows: “I'm your learning guide, here to support you along your journey of discovery and growth.”
-- What we can change to fix it (options):
-  - Option A (recommended): update the test text in `tests/public-funnel-tests.mjs` to match the current page.
-  - Option B: change the page copy back to the old sentence (this changes what users see).
-  - Option C: make the test less strict (for example: only check “I'm your learning guide”).
-- Things to consider:
-  - Updating the test accepts the new wording (no user-facing change).
-  - Changing the page copy affects the product wording and could affect translations or marketing text.
-  - Making the test less strict makes it less likely to fail when copy changes, but it also means the test will catch fewer copy mistakes.
+2)
+Add a last onboarding card (which show only  while the user’s profileTour flag stays true), make it centered in the screen. 
+        <strong>You don’t need to do anything right now. We’ll email you when the first step is ready (usually within a few days).</strong>
+After the last card, instead of next, the sign should be "Done"
 
 2) `npm run test:profile-and-journeys`
 - What failed: “Profile shows goal and recommended journey”.

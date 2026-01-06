@@ -93,25 +93,11 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
         <strong style="color:#c79d2d;">${learningGoal}</strong></p>
 
         <p>
-        From here, I’ll start shaping a personalized learning journey <em>with you</em>: grounded in your context, your constraints, and what will actually help you push your growth boundaries.
+        From here, We’ll start shaping a personalized learning journey <em>with you</em>: grounded in your context, your constraints, and what will actually help you push your growth boundaries.
         </p>
 
         <p>
-        You don’t need to do anything right now. I’ll email you when the first step is ready (usually within a few days).
-        </p>
-
-        <p>
-        One more thing: Leadership Factory is still evolving, and you’re among our first users. That means this will be unusually personal, and your input will directly shape what we build next.
-        </p>
-
-        <p>
-        If you’re open to it, just hit reply and tell me one thing:<br/>
-        <strong>How was the experience so far? How could we make it better?</strong>
-        </p>
-
-        <p>
-        If you’d rather talk it through live, you can book a time that suits you here:<br/>
-        <a href="https://calendar.app.google/oQ53qMRtWBuiJW839">Book a conversation</a>
+        <strong>You don’t need to do anything right now. We’ll email you when the first step is ready (usually within a few days).</strong>
         </p>
 
         <p>
