@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const welcomeParagraphs = [
   {
-    text: "This is a space created by Simone & Robin, two Learning&Development professionals, to support anyone who wants to become the best version of themselves.",
+    text: "A space created by Simone and Robin to help you grow as a leader and person.",
   },
   { text: "If you believe that improvement is a choice, click below.", italic: true },
 ];

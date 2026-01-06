@@ -116,24 +116,13 @@ Report:
 - Does the page feel "too busy" or "just right"?
 
 ### Journey 9 — Previous Conversations (presentation)
-Goal: The conversation list is clear and useful.
+Goal: The profile onboarding is useful.
 Steps:
-1) On My Profile, find "Your Previous Conversations".
-2) Open the latest conversation.
-3) Try to continue the chat with one more message.
+1) Check the onboarding steps for the profile.
+2) Check the final profile page.
 Report:
-- Is it clear which conversation is which?
+- Is everything clear or confusing?
 - Does the chat page feel the same style as the rest of the site?
-
-### Journey 10 — Mobile/small screen check (taste)
-Goal: The site still feels good on a small screen.
-Steps:
-1) Make the browser window narrow (phone size).
-2) Re-check: home page, define-your-goal chat, and My Profile.
-Report:
-- Any text too small?
-- Any buttons hard to tap?
-- Anything overlapping or cut off?
 
 ---
 

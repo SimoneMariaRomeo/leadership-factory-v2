@@ -1,25 +1,32 @@
 
 TO FIX 
 
-1)
-Bot prompt to avoid wrong formatting to cross check goal:
-/define-your-goal
-Wanting to move forward but feeling held back by self-doubt—that tension between determination and uncertainty is a powerful signal. It’s not lack of ability; it’s likely an inner confidence gap surfacing under pressure.
+-) from a user goal to user goals
+at the moment each user can have only one goal. Change it to enable having various goals.
+Each goal should have an ID, statement (text), and status (active, achieved)
 
-So far, we have:
+All active goals should be passed to a bot chat (not just the first one: change Current user goal --> Current user goals)
 
-[X Situation]: Launching a personal business amid paralyzing uncertainty and mental fog
-[Y Pattern]: A recurring thought of "I have no clue what I'm doing," triggering procrastination
-[Z Learning]: Building self-trust and clarity under ambiguity
-[X Goal]: Successfully moving forward with the business despite uncertainty
-Does it resonate that developing confidence in navigating the unknown could be the key learning you're seeking?
+the define-your-goal session should never be passed existing goals
 
-2)
-Add a last onboarding card (which show only  while the user’s profileTour flag stays true), make it centered in the screen. 
-        <strong>You don’t need to do anything right now. We’ll email you when the first step is ready (usually within a few days).</strong>
-After the last card, instead of next, the sign should be "Done"
 
-2) `npm run test:profile-and-journeys`
+-) edits to my profile
+Put the personalized Learning Journey before Your goal
+Change Your goal to Your goals
+Add a button to add a new goal 
+Each goal should have a button to edit it 
+Each goal should have a box to mark "Achieved" or Active. Achieved goals are moved to the bottom and crossed
+
+
+-) fixed VS growth mindset
+Why do you think two people with similar abilities can respond so differently to the same challenge?
+-->
+Have you wondered why people with similar abilities can respond so differently to the same challenge?
+It turns out, your mindset is more important to career success than your skills sometimes.
+Would you like to know more?
+
+
+-) `npm run test:profile-and-journeys`
 - What failed: “Profile shows goal and recommended journey”.
 - Why it failed: the test looks for a link with the name “Latest personalized journey”, but the link’s accessible name now includes extra text (“Second intro”) because that intro text sits inside the link.
   - The page has a link whose accessible name is: “Latest personalized journey Second intro”
@@ -33,7 +40,3 @@ After the last card, instead of next, the sign should be "Done"
   - Adding `aria-label` changes what screen readers read for that link (it may hide the intro from the link label).
   - Moving the intro outside the link reduces the clickable area (some users may like clicking the whole card).
 
-Extra note about AI tests
-- `npm run test:define-your-goal-chat` calls real AI providers in the later steps.
-- This can fail if API keys are missing, the network is down, or the AI response changes.
-- If we want more stable tests, we can replace the real AI calls with mocked responses in test mode.
