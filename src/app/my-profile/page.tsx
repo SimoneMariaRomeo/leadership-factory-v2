@@ -1,9 +1,9 @@
-// This page shows the signed-in user's goal, recommended journey, and all of their journeys.
+// This page shows the signed-in user's goals, recommended journey, and recent conversations.
 import Link from "next/link";
 import { headers } from "next/headers";
 import LoginPrompt from "../components/LoginPrompt";
 import ProfileTour from "./ProfileTour";
-import EditableGoalCard from "./EditableGoalCard";
+import GoalsPanel from "./GoalsPanel";
 import AvatarPicker from "./AvatarPicker";
 import SignOutButton from "./SignOutButton";
 import { prisma } from "../../server/prismaClient";
@@ -21,18 +21,18 @@ export default async function MyProfilePage() {
       <div className="content-shell">
         <div className="bg-orbs" aria-hidden="true" />
         <div className="content-inner">
-          <LoginPrompt
-            title="Please log in to see your profile"
-            message="Sign in to view your learning goal, journeys, and conversations."
-            buttonLabel="Login to continue"
-            afterLoginPath="/my-profile"
-          />
+            <LoginPrompt
+              title="Please log in to see your profile"
+              message="Sign in to view your learning goals, journeys, and conversations."
+              buttonLabel="Login to continue"
+              afterLoginPath="/my-profile"
+            />
         </div>
       </div>
     );
   }
 
-  const [personalizedJourneys, recentChats] = await Promise.all([
+  const [personalizedJourneys, recentChats, goals] = await Promise.all([
     prisma.learningJourney.findMany({
       where: {
         isStandard: false,
@@ -57,6 +57,11 @@ export default async function MyProfilePage() {
       orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
       take: 5,
       select: { id: true, sessionTitle: true, startedAt: true },
+    }),
+    prisma.userGoal.findMany({
+      where: { userId: user.id },
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      select: { id: true, statement: true, status: true, updatedAt: true },
     }),
   ]);
 
@@ -95,9 +100,6 @@ export default async function MyProfilePage() {
 
               </div>
             </div>
-            <div id="tour-goal">
-              <EditableGoalCard initialGoal={user.learningGoal} confirmedAt={user.learningGoalConfirmedAt} />
-            </div>
           </section>
 
           <section className="profile-section">
@@ -135,6 +137,17 @@ export default async function MyProfilePage() {
                 </>
               )}
             </div>
+          </section>
+
+          <section className="profile-section" id="tour-goal">
+            <GoalsPanel
+              goals={goals.map((goal) => ({
+                id: goal.id,
+                statement: goal.statement,
+                status: goal.status,
+                updatedAt: goal.updatedAt.toISOString(),
+              }))}
+            />
           </section>
 
           <section className="profile-section">

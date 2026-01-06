@@ -1408,6 +1408,43 @@ a {
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
+.goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.goal-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.goal-status-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--body-sm);
+  color: var(--text-soft);
+}
+
+.goal-status-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+}
+
+.goal-item-achieved .goal-text {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.goal-item-achieved .goal-box {
+  background: rgba(245, 245, 245, 0.7);
+}
+
 .goal-card-head {
   display: flex;
   align-items: center;

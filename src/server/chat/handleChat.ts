@@ -33,14 +33,16 @@ function buildSystemMessage({
   objective,
   content,
   botTools,
-  userGoalSummary,
+  userGoals,
 }: {
   botRole: string;
   objective?: string | null;
   content: string;
   botTools: string;
-  userGoalSummary?: string | null;
+  userGoals?: string[] | null;
 }): LlmMessage {
+  const cleanedGoals = (userGoals || []).map((goal) => goal.trim()).filter((goal) => goal.length > 0);
+  const goalsText = cleanedGoals.length ? cleanedGoals.map((goal) => `- ${goal}`).join("\n") : "not defined yet";
   const systemText = [
     botRole,
     "",
@@ -53,8 +55,8 @@ function buildSystemMessage({
     "Tools and JSON commands you can use:",
     botTools,
     "",
-    "Current user goal:",
-    userGoalSummary || "not defined yet",
+    "Current user goals:",
+    goalsText,
   ].join("\n");
 
   return { role: "system", content: systemText };
@@ -312,6 +314,22 @@ export async function handleChat({
   const botRole = user?.botRole || "You are an executive coach and consultant with 20+ years supporting performance and motivation. You work on soft skills and mindset. Format your replies with bold, italics and new lines to improve readability.";
 
   const outlineForPrompt = journeyFromStep?.sessionOutline || outline;
+  const isDefineYourGoal = outlineForPrompt?.slug === "define-your-goal";
+  const activeGoals =
+    userId && !isDefineYourGoal
+      ? await prisma.userGoal.findMany({
+          where: { userId, status: "active" },
+          orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+          select: { statement: true },
+        })
+      : [];
+  const goalStatements = activeGoals.map((goal) => goal.statement).filter((goal) => goal.trim().length > 0);
+  const goalsForPrompt =
+    !isDefineYourGoal && goalStatements.length > 0
+      ? goalStatements
+      : !isDefineYourGoal && journeyForPrompt?.userGoalSummary
+        ? [journeyForPrompt.userGoalSummary]
+        : [];
   const canCompleteStep = Boolean(journeyStepId && journeyFromStep && !journeyFromStep.journey.isStandard);
   const botTools =
     canCompleteStep && outlineForPrompt.botTools
@@ -324,7 +342,7 @@ export async function handleChat({
       objective: outlineForPrompt.objective,
       content: outlineForPrompt.content,
       botTools,
-      userGoalSummary: journeyForPrompt?.userGoalSummary || user?.learningGoal || null,
+      userGoals: goalsForPrompt,
     }),
     { role: "user", content: outlineForPrompt.firstUserMessage },
     ...messages.map((message) => ({ role: message.role, content: message.content })),

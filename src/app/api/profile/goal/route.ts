@@ -1,4 +1,4 @@
-// This route lets the signed-in user update their learning goal from the profile page.
+// This route lets the signed-in user add or update goals from the profile page.
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../server/prismaClient";
 import { requireUser, UnauthorizedError } from "../../../../server/auth/session";
@@ -6,39 +6,53 @@ import { requireUser, UnauthorizedError } from "../../../../server/auth/session"
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const learningGoal = typeof body.learningGoal === "string" ? body.learningGoal.trim() : "";
+    const goalId = typeof body.goalId === "string" ? body.goalId.trim() : "";
+    const statement = typeof body.statement === "string" ? body.statement.trim() : "";
+    const status =
+      body.status === "active" || body.status === "achieved" ? (body.status as "active" | "achieved") : null;
+    const user = await requireUser(req);
 
-    if (!learningGoal) {
-      return NextResponse.json({ error: "Please write your learning goal before saving." }, { status: 400 });
+    if (!goalId) {
+      if (!statement) {
+        return NextResponse.json({ error: "Please write your goal before saving." }, { status: 400 });
+      }
+      const created = await prisma.userGoal.create({
+        data: {
+          userId: user.id,
+          statement,
+          status: "active",
+        },
+        select: { id: true, statement: true, status: true, updatedAt: true },
+      });
+      return NextResponse.json({ success: true, goal: created });
     }
 
-    const user = await requireUser(req);
-    const now = new Date();
+    const existing = await prisma.userGoal.findFirst({
+      where: { id: goalId, userId: user.id },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Goal not found." }, { status: 404 });
+    }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const savedUser = await tx.user.update({
-        where: { id: user.id },
-        data: { learningGoal, learningGoalConfirmedAt: now },
-        select: { id: true, email: true, name: true, learningGoal: true, learningGoalConfirmedAt: true },
-      });
+    const data: { statement?: string; status?: "active" | "achieved" } = {};
+    if (statement) {
+      data.statement = statement;
+    }
+    if (status) {
+      data.status = status;
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "Please send a goal update." }, { status: 400 });
+    }
 
-      const latestPersonalizedJourney = await tx.learningJourney.findFirst({
-        where: { personalizedForUserId: user.id, isStandard: false, status: { not: "archived" } },
-        orderBy: [{ createdAt: "desc" }, { updatedAt: "desc" }],
-        select: { id: true },
-      });
-
-      if (latestPersonalizedJourney) {
-        await tx.learningJourney.update({
-          where: { id: latestPersonalizedJourney.id },
-          data: { userGoalSummary: learningGoal },
-        });
-      }
-
-      return savedUser;
+    const updated = await prisma.userGoal.update({
+      where: { id: goalId },
+      data,
+      select: { id: true, statement: true, status: true, updatedAt: true },
     });
 
-    return NextResponse.json({ success: true, user: updated });
+    return NextResponse.json({ success: true, goal: updated });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

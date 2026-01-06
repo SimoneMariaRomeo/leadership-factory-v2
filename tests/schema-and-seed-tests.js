@@ -146,6 +146,7 @@ async function main() {
 async function ensureTablesExist() {
   const expected = [
     "User",
+    "UserGoal",
     "LearningSessionChat",
     "Message",
     "LearningJourney",

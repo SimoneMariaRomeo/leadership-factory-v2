@@ -26,10 +26,12 @@ export async function POST(req: Request) {
     const user = await requireUser(req);
     const guestId = getGuestIdFromRequest(req);
     const result = await prisma.$transaction(async (tx) => {
-      const updatedUser = await tx.user.update({
-        where: { id: user.id },
-        data: { learningGoal, learningGoalConfirmedAt: new Date() },
-        select: { id: true, email: true, name: true, learningGoal: true },
+      await tx.userGoal.create({
+        data: {
+          userId: user.id,
+          statement: learningGoal,
+          status: "active",
+        },
       });
 
       // Link the latest define-your-goal guest chat for this browser, so it appears in "Previous Conversations" after signup.
@@ -71,11 +73,11 @@ export async function POST(req: Request) {
         select: { id: true, personalizedForUserId: true },
       });
 
-      return { updatedUser, journey, linkedChatId };
+      return { journey, linkedChatId };
     });
 
     try {
-      await sendGoalCommitEmails({ user: result.updatedUser, learningGoal, journey: result.journey });
+      await sendGoalCommitEmails({ user, learningGoal, journey: result.journey });
     } catch (emailError) {
       console.error("Sending goal commit emails failed:", emailError);
     }

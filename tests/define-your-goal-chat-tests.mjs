@@ -235,7 +235,7 @@ async function testPromptConstruction(sessionOutlineId, journeyStepId) {
   const firstUserTurn = capturedMessages[1];
   assert(systemMessage.content.includes("Session objective"), "System prompt should include the objective label.");
   assert(systemMessage.content.toLowerCase().includes("tools and json commands"), "System prompt should list bot tools.");
-  assert(systemMessage.content.includes("Current user goal"), "System prompt should mention the current user goal.");
+  assert(systemMessage.content.includes("Current user goals"), "System prompt should mention the current user goals.");
   assert(firstUserTurn.content.length > 0, "First user message should be present.");
   logPass("Prompt carries objective, content, botTools, and goal summary.");
 }

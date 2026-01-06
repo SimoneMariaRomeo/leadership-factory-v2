@@ -15,8 +15,6 @@ type SafeUser = {
   id: string;
   email: string | null;
   name: string | null;
-  learningGoal: string | null;
-  learningGoalConfirmedAt: Date | null;
   picture: string | null;
   profileTour: boolean;
   role: string;
@@ -85,8 +83,6 @@ export async function getCurrentUser(req: Request): Promise<SafeUser | null> {
       id: true,
       email: true,
       name: true,
-      learningGoal: true,
-      learningGoalConfirmedAt: true,
       picture: true,
       profileTour: true,
       role: true,
