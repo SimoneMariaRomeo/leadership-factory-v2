@@ -324,7 +324,7 @@ export async function handleChat({
       objective: outlineForPrompt.objective,
       content: outlineForPrompt.content,
       botTools,
-      userGoalSummary: journeyForPrompt?.userGoalSummary || "not defined yet",
+      userGoalSummary: journeyForPrompt?.userGoalSummary || user?.learningGoal || null,
     }),
     { role: "user", content: outlineForPrompt.firstUserMessage },
     ...messages.map((message) => ({ role: message.role, content: message.content })),
