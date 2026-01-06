@@ -22,8 +22,8 @@ SELECT
     "id",
     "learningGoal",
     'active',
-    COALESCE("learningGoalConfirmedAt", CURRENT_TIMESTAMP),
-    COALESCE("learningGoalConfirmedAt", CURRENT_TIMESTAMP)
+    COALESCE("learningGoalConfirmedAt", "createdAt", CURRENT_TIMESTAMP),
+    COALESCE("learningGoalConfirmedAt", "createdAt", CURRENT_TIMESTAMP)
 FROM "User"
 WHERE "learningGoal" IS NOT NULL AND length(trim("learningGoal")) > 0;
 

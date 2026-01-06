@@ -7,6 +7,7 @@ DROP INDEX IF EXISTS "LearningSessionOutline_slug_key";
 ALTER TABLE "LearningSessionOutline" DROP COLUMN IF EXISTS "journeyId";
 ALTER TABLE "LearningSessionOutline" DROP COLUMN IF EXISTS "live";
 CREATE UNIQUE INDEX "LearningSessionOutline_slug_key" ON "LearningSessionOutline"("slug");
+ALTER TABLE "LearningJourneyStep" DROP CONSTRAINT IF EXISTS "LearningJourneyStep_sessionOutlineId_fkey";
 ALTER TABLE "LearningJourneyStep"
   ADD CONSTRAINT "LearningJourneyStep_sessionOutlineId_fkey"
     FOREIGN KEY ("sessionOutlineId") REFERENCES "LearningSessionOutline"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
