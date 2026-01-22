@@ -1,5 +1,6 @@
 // This helper sends the simple emails for goal commits and can be swapped out in tests.
 import nodemailer from "nodemailer";
+import { setDefaultResultOrder } from "dns";
 
 type GoalCommitEmailInput = {
   user: { id: string; email: string | null; name: string | null };
@@ -45,6 +46,13 @@ async function getTransporter() {
 
   if (!host || !user || !pass) {
     throw new Error("Missing SMTP configuration for notifications.");
+  }
+
+  // This prefers IPv4 so SMTP does not hang on broken IPv6 routes.
+  try {
+    setDefaultResultOrder("ipv4first");
+  } catch {
+    // If the runtime does not support this, keep going.
   }
 
   transportPromise = Promise.resolve(
