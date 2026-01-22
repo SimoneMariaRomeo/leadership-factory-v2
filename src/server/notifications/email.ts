@@ -70,14 +70,18 @@ async function getTransporter() {
 // This small helper sends a single email, real or mocked.
 async function sendMail(options: MailOptions) {
   const from = process.env.NOTIFICATION_EMAIL_FROM || process.env.NOTIFICATION_EMAIL_SMTP_USER || "";
+  const sentAt = new Date().toISOString();
+  const logPayload = { to: options.to, subject: options.subject, sentAt, html: options.html };
 
   if (testSender) {
     await testSender({ ...options, html: options.html });
+    console.info("Email sent (test):", logPayload);
     return;
   }
 
   const transporter = await getTransporter();
   await transporter.sendMail({ ...options, from });
+  console.info("Email sent:", logPayload);
 }
 
 // This sends both the user and admin emails for a goal commit.
