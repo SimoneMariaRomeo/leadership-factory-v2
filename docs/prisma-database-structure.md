@@ -70,6 +70,7 @@ model LearningJourney {
   personalizedForUser   User?     @relation("UserJourneys", fields: [personalizedForUserId], references: [id])
 
   userGoalSummary       String?
+  goalChatId            String?  // chat that led to this personal journey
 
   status                String    // "draft" | "awaiting_review" | "active" | "completed" | "archived"
 
