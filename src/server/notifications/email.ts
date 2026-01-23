@@ -105,7 +105,7 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
         <strong style="color:#c79d2d;">${learningGoal}</strong></p>
 
         <p>
-        From here, We’ll start shaping a personalized learning journey <em>with you</em>: grounded in your context, your constraints, and what will actually help you push your growth boundaries.
+        From here, we’ll start shaping a personalized learning journey <em>for you</em>: grounded in your context, your constraints, and what will actually help you push your growth boundaries.
         </p>
 
         <p>
