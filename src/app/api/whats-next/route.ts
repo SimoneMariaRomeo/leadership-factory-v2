@@ -89,11 +89,10 @@ export async function POST(req: Request) {
       return { journey, goalChatId };
     });
 
-    try {
-      await sendGoalCommitEmails({ user, learningGoal, journey: result.journey });
-    } catch (emailError) {
+    // This sends emails in the background so slow SMTP does not block the response.
+    void sendGoalCommitEmails({ user, learningGoal, journey: result.journey }).catch((emailError) => {
       console.error("Sending goal commit emails failed:", emailError);
-    }
+    });
 
     return NextResponse.json({ success: true, journeyId: result.journey.id });
   } catch (err) {
