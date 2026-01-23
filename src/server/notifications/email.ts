@@ -1,11 +1,12 @@
 // This helper sends the simple emails for goal commits and can be swapped out in tests.
 import nodemailer from "nodemailer";
 import { setDefaultResultOrder } from "dns";
+import { prisma } from "../prismaClient";
 
 type GoalCommitEmailInput = {
   user: { id: string; email: string | null; name: string | null };
   learningGoal: string;
-  journey: { id: string; personalizedForUserId?: string | null };
+  journey: { id: string; personalizedForUserId?: string | null; goalChatId?: string | null };
 };
 
 type JourneyActivatedEmailInput = {
@@ -27,6 +28,45 @@ function getProductionUrl() {
   const configured = (process.env.PRODUCTION_URL || "").trim();
   const base = configured || "http://localhost:3000";
   return base.endsWith("/") ? base.slice(0, -1) : base;
+}
+
+// This keeps plain text safe inside email HTML.
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+type ConversationMessage = {
+  role: string;
+  content: string | null;
+  command?: any | null;
+};
+
+// This turns chat messages into simple User/Coach lines for the admin email.
+function formatConversationHtml(messages: ConversationMessage[]) {
+  const cleaned = messages
+    .filter((message) => message.command == null)
+    .map((message) => ({
+      role: message.role,
+      content: (message.content || "").trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+
+  if (cleaned.length === 0) {
+    return "<p>No conversation found.</p>";
+  }
+
+  return cleaned
+    .map((message) => {
+      const label = message.role === "user" ? "User" : "Coach";
+      const safeContent = escapeHtml(message.content).replace(/\r?\n/g, "<br/>");
+      return `<p><strong>${label}:</strong> ${safeContent}</p>`;
+    })
+    .join("\n");
 }
 
 // This lets tests provide a fake sender.
@@ -91,6 +131,15 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
   const baseUrl = getProductionUrl();
   const profileLink = `${baseUrl}/my-profile`;
   const adminLink = `${baseUrl}/admin/journeys/${journey.id}`;
+  const conversationMessages =
+    adminEmail && journey.goalChatId
+      ? await prisma.message.findMany({
+          where: { chatId: journey.goalChatId },
+          orderBy: { createdAt: "asc" },
+          select: { role: true, content: true, command: true },
+        })
+      : [];
+  const conversationHtml = adminEmail ? formatConversationHtml(conversationMessages) : "";
 
   if (userEmail) {
     await sendMail({
@@ -127,6 +176,8 @@ export async function sendGoalCommitEmails({ user, learningGoal, journey }: Goal
       subject: `New learning goal from ${userEmail || "unknown user"}`,
       html: `
         <p>User email: ${userEmail || "unknown"}</p>
+        <p>Conversation:</p>
+        ${conversationHtml}
         <p>Learning goal:</p>
         <p><strong>${learningGoal}</strong></p>
         <p>Journey id: ${journey.id}</p>

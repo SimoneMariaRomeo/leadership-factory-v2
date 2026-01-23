@@ -1,7 +1,7 @@
 // This page shows the admin tool for session outlines.
 import { headers } from "next/headers";
 import Link from "next/link";
-import SessionsClient from "./SessionsClient";
+import SessionsListClient from "./SessionsListClient";
 import LoginPrompt from "../../components/LoginPrompt";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
 import { prisma } from "../../../server/prismaClient";
@@ -80,7 +80,7 @@ export default async function AdminSessionsPage() {
             </form>
           </div>
         </div>
-        <SessionsClient journeys={journeys} initialOutlines={outlines} />
+        <SessionsListClient journeys={journeys} initialOutlines={outlines} />
       </div>
     </div>
   );

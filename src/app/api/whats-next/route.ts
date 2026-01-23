@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         where: { slug: "define-your-goal" },
         select: { id: true },
       });
-      let linkedChatId: string | null = null;
+      let goalChatId: string | null = null;
       if (needAnalysisOutline && guestId) {
         const latestChat = await tx.learningSessionChat.findFirst({
           where: {
@@ -55,8 +55,20 @@ export async function POST(req: Request) {
             where: { id: latestChat.id },
             data: { userId: user.id },
           });
-          linkedChatId = latestChat.id;
+          goalChatId = latestChat.id;
         }
+      }
+
+      if (needAnalysisOutline && !goalChatId) {
+        const latestUserChat = await tx.learningSessionChat.findFirst({
+          where: {
+            userId: user.id,
+            sessionOutlineId: needAnalysisOutline.id,
+          },
+          orderBy: [{ lastMessageAt: "desc" }, { startedAt: "desc" }],
+          select: { id: true },
+        });
+        goalChatId = latestUserChat?.id || null;
       }
 
       const journey = await tx.learningJourney.create({
@@ -67,13 +79,14 @@ export async function POST(req: Request) {
           isStandard: false,
           personalizedForUserId: user.id,
           userGoalSummary: learningGoal,
+          goalChatId,
           status: "awaiting_review",
           slug: null,
         },
-        select: { id: true, personalizedForUserId: true },
+        select: { id: true, personalizedForUserId: true, goalChatId: true },
       });
 
-      return { journey, linkedChatId };
+      return { journey, goalChatId };
     });
 
     try {

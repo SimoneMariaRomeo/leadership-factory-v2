@@ -1,14 +1,15 @@
-// This page shows the admin tool for journeys and steps.
+// This page shows one journey detail for admins.
 import { headers } from "next/headers";
 import Link from "next/link";
-import JourneysListClient from "./JourneysListClient";
-import LoginPrompt from "../../components/LoginPrompt";
-import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
-import { listJourneys } from "../../../server/admin/journeys";
+import LoginPrompt from "../../../components/LoginPrompt";
+import { getCurrentUser, requestFromCookieHeader } from "../../../../server/auth/session";
+import { getJourneyDetail, listAllOutlines } from "../../../../server/admin/journeys";
+import JourneyDetailClient, { JourneyDetail } from "../JourneyDetailClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminJourneysPage() {
+// This loads the journey and renders the admin detail page.
+export default async function AdminJourneyDetailPage({ params }: { params: { journeyId: string } }) {
   const cookieHeader = headers().get("cookie");
   const user = await getCurrentUser(requestFromCookieHeader(cookieHeader));
 
@@ -19,9 +20,9 @@ export default async function AdminJourneysPage() {
         <div className="content-inner">
           <LoginPrompt
             title="Admin login"
-            message="Sign in first, then you can open the journeys admin tool."
+            message="Sign in first, then you can open the journey admin tool."
             buttonLabel="Login to admin"
-            afterLoginPath="/admin/journeys"
+            afterLoginPath={`/admin/journeys/${params.journeyId}`}
           />
         </div>
       </div>
@@ -48,7 +49,30 @@ export default async function AdminJourneysPage() {
     );
   }
 
-  const journeys = await listJourneys({ isStandard: "all", status: null, userEmail: null });
+  let journeyDetail: JourneyDetail | null = null;
+  try {
+    journeyDetail = (await getJourneyDetail(params.journeyId)) as JourneyDetail;
+  } catch (error) {
+    console.error("Loading journey detail failed:", error);
+  }
+
+  if (!journeyDetail) {
+    return (
+      <div className="content-shell admin-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="content-inner">
+          <div className="glass-card">
+            <h2 className="hero-title">Journey not found.</h2>
+            <Link className="secondary-button" href="/admin/journeys" style={{ marginTop: "12px" }}>
+              Back to journeys
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const outlines = await listAllOutlines();
 
   return (
     <div className="content-shell admin-shell">
@@ -58,11 +82,17 @@ export default async function AdminJourneysPage() {
           <div>
             <p className="hero-kicker">Admin</p>
             <h1 className="hero-title" style={{ marginBottom: 4 }}>
-              Journeys &amp; Steps
+              Journey detail
             </h1>
-            <p className="hero-lead">Filter journeys, edit details, manage steps, and reorder them.</p>
+            <p className="hero-lead">{journeyDetail.title}</p>
           </div>
           <div className="admin-quick-links">
+            <Link className="secondary-button" href="/admin">
+              Admin home
+            </Link>
+            <Link className="secondary-button" href="/admin/journeys">
+              All journeys
+            </Link>
             <Link className="secondary-button" href="/admin/sessions">
               Sessions
             </Link>
@@ -73,7 +103,7 @@ export default async function AdminJourneysPage() {
             </form>
           </div>
         </div>
-        <JourneysListClient initialJourneys={journeys} />
+        <JourneyDetailClient initialDetail={journeyDetail} outlines={outlines} />
       </div>
     </div>
   );
