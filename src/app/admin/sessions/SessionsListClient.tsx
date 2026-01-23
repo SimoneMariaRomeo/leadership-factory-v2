@@ -2,7 +2,6 @@
 
 // This component lists session outlines and lets admins filter or create them.
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type JourneyOption = {
@@ -257,25 +256,31 @@ export default function SessionsListClient({ journeys, initialOutlines }: Sessio
                   <th>Title</th>
                   <th>Slug</th>
                   <th>Updated</th>
-                  <th />
                 </tr>
               </thead>
               <tbody>
                 {outlines.map((outline) => (
-                  <tr key={outline.id}>
+                  <tr
+                    key={outline.id}
+                    onClick={() => router.push(`/admin/sessions/${outline.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(`/admin/sessions/${outline.id}`);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    style={{ cursor: "pointer" }}
+                  >
                     <td>{outline.title}</td>
                     <td>{outline.slug}</td>
                     <td>{formatDate(outline.updatedAt)}</td>
-                    <td>
-                      <Link className="link-button" href={`/admin/sessions/${outline.id}`}>
-                        Open
-                      </Link>
-                    </td>
                   </tr>
                 ))}
                 {outlines.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: "center", padding: "12px" }}>
+                    <td colSpan={3} style={{ textAlign: "center", padding: "12px" }}>
                       No outlines yet.
                     </td>
                   </tr>

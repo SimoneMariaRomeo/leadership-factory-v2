@@ -3,7 +3,6 @@
 // This component lists journeys and lets admins filter or create them.
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type JourneySummary = {
@@ -236,12 +235,23 @@ export default function JourneysListClient({ initialJourneys }: JourneysListClie
                   <th>User email</th>
                   <th>Status</th>
                   <th>Updated</th>
-                  <th />
                 </tr>
               </thead>
               <tbody>
                 {journeys.map((journey) => (
-                  <tr key={journey.id}>
+                  <tr
+                    key={journey.id}
+                    onClick={() => router.push(`/admin/journeys/${journey.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(`/admin/journeys/${journey.id}`);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    style={{ cursor: "pointer" }}
+                  >
                     <td>{journey.title}</td>
                     <td>{journey.slug || "-"}</td>
                     <td>
@@ -265,16 +275,11 @@ export default function JourneysListClient({ initialJourneys }: JourneysListClie
                       </span>
                     </td>
                     <td>{formatDate(journey.updatedAt)}</td>
-                    <td>
-                      <Link className="link-button" href={`/admin/journeys/${journey.id}`}>
-                        Open
-                      </Link>
-                    </td>
                   </tr>
                 ))}
                 {journeys.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "12px" }}>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "12px" }}>
                       No journeys found.
                     </td>
                   </tr>
