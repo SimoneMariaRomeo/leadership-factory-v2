@@ -23,6 +23,19 @@ type MailOptions = {
 let transportPromise: Promise<nodemailer.Transporter> | null = null;
 let testSender: ((options: MailOptions) => Promise<void>) | null = null;
 
+// This waits a bit between retry attempts.
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// This checks if an email error looks temporary.
+function isRetryableEmailError(error: any) {
+  const code = typeof error?.code === "string" ? error.code : "";
+  const command = typeof error?.command === "string" ? error.command : "";
+  const retryableCodes = new Set(["ETIMEDOUT", "ECONNRESET", "ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH"]);
+  return retryableCodes.has(code) || command === "CONN";
+}
+
 // This reads the website URL so email links point to the right place.
 function getProductionUrl() {
   const configured = (process.env.PRODUCTION_URL || "").trim();
@@ -112,6 +125,8 @@ async function sendMail(options: MailOptions) {
   const from = process.env.NOTIFICATION_EMAIL_FROM || process.env.NOTIFICATION_EMAIL_SMTP_USER || "";
   const sentAt = new Date().toISOString();
   const logPayload = { to: options.to, subject: options.subject, sentAt, html: options.html };
+  const maxAttempts = Math.max(1, Number(process.env.NOTIFICATION_EMAIL_RETRY_ATTEMPTS || 4));
+  const baseDelayMs = Math.max(500, Number(process.env.NOTIFICATION_EMAIL_RETRY_DELAY_MS || 3000));
 
   if (testSender) {
     await testSender({ ...options, html: options.html });
@@ -119,9 +134,23 @@ async function sendMail(options: MailOptions) {
     return;
   }
 
-  const transporter = await getTransporter();
-  await transporter.sendMail({ ...options, from });
-  console.info("Email sent:", logPayload);
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const transporter = await getTransporter();
+      await transporter.sendMail({ ...options, from });
+      console.info("Email sent:", logPayload);
+      return;
+    } catch (error) {
+      const shouldRetry = isRetryableEmailError(error);
+      if (!shouldRetry || attempt === maxAttempts) {
+        console.error("Email send failed:", { ...logPayload, attempt, error });
+        throw error;
+      }
+      const delayMs = Math.min(baseDelayMs * attempt, 30000);
+      console.warn(`Email send failed. Retrying in ${delayMs}ms (attempt ${attempt}/${maxAttempts}).`);
+      await sleep(delayMs);
+    }
+  }
 }
 
 // This sends both the user and admin emails for a goal commit.
