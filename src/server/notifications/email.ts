@@ -223,7 +223,7 @@ export async function sendJourneyActivatedEmail({ user, journey }: JourneyActiva
 
   const baseUrl = getProductionUrl();
   const journeySlugOrId = journey.slug || journey.id;
-  const journeyLink = `${baseUrl}/journeys/${journeySlugOrId}?userId=${encodeURIComponent(user.id)}`;
+  const journeyLink = `${baseUrl}/journeys/${journeySlugOrId}`;
 
   await sendMail({
     to: userEmail,

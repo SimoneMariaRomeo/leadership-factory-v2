@@ -1,7 +1,6 @@
 // This page shows the journey intro plus a clickable list of steps with simple access rules.
 import Link from "next/link";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import LoginPrompt from "../../components/LoginPrompt";
 import { loadJourneyWithStepsBySlug, journeySlugOrId } from "../../../lib/journeys";
 import { getCurrentUser, requestFromCookieHeader } from "../../../server/auth/session";
@@ -63,7 +62,29 @@ export default async function JourneyPage({ params, searchParams }: JourneyPageP
   const journeyResult = await loadJourneyWithStepsBySlug(params.slug, currentUser?.id || null);
 
   if (journeyResult.status === "forbidden") {
-    redirect("/my-profile");
+    return (
+      <div className="content-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="content-inner">
+          <div className="journey-empty">
+            <h1 className="hero-title" style={{ marginBottom: "8px" }}>
+              You do not have access
+            </h1>
+            <p className="hero-lead">
+              This journey is private to a different account. Please sign in with the email that received the invite.
+            </p>
+            <div className="journey-detail-actions" style={{ justifyContent: "flex-start", marginTop: "12px" }}>
+              <Link href="/my-profile" className="primary-button">
+                Go to profile
+              </Link>
+              <Link href="/journeys" className="secondary-button">
+                Back to all journeys
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (journeyResult.status === "not_found") {
