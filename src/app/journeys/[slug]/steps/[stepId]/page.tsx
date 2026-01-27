@@ -76,7 +76,25 @@ export default async function JourneyStepPage({ params }: StepPageProps) {
   const access = await loadStepWithAccess(foundStep.id, currentUser?.id || null);
 
   if (access.status === "forbidden") {
-    redirect("/my-profile");
+    return (
+      <main className="page-shell">
+        <div className="bg-orbs" aria-hidden="true" />
+        <div className="glass-card">
+          <h1 className="hero-title">You do not have access</h1>
+          <p className="hero-lead">
+            This session belongs to a different account. Please sign in with the email that received the invite.
+          </p>
+          <div className="journey-detail-actions" style={{ justifyContent: "flex-start", marginTop: "12px" }}>
+            <a href="/my-profile" className="primary-button">
+              Go to profile
+            </a>
+            <a href="/journeys" className="secondary-button">
+              Back to all journeys
+            </a>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (access.status === "not_found") {
