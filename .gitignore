@@ -1,7 +1,25 @@
-node_modules
-# Keep environment variables out of version control
+# Env files
 .env
-secrets.local.txt
+.env.*
 
-/generated/prisma
-.next
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv*/
+
+# Build artifacts
+/dist/
+/build/
+/coverage/
+/.next/
+
+# Logs
+*.log
