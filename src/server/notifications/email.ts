@@ -50,12 +50,15 @@ function isRetryableEmailError(error: any) {
 // This picks which email settings to use based on DEFAULT_API.
 function getNotificationEmailConfig(): NotificationEmailConfig {
   const defaultApi = (process.env.DEFAULT_API || "").trim().toLowerCase();
-  const prefix =
-    defaultApi === "aliyun"
-      ? "ALI_NOTIFICATION_EMAIL_"
-      : defaultApi === "chatgpt"
-        ? "GMAIL_NOTIFICATION_EMAIL_"
-        : "NOTIFICATION_EMAIL_";
+  let prefix = "";
+
+  if (defaultApi === "aliyun") {
+    prefix = "ALI_NOTIFICATION_EMAIL_";
+  } else if (defaultApi === "chatgpt") {
+    prefix = "GMAIL_NOTIFICATION_EMAIL_";
+  } else {
+    throw new Error('DEFAULT_API must be "aliyun" or "chatgpt" for email settings.');
+  }
 
   const host = process.env[`${prefix}SMTP_HOST`];
   const port = Number(process.env[`${prefix}SMTP_PORT`] || 587);
