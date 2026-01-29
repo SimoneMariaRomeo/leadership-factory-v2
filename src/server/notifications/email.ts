@@ -20,6 +20,17 @@ type MailOptions = {
   html: string;
 };
 
+type NotificationEmailConfig = {
+  host: string | undefined;
+  port: number;
+  secure: boolean;
+  user: string | undefined;
+  pass: string | undefined;
+  from: string;
+  to: string | null;
+  prefix: string;
+};
+
 let transportPromise: Promise<nodemailer.Transporter> | null = null;
 let testSender: ((options: MailOptions) => Promise<void>) | null = null;
 
@@ -34,6 +45,27 @@ function isRetryableEmailError(error: any) {
   const command = typeof error?.command === "string" ? error.command : "";
   const retryableCodes = new Set(["ETIMEDOUT", "ECONNRESET", "ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH"]);
   return retryableCodes.has(code) || command === "CONN";
+}
+
+// This picks which email settings to use based on DEFAULT_API.
+function getNotificationEmailConfig(): NotificationEmailConfig {
+  const defaultApi = (process.env.DEFAULT_API || "").trim().toLowerCase();
+  const prefix =
+    defaultApi === "aliyun"
+      ? "ALI_NOTIFICATION_EMAIL_"
+      : defaultApi === "chatgpt"
+        ? "GMAIL_NOTIFICATION_EMAIL_"
+        : "NOTIFICATION_EMAIL_";
+
+  const host = process.env[`${prefix}SMTP_HOST`];
+  const port = Number(process.env[`${prefix}SMTP_PORT`] || 587);
+  const secure = String(process.env[`${prefix}SMTP_SECURE`] || "").toLowerCase() === "true";
+  const user = process.env[`${prefix}SMTP_USER`];
+  const pass = process.env[`${prefix}SMTP_PASS`];
+  const from = process.env[`${prefix}FROM`] || user || "";
+  const to = process.env[`${prefix}TO`] || null;
+
+  return { host, port, secure, user, pass, from, to, prefix };
 }
 
 // This reads the website URL so email links point to the right place.
@@ -91,14 +123,11 @@ export function setTestEmailSender(sender: ((options: MailOptions) => Promise<vo
 async function getTransporter() {
   if (transportPromise) return transportPromise;
 
-  const host = process.env.NOTIFICATION_EMAIL_SMTP_HOST;
-  const port = Number(process.env.NOTIFICATION_EMAIL_SMTP_PORT || 587);
-  const secure = String(process.env.NOTIFICATION_EMAIL_SMTP_SECURE || "").toLowerCase() === "true";
-  const user = process.env.NOTIFICATION_EMAIL_SMTP_USER;
-  const pass = process.env.NOTIFICATION_EMAIL_SMTP_PASS;
+  const config = getNotificationEmailConfig();
+  const { host, port, secure, user, pass } = config;
 
   if (!host || !user || !pass) {
-    throw new Error("Missing SMTP configuration for notifications.");
+    throw new Error(`Missing SMTP configuration for notifications (${config.prefix}).`);
   }
 
   // This prefers IPv4 so SMTP does not hang on broken IPv6 routes.
@@ -122,7 +151,8 @@ async function getTransporter() {
 
 // This small helper sends a single email, real or mocked.
 async function sendMail(options: MailOptions) {
-  const from = process.env.NOTIFICATION_EMAIL_FROM || process.env.NOTIFICATION_EMAIL_SMTP_USER || "";
+  const config = getNotificationEmailConfig();
+  const from = config.from;
   const sentAt = new Date().toISOString();
   const logPayload = { to: options.to, subject: options.subject, sentAt, html: options.html };
   const maxAttempts = Math.max(1, Number(process.env.NOTIFICATION_EMAIL_RETRY_ATTEMPTS || 4));
@@ -156,7 +186,7 @@ async function sendMail(options: MailOptions) {
 // This sends both the user and admin emails for a goal commit.
 export async function sendGoalCommitEmails({ user, learningGoal, journey }: GoalCommitEmailInput) {
   const userEmail = user.email;
-  const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
+  const adminEmail = getNotificationEmailConfig().to;
   const baseUrl = getProductionUrl();
   const profileLink = `${baseUrl}/my-profile`;
   const adminLink = `${baseUrl}/admin/journeys/${journey.id}`;
