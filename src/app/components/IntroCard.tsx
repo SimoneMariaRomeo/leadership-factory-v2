@@ -103,7 +103,14 @@ export default function IntroCard({ title, paragraphs, button }: IntroCardProps)
       <main className="intro-card">
         <div className="intro-row">
           <div className="intro-logo">
-            <Image src="/coai-logo.png" alt="Coach logo" width={56} height={56} className="intro-logo-img" />
+            <Image
+              src="/coai-logo.png"
+              alt="Coach logo"
+              width={56}
+              height={56}
+              className="intro-logo-img"
+              unoptimized
+            />
           </div>
           <div className="intro-text-col">
             <h1 className="intro-title">{typedTitle}</h1>
