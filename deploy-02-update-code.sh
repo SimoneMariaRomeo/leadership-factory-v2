@@ -14,6 +14,18 @@ set +a
 
 echo "== UPDATE CODE =="
 git fetch --prune origin
+if ! git diff-index --quiet HEAD --; then
+  if [ -t 0 ]; then
+    read -r -p "Uncommitted changes found. Continue and discard them? (y/n) " ANSWER
+    if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
+      echo "Stopped to protect local changes."
+      exit 1
+    fi
+  else
+    echo "ERROR: Uncommitted changes found. Run from a terminal to confirm."
+    exit 1
+  fi
+fi
 git reset --hard origin/master
 
 AFTER="$(git rev-parse HEAD)"
