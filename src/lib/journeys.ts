@@ -155,7 +155,11 @@ export async function getOrCreateStepChat(stepId: string, userId: string | null)
 }
 
 // This marks the step done and unlocks the next step in order when rules allow it.
-export async function completeStepAndUnlockNext(stepId: string, userId: string | null): Promise<StepCompletionResult> {
+export async function completeStepAndUnlockNext(
+  stepId: string,
+  userId: string | null,
+  options?: { completedAt?: Date | null; unlockedAt?: Date | null; allowJourneyCompletion?: boolean }
+): Promise<StepCompletionResult> {
   const access = await loadStepWithAccess(stepId, userId);
   if (access.status !== "ok") return access;
 
@@ -168,6 +172,9 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
   }
 
   const now = new Date();
+  const completedAtOverride = options?.completedAt ?? null;
+  const unlockedAtOverride = options?.unlockedAt ?? null;
+  const allowJourneyCompletion = options?.allowJourneyCompletion ?? false;
   const journeyId = step.journeyId;
 
   const { completedStep, unlockedStep, journey } = await prisma.$transaction(async (tx) => {
@@ -184,7 +191,7 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     });
 
-    const completedAt = currentStep.completedAt || now;
+    const completedAt = currentStep.completedAt || completedAtOverride || now;
     const updatedStep = await tx.learningJourneyStep.update({
       where: { id: stepId },
       data: { status: "completed", completedAt },
@@ -197,7 +204,7 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
     if (nextStep && nextStep.status === "locked") {
       unlocked = await tx.learningJourneyStep.update({
         where: { id: nextStep.id },
-        data: { status: "unlocked", unlockedAt: nextStep.unlockedAt ?? now },
+        data: { status: "unlocked", unlockedAt: nextStep.unlockedAt ?? unlockedAtOverride ?? now },
         include: { journey: true, sessionOutline: true, chats: true },
       });
     } else if (nextStep) {
@@ -211,13 +218,16 @@ export async function completeStepAndUnlockNext(stepId: string, userId: string |
       where: { journeyId, status: { not: "completed" } },
     });
 
-    const updatedJourney =
+    const shouldCompleteJourney =
+      allowJourneyCompletion &&
       remainingSteps === 0 &&
       currentStep.journey.status === "active" &&
       !currentStep.journey.isStandard &&
-      Boolean(currentStep.journey.personalizedForUserId)
-        ? await tx.learningJourney.update({ where: { id: journeyId }, data: { status: "completed" } })
-        : currentStep.journey;
+      Boolean(currentStep.journey.personalizedForUserId);
+
+    const updatedJourney = shouldCompleteJourney
+      ? await tx.learningJourney.update({ where: { id: journeyId }, data: { status: "completed" } })
+      : currentStep.journey;
 
     return { completedStep: updatedStep, unlockedStep: unlocked, journey: updatedJourney };
   });

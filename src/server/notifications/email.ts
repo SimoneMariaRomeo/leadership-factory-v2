@@ -14,6 +14,16 @@ type JourneyActivatedEmailInput = {
   journey: { id: string; slug: string | null };
 };
 
+type FollowUpStepEmailInput = {
+  user: { id: string; email: string | null; name: string | null };
+  journey: { id: string; slug: string | null; title: string };
+  step: { id: string; sessionOutline: { title: string; slug: string; firstUserMessage: string } };
+  followUpIndex: number;
+  isFinal: boolean;
+  systemPrompt: string;
+  outline: { title: string; objective: string | null; content: string; firstUserMessage: string };
+};
+
 type MailOptions = {
   to: string;
   subject: string;
@@ -276,4 +286,73 @@ export async function sendJourneyActivatedEmail({ user, journey }: JourneyActiva
       Leadership Factory</p>
     `.trim(),
   });
+}
+
+// This sends the user + admin emails when a follow-up step is created.
+export async function sendFollowUpStepEmails({
+  user,
+  journey,
+  step,
+  followUpIndex,
+  isFinal,
+  systemPrompt,
+  outline,
+}: FollowUpStepEmailInput) {
+  const userEmail = user.email;
+  const adminEmail = getNotificationEmailConfig().to;
+  const baseUrl = getProductionUrl();
+  const journeySlugOrId = journey.slug || journey.id;
+  const stepLink = `${baseUrl}/journeys/${journeySlugOrId}/steps/${step.sessionOutline.slug}`;
+  const adminLink = `${baseUrl}/admin/journeys/${journey.id}`;
+
+  if (userEmail) {
+    const safeFirstMessage = escapeHtml(step.sessionOutline.firstUserMessage || outline.firstUserMessage).replace(/\r?\n/g, "<br/>");
+    await sendMail({
+      to: userEmail,
+      subject: isFinal ? "Your final reflection step is ready" : "Your next step is ready",
+      html: `
+        <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+
+        <p>Your next step is ready.</p>
+
+        <p><strong>${escapeHtml(step.sessionOutline.title)}</strong></p>
+
+        <p>${safeFirstMessage}</p>
+
+        <p><a href="${stepLink}">Continue the chat</a></p>
+
+        <p>Simone<br/>
+        Leadership Factory</p>
+      `.trim(),
+    });
+  }
+
+  if (adminEmail) {
+    const safePrompt = escapeHtml(systemPrompt).replace(/\r?\n/g, "<br/>");
+    const safeContent = escapeHtml(outline.content).replace(/\r?\n/g, "<br/>");
+    const safeFirstMessage = escapeHtml(outline.firstUserMessage).replace(/\r?\n/g, "<br/>");
+    const safeObjective = outline.objective ? escapeHtml(outline.objective).replace(/\r?\n/g, "<br/>") : "None";
+
+    await sendMail({
+      to: adminEmail,
+      subject: `Follow-up step ${followUpIndex} for ${userEmail || "unknown user"}`,
+      html: `
+        <p>User email: ${userEmail || "unknown"}</p>
+        <p>Journey: ${escapeHtml(journey.title)} (id: ${journey.id})</p>
+        <p>Step id: ${step.id}</p>
+        <p>Step link: <a href="${stepLink}">${stepLink}</a></p>
+        <p>Admin link: <a href="${adminLink}">${adminLink}</a></p>
+        <p>Follow-up index: ${followUpIndex}</p>
+        <p>Final step: ${isFinal ? "yes" : "no"}</p>
+        <p>System prompt:</p>
+        <p>${safePrompt}</p>
+        <p>Outline title: ${escapeHtml(outline.title)}</p>
+        <p>Objective: ${safeObjective}</p>
+        <p>Content:</p>
+        <p>${safeContent}</p>
+        <p>First user message:</p>
+        <p>${safeFirstMessage}</p>
+      `.trim(),
+    });
+  }
 }

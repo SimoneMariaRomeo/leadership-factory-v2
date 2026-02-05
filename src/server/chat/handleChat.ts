@@ -43,6 +43,11 @@ function buildSystemMessage({
 }): LlmMessage {
   const cleanedGoals = (userGoals || []).map((goal) => goal.trim()).filter((goal) => goal.length > 0);
   const goalsText = cleanedGoals.length ? cleanedGoals.map((goal) => `- ${goal}`).join("\n") : "not defined yet";
+  const toolsSection =
+    botTools && botTools.trim().length > 0
+      ? ["", "Tools and JSON commands you can use:", botTools]
+      : [];
+
   const systemText = [
     botRole,
     "",
@@ -51,9 +56,7 @@ function buildSystemMessage({
     "",
     "Instructions:",
     content,
-    "",
-    "Tools and JSON commands you can use:",
-    botTools,
+    ...toolsSection,
     "",
     "Current user goals:",
     goalsText,
@@ -330,11 +333,7 @@ export async function handleChat({
       : !isDefineYourGoal && journeyForPrompt?.userGoalSummary
         ? [journeyForPrompt.userGoalSummary]
         : [];
-  const canCompleteStep = Boolean(journeyStepId && journeyFromStep && !journeyFromStep.journey.isStandard);
-  const botTools =
-    canCompleteStep && outlineForPrompt.botTools
-      ? `${outlineForPrompt.botTools}\n\nWhen the user has clearly finished this step, send exactly {"command": "mark_step_completed"} as a JSON message with no other text.`
-      : outlineForPrompt.botTools;
+  const botTools = outlineForPrompt.botTools;
 
   const modelMessages: LlmMessage[] = [
     buildSystemMessage({
@@ -364,7 +363,7 @@ export async function handleChat({
 
   const assistantText = await callModel({ messages: modelMessages, provider: process.env.DEFAULT_API });
   const split = splitAssistantResponse(assistantText);
-  const assistantCommand = split.command;
+  const assistantCommand = split.command?.command === "mark_step_completed" ? null : split.command;
   const assistantContent = split.content.trim().length > 0 ? split.content.trim() : null;
 
   if (assistantCommand) {

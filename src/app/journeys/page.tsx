@@ -27,11 +27,22 @@ export default async function JourneysPage() {
     );
   }
 
-  const standardJourneys = await prisma.learningJourney.findMany({
-    where: { isStandard: true, status: "active", personalizedForUserId: null },
-    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    select: { id: true, title: true, intro: true, slug: true, status: true },
-  });
+  const [standardJourneys, personalizedJourneys] = await Promise.all([
+    prisma.learningJourney.findMany({
+      where: { isStandard: true, status: "active", personalizedForUserId: null },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      select: { id: true, title: true, intro: true, slug: true, status: true },
+    }),
+    prisma.learningJourney.findMany({
+      where: {
+        isStandard: false,
+        personalizedForUserId: user.id,
+        status: { in: ["active", "completed"] },
+      },
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      select: { id: true, title: true, intro: true, slug: true, status: true },
+    }),
+  ]);
 
   return (
     <div className="content-shell">
@@ -53,6 +64,15 @@ export default async function JourneysPage() {
         ) : (
           <JourneyGridReveal journeys={standardJourneys} />
         )}
+
+        {personalizedJourneys.length > 0 ? (
+          <div style={{ marginTop: "24px" }}>
+            <h2 className="journey-title" style={{ marginBottom: "12px" }}>
+              Your Personalized Journeys
+            </h2>
+            <JourneyGridReveal journeys={personalizedJourneys} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

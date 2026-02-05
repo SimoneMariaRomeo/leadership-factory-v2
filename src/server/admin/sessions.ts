@@ -14,7 +14,7 @@ export type SessionInput = {
   title: string;
   slug: string;
   content: string;
-  botTools: string;
+  botTools?: string;
   firstUserMessage: string;
   objective?: string | null;
   tags?: any;
@@ -66,7 +66,7 @@ export async function getSessionOutline(id: string) {
 
 // This creates a new outline with a simple order default.
 export async function createSessionOutline(input: SessionInput) {
-  const required = ["title", "slug", "content", "botTools", "firstUserMessage"] as const;
+  const required = ["title", "slug", "content", "firstUserMessage"] as const;
   for (const key of required) {
     if (!input[key] || `${input[key]}`.trim() === "") {
       throw new AdminValidationError(`${key} is required.`);
@@ -86,7 +86,7 @@ export async function createSessionOutline(input: SessionInput) {
         order: nextOrder,
         objective: input.objective?.trim() || null,
         content: input.content,
-        botTools: input.botTools,
+        botTools: input.botTools ?? "",
         firstUserMessage: input.firstUserMessage,
         tags: input.tags ?? null,
       },
