@@ -13,5 +13,5 @@ Write-Host "Deploy target: $Target ($Remote)"
 
 ssh $Remote "cd leadership-factory && bash ./02-update-code-deploy.sh"
 if ($LASTEXITCODE -ne 0) {
-  throw "Remote deploy step failed on $Target: 02-update-code-deploy.sh"
+  throw "Remote deploy step failed on ${Target}: 02-update-code-deploy.sh"
 }
