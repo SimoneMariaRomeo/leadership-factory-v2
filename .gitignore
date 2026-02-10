@@ -2,6 +2,7 @@
 .env
 .env.*
 secrets.local.txt
+!.env.example
 
 # OS
 .DS_Store
