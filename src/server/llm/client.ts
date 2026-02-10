@@ -10,8 +10,8 @@ const FALLBACK_REPLY = "I am here to help you shape a clear learning goal.";
 const FAKE_JSON_GOAL =
   '{"command":"create_learning_goal","learningGoal":"I want to create a clear, actionable plan by next week that defines specific time and energy boundaries between my full-time job and my personal business, so I can reduce overwhelm and operate more intentionally."}';
 
-// We always ask the model to think hard, so answers are more reliable.
-// This works for both OpenAI and the DashScope OpenAI-compatible endpoint.
+// We try to ask the model to think hard, so answers are more reliable.
+// Some models do not support this setting, so we retry without it if needed.
 const REASONING_EFFORT = "high";
 
 export async function callChatModel({ messages, provider }: CallChatModelArgs): Promise<string> {
@@ -58,26 +58,55 @@ async function postToAliyun(messages: LlmMessage[], shouldLog: boolean): Promise
   const model = process.env.ALIYUN_REASONING || "qwen-plus";
 
   try {
-    const response = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
+    const url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+    const baseBody = { model, messages };
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        reasoning_effort: REASONING_EFFORT,
-        messages,
-      }),
+      body: JSON.stringify({ ...baseBody, reasoning_effort: REASONING_EFFORT }),
     });
+
+    const responseText = await response.text();
     if (!response.ok) {
+      const shouldRetryWithoutReasoning =
+        response.status === 400 && responseText.includes("Unrecognized request argument supplied: reasoning_effort");
+
+      if (shouldRetryWithoutReasoning) {
+        const retryResponse = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(baseBody),
+        });
+
+        const retryText = await retryResponse.text();
+        if (!retryResponse.ok) {
+          console.error("Aliyun retry call failed with status", retryResponse.status);
+          if (shouldLog) {
+            console.error("[llm] aliyun retry error body:", retryText);
+          }
+          return FALLBACK_REPLY;
+        }
+
+        const data = JSON.parse(retryText) as any;
+        const content = data?.choices?.[0]?.message?.content;
+        return typeof content === "string" ? content : FALLBACK_REPLY;
+      }
+
       console.error("Aliyun call failed with status", response.status);
       if (shouldLog) {
-        console.error("[llm] aliyun error body:", await response.text());
+        console.error("[llm] aliyun error body:", responseText);
       }
       return FALLBACK_REPLY;
     }
-    const data = (await response.json()) as any;
+
+    const data = JSON.parse(responseText) as any;
     const content = data?.choices?.[0]?.message?.content;
     return typeof content === "string" ? content : FALLBACK_REPLY;
   } catch (err) {
@@ -97,26 +126,55 @@ async function postToOpenAI(messages: LlmMessage[], shouldLog: boolean): Promise
   const model = process.env.OPENAI_REASONING || "gpt-4o-mini";
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const url = "https://api.openai.com/v1/chat/completions";
+    const baseBody = { model, messages };
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        reasoning_effort: REASONING_EFFORT,
-        messages,
-      }),
+      body: JSON.stringify({ ...baseBody, reasoning_effort: REASONING_EFFORT }),
     });
+
+    const responseText = await response.text();
     if (!response.ok) {
+      const shouldRetryWithoutReasoning =
+        response.status === 400 && responseText.includes("Unrecognized request argument supplied: reasoning_effort");
+
+      if (shouldRetryWithoutReasoning) {
+        const retryResponse = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(baseBody),
+        });
+
+        const retryText = await retryResponse.text();
+        if (!retryResponse.ok) {
+          console.error("OpenAI retry call failed with status", retryResponse.status);
+          if (shouldLog) {
+            console.error("[llm] openai retry error body:", retryText);
+          }
+          return FALLBACK_REPLY;
+        }
+
+        const data = JSON.parse(retryText) as any;
+        const content = data?.choices?.[0]?.message?.content;
+        return typeof content === "string" ? content : FALLBACK_REPLY;
+      }
+
       console.error("OpenAI call failed with status", response.status);
       if (shouldLog) {
-        console.error("[llm] openai error body:", await response.text());
+        console.error("[llm] openai error body:", responseText);
       }
       return FALLBACK_REPLY;
     }
-    const data = (await response.json()) as any;
+
+    const data = JSON.parse(responseText) as any;
     const content = data?.choices?.[0]?.message?.content;
     return typeof content === "string" ? content : FALLBACK_REPLY;
   } catch (err) {
