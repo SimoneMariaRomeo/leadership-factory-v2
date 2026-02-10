@@ -10,6 +10,10 @@ const FALLBACK_REPLY = "I am here to help you shape a clear learning goal.";
 const FAKE_JSON_GOAL =
   '{"command":"create_learning_goal","learningGoal":"I want to create a clear, actionable plan by next week that defines specific time and energy boundaries between my full-time job and my personal business, so I can reduce overwhelm and operate more intentionally."}';
 
+// We always ask the model to think hard, so answers are more reliable.
+// This works for both OpenAI and the DashScope OpenAI-compatible endpoint.
+const REASONING_EFFORT = "high";
+
 export async function callChatModel({ messages, provider }: CallChatModelArgs): Promise<string> {
   const activeProvider = (provider || process.env.DEFAULT_API || "aliyun").toLowerCase();
   const shouldLog = process.env.NODE_ENV !== "production";
@@ -51,6 +55,8 @@ async function postToAliyun(messages: LlmMessage[], shouldLog: boolean): Promise
     return FALLBACK_REPLY;
   }
 
+  const model = process.env.ALIYUN_REASONING || "qwen-plus";
+
   try {
     const response = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
       method: "POST",
@@ -59,7 +65,8 @@ async function postToAliyun(messages: LlmMessage[], shouldLog: boolean): Promise
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "qwen-plus",
+        model,
+        reasoning_effort: REASONING_EFFORT,
         messages,
       }),
     });
@@ -87,6 +94,8 @@ async function postToOpenAI(messages: LlmMessage[], shouldLog: boolean): Promise
     return FALLBACK_REPLY;
   }
 
+  const model = process.env.OPENAI_REASONING || "gpt-4o-mini";
+
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -95,7 +104,8 @@ async function postToOpenAI(messages: LlmMessage[], shouldLog: boolean): Promise
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model,
+        reasoning_effort: REASONING_EFFORT,
         messages,
       }),
     });
