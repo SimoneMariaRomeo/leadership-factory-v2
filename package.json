@@ -38,10 +38,11 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "generate": "prisma generate",
+    "postinstall": "prisma generate",
     "migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "test:schema-and-seed": "node tests/schema-and-seed-tests.js",

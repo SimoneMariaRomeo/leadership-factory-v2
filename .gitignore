@@ -23,3 +23,6 @@ __pycache__/
 
 # Logs
 *.log
+
+# Prisma generated client output (always re-created by `prisma generate`)
+generated/prisma/
