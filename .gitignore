@@ -1,6 +1,7 @@
 # Env files
 .env
 .env.*
+secrets.local.txt
 
 # OS
 .DS_Store
