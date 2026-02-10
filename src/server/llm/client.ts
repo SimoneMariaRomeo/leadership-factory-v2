@@ -123,7 +123,7 @@ async function postToOpenAI(messages: LlmMessage[], shouldLog: boolean): Promise
     return FALLBACK_REPLY;
   }
 
-  const model = process.env.OPENAI_REASONING || "gpt-4o-mini";
+  const model = process.env.OPENAI_REASONING || "gpt-5";
 
   try {
     const url = "https://api.openai.com/v1/chat/completions";
