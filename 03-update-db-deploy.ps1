@@ -1,0 +1,7 @@
+# This file runs one deploy step on west from your local machine.
+$ErrorActionPreference = "Stop"
+
+ssh west "cd leadership-factory && bash ./03-update-db-deploy.sh"
+if ($LASTEXITCODE -ne 0) {
+  throw "Remote deploy step failed: 03-update-db-deploy.sh"
+}
